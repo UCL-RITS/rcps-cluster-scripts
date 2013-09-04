@@ -1,0 +1,105 @@
+#!/usr/bin/env python
+
+# Gets qstat xml output, converts it into a pretty format.
+#  by Ian Kirker, 2012
+
+import sys
+import os
+import subprocess
+
+# Covers 2.4-2.5 (where elementtree is in elementtree) to 2.6+ (where it is not)
+try:
+  import lxml.etree as ET
+except:
+  try: 
+    import elementtree.ElementTree as ET
+  except:
+    try:
+      import xml.etree.ElementTree as ET
+    except:
+      sys.stderr.write("Could not get an elementtree implementation.\n")
+      sys.exit(8)
+
+
+class color:
+  red="\x1B[1;31m"
+  green="\x1B[1;32m"
+  blue="\x1B[1;34m"
+  reset="\x1B[0m"
+
+def parse_error(qstat_cmd, stdout, stderr):
+  sys.stderr.write("No information or failed to parse output.\n")
+  sys.stderr.write("Command executed was: \"%s\"\n" % qstat_cmd)
+  sys.stderr.write("Error is:\n%s\n" % stderr)
+  sys.stderr.write("\n")
+  sys.exit(1)
+
+
+def decompose_queue(queue_info_tag, user):
+  # Reads the XML and prints jobs with status belonging to user.
+  job_count = 0
+  if queue_info_tag is None:
+    sys.stderr.write("Decomposition error!\n")
+    sys.exit(1)
+    
+  for job_list in queue_info_tag:
+    if (job_list.find("JB_owner").text == user) or (user == "\*") or (user == "*"):
+      job_string = "  " + job_list.find("JB_job_number").text
+      job_string = job_string + "  " + job_list.find("JB_name").text
+      state = job_list.find("state").text.upper()
+      
+      if state == "R":
+        state = color.green + state + color.reset
+      elif state == "QW" or state == "Q" :
+        state = color.blue + state + color.reset
+      else:
+        state = color.red + state + color.reset
+      
+      job_string = job_string + " : " + state
+      print job_string
+    job_count = job_count + 1    
+
+  return job_count  
+
+
+def main():
+  # If a user name is provided on the command line, use that
+  # otherwise get the USER variable.
+  user = os.getenv("USER")
+  if len(sys.argv) == 2:
+    user = sys.argv[1]
+  if len(sys.argv) > 2:
+    sys.stderr.write("Too many arguments! Either no arguments or a username, please.\n")
+    exit(5)
+  
+  qstat_cmd = "qstat -xml -u %s" % (user)
+
+  # Run qstat with a pipe
+  qstat_proc = subprocess.Popen(qstat_cmd,
+    shell=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    env=os.environ)
+  stdout, stderr = qstat_proc.communicate()
+
+  # Parse XML
+  try:
+    root = ET.fromstring(stdout)
+  except:
+    parse_error(qstat_cmd, stdout, stderr)
+  
+  # Print header, then find jobs in XML tree
+  #  Use stderr and stdout so that piped output does not need head and tail cut off
+  sys.stderr.write("User "+user+" has jobs:\n")
+  job_count = 0
+  
+  for queue_info in root:
+    job_count = job_count + decompose_queue(queue_info, user)  
+  
+  sys.stdout.flush()
+  sys.stderr.write("--\n " + repr(job_count) + " jobs.\n")
+
+if __name__ == "__main__":
+  main()
+
+

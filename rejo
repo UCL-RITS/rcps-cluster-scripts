@@ -1,0 +1,111 @@
+#!/usr/bin/env perl
+
+# Queries the accounting database to get most recently finished jobs.
+# -IK, 2013
+
+use strict;
+use warnings;
+
+use DBI;
+use Getopt::Long;
+
+my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
+my $current_time = time;
+my $default_time_window = 24;
+my $time_window_hours = $default_time_window; 
+my $nodename = "";
+
+sub print_help() {
+  print "$0 - prints recently finished jobs\n\n";
+  print "  Arguments:\n";
+  print "    --hours=<number>  show jobs that finished in the last <number> hours [24]\n";
+  print "    --user=<username> show jobs from user <username> [you] (use * for any)\n";
+  print "    --node=<nodename> show jobs with master node <nodename> [any]\n";
+  print "    -h, --help        show this message\n\n";
+  exit 0
+}
+
+
+my $result = GetOptions("hours=f" => \$time_window_hours,
+                        "u|user=s"  => \$username,
+                        "n|node=s"  => \$nodename,
+                        "h|help"    => sub { print_help() });
+
+if (!$result) {
+  die("Error in options.\n");
+}
+  
+my $dbh;
+open my $stderr,">&STDERR";
+close STDERR;
+open STDERR, ">", \my $err;
+eval {
+  my $timeout = 4; #seconds
+  local $SIG{ALRM} = sub { die "timeout\n" };
+  alarm $timeout;
+  
+  # Use read-only account
+  $dbh = DBI->connect('DBI:mysql:sgelogs;host=mysql.data.legion.ucl.ac.uk', 'ccspapp', 'U4Ah+fSt', {RaiseError => 1} );
+
+  alarm 0; # Remove alarm
+};
+close STDERR;
+open STDERR, ">&" , $stderr;
+close $stderr;
+
+if ($@ =~ "timeout\n") {
+  die "Job logging database connection attempt timed out.\n";
+} elsif ($@) {
+  $err=~s/\n.*//gm;
+  die "\nUnexpected error while attempting to connect to job logging database: \n\n$err\n\n";
+}
+
+my $statement = "SELECT * FROM accounting WHERE end_time>?";
+
+if ($nodename ne "") {
+  if (not $nodename =~ /\.data\.legion\.ucl\.ac\.uk$/) {
+    $nodename .= ".data.legion.ucl.ac.uk";
+  }
+  $statement .= " AND hostname=?";
+}
+
+if ($username ne "*") {
+  $statement .= " AND owner=?";
+}
+
+$statement .= " ORDER BY end_time;";
+
+my $sth = $dbh->prepare_cached($statement);
+my $time_window = $time_window_hours * 3600;
+
+if ( ($nodename eq "") and ($username eq "*") ) {
+  $sth->execute($current_time-$time_window);
+} elsif ( ($nodename eq "") and ($username ne "*") ) {
+  $sth->execute($current_time-$time_window,$username);
+} elsif ( ($nodename ne "") and ($username eq "*") ) {
+  $sth->execute($current_time-$time_window,$nodename);
+} elsif ( ($nodename ne "") and ($username ne "*") ) {
+  $sth->execute($current_time-$time_window,$nodename,$username);
+} else {
+  print STDERR "Error in script.\n";
+}
+
+my $row;
+
+if ($sth->rows == 0) {
+  print "No finished jobs found within time frame searched. (Last $time_window_hours hours.)\n";
+  $sth->finish;
+} else {
+  print "__Start_Time______________|__End_Time________________|_Owner___|__Job_ID__|Status|_Name_____________________\n";
+  while ( $row = $sth->fetchrow_hashref() ) {
+    printf " %24s | %24s | %7s | %8s | %4s | %s \n", 
+            scalar localtime($row->{'start_time'}),
+            scalar localtime($row->{'end_time'}),
+            $row->{'owner'},
+            $row->{'job_number'},
+            $row->{'exit_status'},
+            $row->{'job_name'};
+  }
+}
+$dbh->disconnect();
+
