@@ -119,7 +119,6 @@ if ($sth->rows == 0) {
       $row->{'fstime'} = scalar localtime($row->{'start_time'});
       $row->{'fetime'} = scalar localtime($row->{'end_time'});
       $row->{'ewalltime'} = $row->{'end_time'} - $row->{'start_time'};
-      print %$row;
       my $format_element;
       foreach $format_element (@format_array) {
         if (defined($row->{$format_element})) {
