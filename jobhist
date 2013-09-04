@@ -14,6 +14,7 @@ my $current_time = time;
 my $default_time_window = 24;
 my $time_window_hours = $default_time_window; 
 my $nodename = "";
+my $format;
 
 sub print_help() {
   print "$0 - prints recently finished jobs\n\n";
@@ -21,14 +22,26 @@ sub print_help() {
   print "    --hours=<number>  show jobs that finished in the last <number> hours [24]\n";
   print "    --user=<username> show jobs from user <username> [you] (use * for any)\n";
   print "    --node=<nodename> show jobs with master node <nodename> [any]\n";
+  print "    --info=<csvelements> select elements to display (experimental)\n";
+  print "    -l                show list of valid elements (experimental)\n";
   print "    -h, --help        show this message\n\n";
   exit 0
 }
 
+sub list_els() {
+  print join("\n ",split(","," id,_pos,_checksum,qname,hostname,ugroup,owner,job_name,job_number,account,priority,submission_time,start_time,end_time,failed,exit_status,ru_wallclock,ru_utime,ru_stime,ru_maxrss,ru_ixrss,ru_ismrss,ru_idrss,ru_isrss,ru_minflt,ru_majflt,ru_nswap,ru_inblock,ru_oublock,ru_msgsnd,ru_msgrcv,ru_nsignals,ru_nvcsw,ru_nivcsw,project,department,granted_pe,slots,task_number,cpu,mem,io,category,iow,pe_taskid,maxvmem,arid,ar_submission_time,cost,C::l::bonus,C::l::cpu,C::l::gpu,C::l::h_rss,C::l::h_rt,C::l::h_vmem,C::l::memory,C::l::penalty,C::l::threads"));
+  print "\n";
+  print " fstime\n";
+  print " fetime\n";
+  print " ewalltime\n";
+  exit 0;
+}
 
 my $result = GetOptions("hours=f" => \$time_window_hours,
                         "u|user=s"  => \$username,
                         "n|node=s"  => \$nodename,
+                        "i|info=s"  => \$format,
+                        "l"         => sub { list_els() },
                         "h|help"    => sub { print_help() });
 
 if (!$result) {
@@ -59,6 +72,9 @@ if ($@ =~ "timeout\n") {
   $err=~s/\n.*//gm;
   die "\nUnexpected error while attempting to connect to job logging database: \n\n$err\n\n";
 }
+
+
+# Build query
 
 my $statement = "SELECT * FROM accounting WHERE end_time>?";
 
@@ -96,15 +112,37 @@ if ($sth->rows == 0) {
   print "No finished jobs found within time frame searched. (Last $time_window_hours hours.)\n";
   $sth->finish;
 } else {
-  print "__Start_Time______________|__End_Time________________|_Owner___|__Job_ID__|Status|_Name_____________________\n";
-  while ( $row = $sth->fetchrow_hashref() ) {
-    printf " %24s | %24s | %7s | %8s | %4s | %s \n", 
-            scalar localtime($row->{'start_time'}),
-            scalar localtime($row->{'end_time'}),
-            $row->{'owner'},
-            $row->{'job_number'},
-            $row->{'exit_status'},
-            $row->{'job_name'};
+  if (defined($format)) {
+    my @format_array=split(',',$format);
+    while ( $row = $sth->fetchrow_hashref() ) {
+      my $line = "";
+      $row->{'fstime'} = scalar localtime($row->{'start_time'});
+      $row->{'fetime'} = scalar localtime($row->{'end_time'});
+      $row->{'ewalltime'} = $row->{'end_time'} - $row->{'start_time'};
+      print %$row;
+      my $format_element;
+      foreach $format_element (@format_array) {
+        if (defined($row->{$format_element})) {
+          $line .= $row->{$format_element} . "\t";
+        } else {
+          print STDERR "Error: field not found.\n";
+          exit(53);
+        }
+      }
+      $line .= "\n";
+      print $line;
+    }
+  } else {
+    print "__Start_Time______________|__End_Time________________|_Owner___|__Job_ID__|Status|_Name_____________________\n";
+    while ( $row = $sth->fetchrow_hashref() ) {
+      printf " %24s | %24s | %7s | %8s | %4s | %s \n", 
+              scalar localtime($row->{'start_time'}),
+              scalar localtime($row->{'end_time'}),
+              $row->{'owner'},
+              $row->{'job_number'},
+              $row->{'exit_status'},
+              $row->{'job_name'};
+    }
   }
 }
 $dbh->disconnect();
