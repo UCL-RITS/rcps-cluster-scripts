@@ -7,6 +7,12 @@ if [[ -z "$1" ]]; then
   exit 5
 fi
 
+if [[ "$1" == "--help" ]]; then
+  echo -e "Usage: qexplain \e[04mjob_id\e[00m\n"
+  echo " Prints the cause of the error state in a job."
+  exit
+fi
+
 while [[ -n "$1" ]]; do
   # First qstat call is for error messages, otherwise you get them in XML format
   qstat -j $1 >/dev/null && echo -n "Job ID: $1 -- " && qstat -j $1 -xml | grep QIM_message | sed -re 's(<[A-Za-z/_]+>)g' -e 's/^[ ]+//' -e "s/&apos;/'/g" -e "s/&amp;/&/g" -e "s/.*]://"
