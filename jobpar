@@ -1,0 +1,340 @@
+#!/usr/bin/perl
+#
+# (C) 2004-2009, John Pormann, Duke University
+#      jbp1@duke.edu
+#
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# RCSID: $Id: jobpar,v 1.17 2004/10/20 18:46:12 jbp1 Exp $
+#
+# jobpar - make a simple estimate of parallel efficiency of a running
+#          SGE job
+#
+# From: https://wiki.duke.edu/display/SCSC/SGE+Tools
+#
+
+use Time::Local;
+use Getopt::Std;
+
+getopts('hvVasmlASMLr:');
+
+if( defined($opt_h) ) {
+  print "usage:  jobpar [opts] job-id\n"
+    .   "     -a          use 'load_avg'\n"
+    .   "     -s          use 'load_short'\n"
+    .   "     -m          use 'load_medium'\n"
+    .   "     -l          use 'load_long'\n"
+    .   "     -A          use 'np_load_avg'\n"
+    .   "     -S          use 'np_load_short'\n"
+    .   "     -M          use 'np_load_medium'\n"
+    .   "     -L          use 'np_load_long'\n"
+    .   "     -r #        rounding parameter\n"
+    .   "     -v          verbose output\n"
+    .   "     -V          really verbose output\n";
+  exit( 0 );
+}
+if( defined($opt_v) ) {
+  $opt_v = 1;
+} else {
+  $opt_v = 0;
+}
+if( defined($opt_V) ) {
+  $opt_v = 10;
+}
+if( not defined($opt_c) ) {
+  $opt_c = 10.0;
+}
+if( defined($opt_r) ) {
+  $hist_rnd = $opt_r;
+} else {
+  $hist_rnd = 4;
+}
+
+# default to 'load_avg'
+$loadtype = 'hl:load_avg';
+if( defined($opt_a) ) {
+  $loadtype = 'hl:load_avg';
+} elsif( defined($opt_s) ) {
+  $loadtype = 'hl:load_short';
+} elsif( defined($opt_m) ) {
+  $loadtype = 'hl:load_medium';
+} elsif( defined($opt_l) ) {
+  $loadtype = 'hl:load_long';
+} elsif( defined($opt_A) ) {
+  $loadtype = 'hl:np_load_avg';
+} elsif( defined($opt_S) ) {
+  $loadtype = 'hl:np_load_short';
+} elsif( defined($opt_M) ) {
+  $loadtype = 'hl:np_load_medium';
+} elsif( defined($opt_L) ) {
+  $loadtype = 'hl:np_load_long';
+}
+
+
+# what job are we looking for?
+$jobid = shift( @ARGV );
+
+# init some arrays
+%hostinfo  = ();
+%jobinfo   = ();
+
+# get the host info from qhost command
+$err = &get_hostinfo();
+
+# print out some basic info
+$v = $jobinfo{$jobid};
+@list = split( ',', $v );
+$nc = 0;
+$nh = 0;
+$master = '';
+%hosts = ();
+foreach $v ( @list ) {
+  @fld = split( ':', $v );
+  $h = $fld[9];
+  $h =~ s/\.q$//;
+  if( $v =~ m/MASTER$/ ) {
+    $master = $h;
+    next;
+  }
+  if( not exists($hosts{$h}) ) {
+    $hosts{$h} = 1;
+    $nh++;
+  } else {
+    $hosts{$h}++;
+  }
+  $nc++;
+}
+print "job $jobid is running on $nh hosts ($nc cpus)\n";
+$q = 0;
+$bad = 0;
+%mhz = ();
+foreach $k ( keys(%hosts) ) {
+  $v = $hosts{$k};
+  if( $k eq $master ) {
+    $v .= 'm';
+  }
+
+  # check for other jobs
+  @list = split( ',', $hostinfo{$k} );
+  foreach $x ( @list ) {
+    if( $x =~ m/^(\d+)\:/ ) {
+      $jid = $1;
+      if( $jid != $jobid ) {
+        $bad = 1;
+        $v .= 'b';
+        last;
+      }
+    } elsif( $x =~ m/mhz/ ) {
+      # check for mhz differences
+      $m = $x;
+      $m =~ s/(.*?)\=(.*)/$2/;
+      $m = int($m);
+      $mhz{$m}++;
+    }
+  }
+
+  print "\t$k ($v)";
+
+  $q++;
+  if( $q == 4 ) {
+    print "\n";
+    $q = 0;
+  }
+}
+if( $q ) {
+  print "\n";
+}
+
+if( $bad ) {
+  print "Warning: some of your machines are being shared with other users\n"
+    .   "  and the results shown below may not be accurate\n";
+}
+if( scalar(keys(%mhz)) == 0 ) {
+  # no mhz info found
+} elsif( scalar(keys(%mhz)) > 1 ) {
+  print "Warning: some of your machines have different CPU speeds, this is\n"
+    .   "  likely to cause load imbalances even in 'good' parallel codes\n";
+  if( defined($opt_v) ) {
+    print "    found mhz ratings [ ";
+    foreach $m ( keys(%mhz) ) {
+      $q = $mhz{$m};
+      print "$q\@$m ";
+    }
+    print "]\n";
+  }
+}
+
+# when did job start?  are stats valid yet?
+$v = $jobinfo{$jobid};
+$v =~ s/(.*?)\,(.*)/$1/;
+@list = split( ':', $v );
+@fld = split( '/', $list[5] );
+$start_tm = timelocal( $list[8], $list[7], $list[6], $fld[1], 
+                      $fld[0]-1, $fld[2]-1900 );
+$curr_tm = time;
+$delta_tm = $curr_tm - $start_tm;
+$h = int( $delta_tm/3600 );
+$v = $delta_tm - $h*3600;
+$m = int( $v/60 );
+$s = $v - $m*60;
+print "Job has been running for ${h}h ${m}m ${s}s\n";
+if( $loadtype =~ m/_avg$/ ) {
+  if( $delta_tm < 300 ) {
+    print "Warning: this job started recently and thus the statistics may\n"
+      .   "  not be accurate; wait 5 min after job start for $loadtype\n";
+  }
+} elsif( $loadtype =~ m/_short$/ ) {
+  if( $delta_tm < 60 ) {
+    print "Warning: this job started recently and thus the statistics may\n"
+      .   "  not be accurate; wait 1 min after job start for $loadtype\n";
+  }
+} elsif( $loadtype =~ m/_medium$/ ) {
+  if( $delta_tm < 300 ) {
+    print "Warning: this job started recently and thus the statistics may\n"
+      .   "  not be accurate; wait 5 min after job start for $loadtype\n";
+  }
+} elsif( $loadtype =~ m/_long$/ ) {
+  if( $delta_tm < 900 ) {
+    print "Warning: this job started recently and thus the statistics may\n"
+      .   "  not be accurate; wait 15 min after job start for $loadtype\n";
+  }
+}
+
+
+# now check qhost/host data for load info
+# : keep some stats
+$min_user_load = 100;
+$max_user_load = 0;
+$avg_user_load = 0;
+$num_user_cpus = 0;
+$other_users = 0;
+@histogram = ();
+foreach $h ( sort(keys(%hosts)) ) {
+  $flag = 0;
+  $v = $hostinfo{$h};
+  $v =~ m/(.*),$loadtype\=(.*?),/;
+  $ld = $2;
+  $avg_user_load += $ld;
+  $num_user_cpus++;
+  if( $ld > $max_user_load ) {
+    $max_user_load = $ld;
+  }
+  if( $ld < $min_user_load ) {
+    $min_user_load = $ld;
+  }
+  $ild = int($ld*$hist_rnd);
+  $histogram[$ild]++;
+}
+
+$avg_user_load = $avg_user_load / $num_user_cpus;
+
+print "using load type '$loadtype':\n"
+  .   "    min load: $min_user_load\n"
+  .   "    max load: $max_user_load\n"
+  .   "    avg load: $avg_user_load\n";
+
+print "number of machines per load-threshold:\n";
+for($i=0;$i<scalar(@histogram);$i++) {
+  $i1 = $i / $hist_rnd;
+  $i2 = ($i+1) / $hist_rnd;
+  $xx = '#' x $histogram[$i];
+  printf "  load %5.2f to %5.2f : %3i : %s\n", $i1,$i2,$histogram[$i],$xx;
+}
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+ # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+sub get_hostinfo {
+  my ($last_jid,$last_host,$last_q,$q,$k,$v);
+  my @list;
+
+  @list = ();
+
+  # run the qhost command to find stats
+  open( QP, "/usr/bin/qhost -j -F |" );
+  $last_jid  = -1;
+  $last_host = '';
+  $last_q = '';
+  while( <QP> ) {
+    if( $_ =~ m/^HOSTNAME/ ) {
+      next;
+    } elsif( $_ =~ m/^\s+job\-ID/ ) {
+      next;
+    } elsif( $_ =~ m/\-\-\-\-\-\-\-\-\-/ ) {
+      next;
+
+    } elsif( $_ =~ m/^\s+\d/ ) {
+      # this is a job line
+      @list = split( /\s+/, $_ );
+      if( $list[0] eq '' ) {
+        shift( @list );
+      }
+      $jid = $list[0];
+      # field 7 contains queue info ... replace with hostname
+      $list[7] = $last_host;
+      $q = join( ':', @list );
+      $hostinfo{$last_host} .= $q . ',';
+      $jobinfo{$jid} .= $q . ',';
+      $last_jid = $jid;
+      $last_q = $q;
+
+    } elsif( $_ =~ m/prio\.q@SLAVE/ ) {
+      # this process is same job as last one
+      $last_q =~ s/MASTER/SLAVE/;
+      $hostinfo{$last_host} .= $last_q . ',';
+      $jobinfo{$last_jid} .= $last_q . ',';
+
+    } elsif( $_ =~ m/^\s+\D/ ) {
+      # this is a host-stat line
+      chomp( $_ );
+      $_ =~ s/\s*//g;
+      $hostinfo{$last_host} .= $_ . ',';
+
+    } else {
+      # this is a host line
+      @list = split( /\s+/, $_ );
+      if( $list[0] eq '' ) {
+        shift( @list );
+      }
+      $last_host = $list[0];
+      $hostinfo{$last_host} = '';
+    }
+  }
+  close( QP );
+
+  if( defined($opt_V) ) {
+    print "hostinfo:\n";
+    foreach $k ( keys(%hostinfo) ) {
+      $v = $hostinfo{$k};
+      print "$k [$v]\n";
+    }
+    print "jobinfo:\n";
+    foreach $k ( keys(%jobinfo) ) {
+      $v = $jobinfo{$k};
+      print "$k [$v]\n";
+    }
+  }
+
+  return( 0 );
+}
+
+
+
