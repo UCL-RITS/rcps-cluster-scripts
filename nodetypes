@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+qhost | grep ^node | grep -v -- ' - ' | sed -e 's/^node-..../nodes with /' | awk '{print $1 " " $2  " cores: " $4 "        RAM: "  $6 }' | sort -gk 4 | uniq -c
+
