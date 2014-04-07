@@ -1,4 +1,93 @@
-#!/usr/bin/env bash
+#!/usr/bin/env perl
 
-qhost | grep ^node | grep -v -- ' - ' | sed -e 's/^node-..../nodes with /' | awk '{print $1 " " $2  " cores: " $4 "        RAM: "  $6 }' | sort -gk 4 | uniq -c
+require "/shared/ucl/etc/jsvconfig/Jsvnode.pm";
+
+our %types = %Jsvnode::types;
+
+# Because these aren't covered in the JSV
+$types{"L"} = { "match" => "^login[0-9]+" };
+
+our $nodeclass;
+our $hostname;
+
+our %counting_types;
+our %matches;
+
+if ($ARGV[0] == "") {
+  $ARGV[0] = "qhost |";
+} else {
+  $ARGV[0] = "qhost -h $ARGV[0] |";
+}
+
+
+while (<>) {
+  if ($_ =~ m/ - /) {
+    next;
+  }
+  # Sample line:
+  #  node-p05                lx26-amd64     12  7.17   23.6G    4.5G  221.4G  155.2M
+  if ($_ !~ m/^[ \t]*
+              ([^ \t]+) [ \t]+
+              ([^ \t]+) [ \t]+
+              ([^ \t]+) [ \t]+
+              ([^ \t]+) [ \t]+
+              ([^ \t]+) [ \t]+
+              ([^ \t]+) [ \t]+
+              ([^ \t]+) [ \t]+
+              ([^ \t]+) [ \t]*$/x) {
+    next;
+  } else {
+    if ($1 eq "HOSTNAME") {
+      next;
+    }
+
+    %matches = (
+      "host" => $1,
+      "arch" => $2,
+      "cores" => $3,
+      "load"  => $4,
+      "ram_total" => $5,
+      "ram_used"  => $6,
+      "swap_total" => $7,
+      "swap_used"  => $8,
+    );
+
+    # print "Host: ".$matches{"host"}." Arch:".$matches{'arch'}."\n";
+
+    my $type;
+    my $this_node_type;
+    foreach $type (keys %types) {
+      if ($matches{"host"} =~ m/$types{$type}{'match'}/) {
+        $this_node_type = $type;
+        #print $matches{"host"}.": $type\n";
+        break;
+      }
+    }
+    if ($this_node_type eq "") {
+      print "Unknown node type: ".$matches{"host"}."\n";
+      next;
+    }
+
+    my $node_key = $this_node_type."_".$matches{"cores"}."_".$matches{"ram_total"};
+    if (not defined($counting_types{$node_key})) {
+      $counting_types{$node_key} = { 
+        "class_name" => $this_node_type, 
+        "cores" => $matches{"cores"}, 
+        "ram_total" => $matches{"ram_total"},
+        "number" => 1 
+      };
+    } else {
+      $counting_types{$node_key}{"number"} = $counting_types{$node_key}{"number"} + 1;
+    }
+  }
+}
+
+
+foreach $type (sort keys %counting_types) {
+  printf "%5d type %1s nodes: %2d cores, %6s RAM\n", 
+    $counting_types{$type}{"number"},
+    $counting_types{$type}{"class_name"},
+    $counting_types{$type}{"cores"},
+    $counting_types{$type}{"ram_total"};
+}
 

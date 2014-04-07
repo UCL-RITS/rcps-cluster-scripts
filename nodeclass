@@ -1,0 +1,23 @@
+#!/usr/bin/env perl
+
+require "/shared/ucl/etc/jsvconfig/Jsvnode.pm";
+
+our %types = %Jsvnode::types;
+
+
+
+our $nodeclass;
+our $hostname;
+
+while ($ARGV[0]) {
+  $hostname = $ARGV[0];
+
+  foreach $nodeclass (keys %types) {
+    if ($hostname =~ m/$types{$nodeclass}{'match'}/) {
+      print "$hostname: $nodeclass\n";
+    }
+  }
+
+  shift(@ARGV);
+}
+
