@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+# A script for atomically updating the module files (via symlinks), without tempting people to modify them in place.
+#
+# by Ian Kirker, 2015
+
+# Parse options (super-simple atm)
+
+if [[ -n "$1" ]]; then
+  if [[ "$1" == "-f" ]]; then
+    force_update="y"
+  fi
+fi
+
+
+# Don't try to continue if something breaks
+set -e
+
+if [[ ! -L "modulefiles" ]]; then
+  if [[ "$force_update" != "y" ]]; then
+    echo "Warning: this directory does not contain an existing modulefiles symlink. Attempting to run this script here may not do something sensible. Use \"-f\" to force run anyway."
+    exit 2
+  fi
+  if [[ -d "modulefiles" ]]; then
+    echo -e "Warning: an existing modulefiles directory is present. \n This script will attempt to move it out of the way, but this operation is not atomic and module accesses happening during the (hopefully very quick) transition may fail." >&2
+    RENDIR=modulefiles_prevcs_`date +%Y-%m-%d`
+    mv -bv modulefiles ${RENDIR} && ln -Tfs ${RENDIR} modulefiles
+  fi
+fi
+
+
+# Config info
+
+branch="master"
+repo_url="https://github.com/UCL-RITS/rcps-modulefiles.git"
+
+
+echo "Getting latest commit hash for ${branch} branch..." >&2
+latest_sha=`git ls-remote --exit-code ${repo_url} ${branch} | cut -f 1`
+
+if [[ -n "$DEBUG" ]]; then
+  echo "latest_sha: ${latest_sha}" >&2
+fi
+
+req_commit_sha=${latest_sha}
+
+short_sha=${req_commit_sha:0:10}
+if [[ -n "$DEBUG" ]]; then
+  echo "short_sha: ${short_sha}" >&2
+fi
+
+if [[ "${short_sha}" == "" ]]; then
+  echo "Error: could not get SHA of latest commit " >&2
+  exit 2
+fi
+
+
+# Fail or reformat directory name if dir already exists
+
+echo "Checking for existing directory from latest commit..." >&2
+
+target_dir=.mf_${short_sha}
+
+if [[ -d "$target_dir" || -d "$target_dir.*" ]]; then
+  if [[ "${force_update}" != "y" ]]; then
+    echo "Module files are already up-to-date: use \"-f\" to force the creation of a new copy and relinking." >&2
+    exit 2
+  else
+    suffix_number=0
+   
+    new_target_dir=${target_dir} 
+    while [[ -a "${new_target_dir}" ]]; do
+      new_target_dir=${target_dir}.${suffix_number}
+      suffix_number=$(( suffix_number + 1 ))
+    done
+    target_dir=${new_target_dir}
+  fi
+fi
+
+
+git clone --depth=1 -b ${branch} https://github.com/UCL-RITS/rcps-modulefiles.git ${target_dir}
+echo "${req_commit_sha}" >${target_dir}/.commit_sha
+
+# We remove the repo information to dissuade people performing git operations on the prod copy
+echo "Removing superfluous repo information..." >&2
+rm -Rf ${target_dir:-/if_you_see_this_it_means_target_dir_variable_was_empty_somehow}/git
+
+echo "Linking..." >&2
+ln -Tfs ${target_dir} modulefiles
+
+echo "--Done--" >&2
+
