@@ -1,2 +1,2 @@
 # rcps-rcops-scripts
-Various scripts for ops work on RCFS clusters
+Various scripts for ops work on RCFS clusters, including Legion.
