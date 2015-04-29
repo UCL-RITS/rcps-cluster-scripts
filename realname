@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+LDAPSEARCH_PATH=/usr/bin/ldapsearch
+
+if [ ! -x "$LDAPSEARCH_PATH" ]; then
+  echo "Error: this script requires ldapsearch." >&2
+  exit 3
+fi
+
+for name in "$@"; do
+  if [ "${#name}" -ne "7" ]; then
+    echo "Invalid username: \"${name}\"" >&2
+    exit 2
+  else
+    ldap_search=`$LDAPSEARCH_PATH \
+                        -x -LLL -y /shared/ucl/etc/ldappw \
+                        -H 'ldaps://openldap-auth2.ucl.ac.uk:636/' \
+                        -D  'cn=unixauth,ou=System Users,dc=uclusers,dc=ucl,dc=ac,dc=uk' \
+                        -b 'ou=Departments,dc=uclusers,dc=ucl,dc=ac,dc=uk' \
+                        "(cn=${name})" \
+                        | \
+                        sed -rn "s/^gecos: (.+)$/\1/p" \
+                        `
+
+    if [ -n "$ldap_search" ]; then
+      if [ $# -gt 1 ]; then
+        echo "${name}: ${ldap_search}"
+      else
+        echo "${ldap_search}"
+      fi
+    else
+      echo "Error: no user found for username \"${name}\"" >&2
+    fi
+  fi
+done
+
