@@ -1,0 +1,265 @@
+#!/usr/bin/python
+""" set_quota - A little script from Jim to check and set values in the Lustre quota database.
+Usage: set_quota {uid} {new_quota}.
+Usage: 
+If called with no aguments, return all quotas
+If called with uid as only argument, return quota for that uid
+If called with uid and new Quota, set the quota accordingly.
+If called with uid and -<nn>days then the o_time will reduced """
+
+import MySQLdb
+import math, sys, pwd, grp, re, datetime
+from optparse import OptionParser 
+
+
+def parse_args():
+  parser = OptionParser("%prog [options] username [username [...]]")
+  parser.add_option("-q", "--quota", metavar="size", action="store", default=None, dest="quota", help="set the size of a user's quota")
+  parser.add_option("-s", "--set-grace-days", metavar="days", action="store", default=None, dest="set_days", help="set a new grace period in days, from now")
+  parser.add_option("-r", "--reset", action="store_true", dest="reset_quota", help="reset a user's quota entry to the default")
+  parser.add_option("-a", "--all", action="store_true", dest="affect_all_users", help="affect all users")
+  parser.add_option("-v", "--verbose", action="store_true", dest="verbose", help="verbose mode, prints out steps")
+  #parser.add_argument("username", metavar="username", nargs="+", action="store", default=None, dest="usernames", help="users to affect")
+  (args, arguments) = parser.parse_args()
+ 
+  args["arguments"] = arguments
+
+  # A ham-fisted conversion from using argparse to using optparse
+
+  return args
+
+def debyte(value):
+  """
+    Converts SI prefix byte sizes into int numbers of bytes, e.g. 5kb -> 5120
+  """
+  conversions = { "kb": 1024,
+                  "mb": 1024*1024,
+                  "gb": 1024*1024*1024,
+                  "tb": 1024*1024*1024*1024,
+                  "pb": 1024*1024*1024*1024*1024,
+                  }
+
+  if len(value) > 2 and value[-2:] in conversions:
+    try:
+      converted_value = int(converted_value[:-2]) * conversions[value[-2:]]
+    except:
+      raise TypeError
+  else:
+    try: 
+      converted_value = int(converted_value)
+    except: 
+      raise TypeError
+  
+  return converted_value
+
+def rebyte(num):
+	for x in ['bytes','KB','MB','GB','TB']:
+		if num < 1024.0:
+			return "%3.1f%s" % (num, x)
+		num /= 1024.0
+	return "%3.1f%s" % (num, 'PB')
+
+def convert_username_to_uid(usernames):
+  """
+    Gets a numeric uid for a given username.
+  """
+  if type(usernames) == str:
+    pwd_entry = pwd.getpwnam(usernames)
+    return pwd_entry.pw_uid
+  else:
+    try:
+      return [ (pwd.getpwnam(x)).pw_uid for x in usernames ]
+    except:
+      raise TypeError
+
+
+class YouAreDoingItWrong(Exception):
+  def __init__(self, value):
+    self.value = value
+
+  def __str__(self):
+    return repr(self.value)
+
+
+def uid_andor_username(username=None,uid=None):
+    # Check failure modes
+    if username != None and uid == None:
+      uid = convert_username_to_uid(username)
+    elif username == None and uid == None:
+      raise YouAreDoingItWrong
+    elif int(uid) != uid:
+      raise YouAreDoingItWrong
+    
+    return uid
+
+
+class Quota:
+  def __init__(self, db_row=None):
+    if db_row != None:
+      #self.row_id, self.date_altered, self.uid, self.gid, self.quota_disabled, self.over_quota, self.something = db_row
+#quota, CREATE TABLE `quota` (
+#  `id` int(11) NOT NULL AUTO_INCREMENT,
+#  `datetime` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+#  `uid` int(11) NOT NULL,
+#  `groups_id` int(11) DEFAULT NULL,
+#  `disable` int(11) DEFAULT NULL,
+#  `o_quota` bigint(20) DEFAULT NULL,
+#  `r_quota` bigint(20) DEFAULT NULL,
+#  `o_time` int(11) DEFAULT NULL,
+#  `r_time` int(11) DEFAULT NULL,
+#  `o_count` int(11) DEFAULT NULL,
+#  `r_count` int(11) DEFAULT NULL,
+#  `mode` int(11) DEFAULT NULL,
+#  `dsge` bit(1) DEFAULT NULL,
+#  PRIMARY KEY (`id`),
+#  KEY `uid` (`uid`)
+#) ENGINE=InnoDB AUTO_INCREMENT=1794 DEFAULT CHARSET=latin1
+
+# id - db primary key
+# datetime - update timestamp
+# uid - numeric user id (who the quota is for)
+# groups_id - numeric group id (who the quota is for) (don't think I've ever seen this used -- check the db?)
+# disable - 
+# o_quota - 
+# r_quota - 
+# o_time - 
+# r_time - 
+# o_count - I think this is seconds over quota? O_O
+# r_count - 
+# mode - 
+# dsge - 1 if SGE job submission is disabled, otherwise NULL
+
+
+
+# Example row
+# id, datetime, uid, groups_id, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge
+# 1145, 2014-12-12 10:11:50, 161746, , , 5368709120, 5368709120, 2419200, , , , , 
+
+#      id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge = thing
+      self.row = db_row
+      self.defined = True
+    else:
+      self.row_id = None
+      self.date_altered = None
+      self.uid = None
+      self.gid = None
+      self.quota_disabled = None
+      self.over_quota = None
+      self.something = None
+      self.defined = False
+
+  def __repr__(self):
+    return repr(self.row)
+
+class QuotaDB:
+  def __init__(self):
+    self.db_handle = MySQLdb.connect(host="mysql.data.legion.ucl.ac.uk", user="quotarw", passwd="J3Jn_fgR", db="lustrequota")
+    self.db_cursor = self.db_handle.cursor()
+
+  def get_entry(self,user):
+
+    uid = uid_andor_username(user)
+
+    # At this point we should have a numeric uid that is at least an integer.
+    # Unfortunately MySQLdb doesn't have prepared statements, so we just have to wing it.
+
+    row_count = self.db_cursor.execute("SELECT * FROM quota WHERE uid=(%d)" % uid)
+    
+    if row_count > 1:
+      sys.stderr.write("Warning: more than one quota entry exists for uid (%d).\n" % uid)
+
+    rows = self.db_cursor.fetchall()
+
+    return [ Quota(row) for row in rows ]
+
+  def update_entry():
+    return NotYetImplemented
+
+
+
+if __name__ == "__main__":
+  qdb = QuotaDB()
+
+  ianquota = qdb.get_entry("uccaiki")
+
+  print(ianquota)
+
+  args = parse_args()
+  print(args)
+
+sys.exit(0)
+
+
+# Retreive quota settings
+num_quotas = cursor.execute("SELECT * FROM quota")
+#print "Found ", num_quotas, "quota settings"
+all_quotas = cursor.fetchall()
+
+for thing in all_quotas:
+	id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge = thing
+	if o_quota != None:
+		o_quota = sizeof_fmt(o_quota*1024)
+	if r_quota != None:
+		r_quota = sizeof_fmt(r_quota*1024)
+	if o_time != None:
+		o_time =str((int(o_time)/86400))+"days"
+	if o_count != None:
+		o_count =datetime.datetime.fromtimestamp(o_count)
+	if check_uid == "":
+		print id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge
+	elif uid == check_uid:
+		print "Existing Quota"
+		print id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge
+
+if new_quota != "":
+	print "Updating quota to", sizeof_fmt(new_quota*1024)
+	set_quota = cursor.execute("""UPDATE quota SET datetime=%s, o_quota='%s', r_quota='%s' WHERE uid='%s'""", (datetime.datetime.now(), new_quota, new_quota, check_uid))
+	db.commit()
+	user_quota = cursor.execute("SELECT * FROM quota WHERE uid="+str(check_uid))
+	result = cursor.fetchone()
+	id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge = result
+	if o_quota != None:
+		o_quota = sizeof_fmt(o_quota*1024)
+	if r_quota != None:
+		r_quota = sizeof_fmt(r_quota*1024)
+	if o_time != None:
+		o_time =str((int(o_time)/86400))+"days"
+	if o_count != None:
+		o_count =datetime.datetime.fromtimestamp(o_count)
+	print "New Quota"
+	print id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge
+
+if extra_days != 0:
+	for thing in all_quotas:
+		id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge = thing
+		if uid == check_uid:
+			if o_time == None: # Then we read the value from the default table instead.
+				def_otime = cursor.execute("""SELECT * from defaults where name='o_time'""")
+				r1,r2, o_time = cursor.fetchone()
+			if o_time != None:
+				if o_time >= (int(extra_days)*86400):
+					newo_time = o_time + (int(extra_days)*86400)
+					set_quota = cursor.execute("""UPDATE quota SET datetime=%s, o_time='%s' WHERE uid='%s'""", (datetime.datetime.now(), newo_time, check_uid))
+					db.commit()
+					user_quota = cursor.execute("SELECT * FROM quota WHERE uid="+str(check_uid))
+					result = cursor.fetchone()
+					id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge = result
+					if o_quota != None:
+						o_quota = sizeof_fmt(o_quota*1024)
+					if r_quota != None:
+						r_quota = sizeof_fmt(r_quota*1024)
+					if o_time != None:
+						o_time =str((int(o_time)/86400))+"days"
+					if o_count != None:
+						o_count =datetime.datetime.fromtimestamp(o_count)
+					print "New Quota"
+					print id, date, uid, gid, disable, o_quota, r_quota, o_time, r_time, o_count, r_count, mode, dsge
+				else : 
+					print "Requested extension in days is longer than existing o_time"
+			else:
+				print "User is not currently over quota"
+
+db.close()
+
+
+
