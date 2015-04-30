@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
 LDAPSEARCH_PATH=/usr/bin/ldapsearch
 
