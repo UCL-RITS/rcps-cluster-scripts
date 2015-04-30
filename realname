@@ -6,7 +6,15 @@ LDAPSEARCH_PATH=/usr/bin/ldapsearch
 while getopts ":eybh" opt; do
   case $opt in
     h)
-      echo -e "usage: $0 [options] username [username [...]]\n\n  Options:\n    -b    reverse lookup -- i.e. search for user names, not usernames (slow)\n    -y    ypcat mode -- requires ssh into socrates\n"
+      echo -e "
+usage: $0 [options] username [username [...]]
+      
+  Options:
+    -h    show this help message
+    -b    reverse lookup -- i.e. search for user names, not usernames (slow)
+    -y    ypcat mode -- requires ssh into socrates
+    -e    getent mode -- requires ssh into socrates
+    "
       exit 0
       ;;
     b)
