@@ -6,7 +6,7 @@ LDAPSEARCH_PATH=/usr/bin/ldapsearch
 while getopts ":eybh" opt; do
   case $opt in
     h)
-      echo -e "
+      echo "
 usage: $0 [options] username [username [...]]
       
   Options:
@@ -38,8 +38,9 @@ done
 
 shift $((OPTIND-1));
 
-if [ -z "$getent_mode" -a ! -x "$LDAPSEARCH_PATH" ]; then
-  echo -e "Error: this script requires ldapsearch.\n  (You might still be able to use ypcat or getent modes.)" >&2
+if [ -z "$lookup_mode" -a ! -x "$LDAPSEARCH_PATH" ]; then
+  echo "Error: this script requires ldapsearch.
+  (You might still be able to use ypcat or getent modes.)" >&2
   exit 3
 fi
 
@@ -57,7 +58,7 @@ for name in "$@"; do
         display_key="cn"
       fi
 
-      search_result=`$LDAPSEARCH_PATH \
+      search_result=$($LDAPSEARCH_PATH \
                           -x -LLL -y /shared/ucl/etc/ldappw \
                           -H 'ldaps://openldap-auth2.ucl.ac.uk:636/' \
                           -D  'cn=unixauth,ou=System Users,dc=uclusers,dc=ucl,dc=ac,dc=uk' \
@@ -65,19 +66,19 @@ for name in "$@"; do
                           "(${search_key}=${name})" \
                           | \
                           sed -rn "s/^${display_key}: (.+)$/\1/p" \
-                          `
+                          )
 
-    elif [ "$lookup_mode" == "getent" ]; then
+    elif [ "$lookup_mode" = "getent" ]; then
       if [ -z "$backwards_mode" ]; then
-        search_result=`ssh socrates.ucl.ac.uk "getent passwd $name" 2>/dev/null | awk -F: '{print $5;}'`
+        search_result=$(ssh socrates.ucl.ac.uk "getent passwd $name" 2>/dev/null | awk -F: '{print $5;}')
       else 
-        search_result=`ssh socrates.ucl.ac.uk "getent passwd" 2>/dev/null | awk -F: '{print $5 ":" $1;}' | grep "$name" | awk -F: '{print $2;}'`
+        search_result=$(ssh socrates.ucl.ac.uk "getent passwd" 2>/dev/null | awk -F: '{print $5 ":" $1;}' | grep "$name" | awk -F: '{print $2;}')
       fi
-    elif [ "$lookup_mode" == "ypcat" ]; then
+    elif [ "$lookup_mode" = "ypcat" ]; then
       if [ -z "$backwards_mode" ]; then
-        search_result=`ssh socrates.ucl.ac.uk "/usr/local/rbin/ypcat passwd" 2>/dev/null | awk -F: '{print $1 ":" $5;}' | grep "^$name" 2>/dev/null | awk -F: '{print $2;}'`
+        search_result=$(ssh socrates.ucl.ac.uk "/usr/local/rbin/ypcat passwd" 2>/dev/null | awk -F: '{print $1 ":" $5;}' | grep "^$name" 2>/dev/null | awk -F: '{print $2;}')
       else 
-        search_result=`ssh socrates.ucl.ac.uk "/usr/local/rbin/ypcat passwd" 2>/dev/null | awk -F: '{print $5 ":" $1;}' | grep "$name" 2>/dev/null  | awk -F: '{print $2;}'`
+        search_result=$(ssh socrates.ucl.ac.uk "/usr/local/rbin/ypcat passwd" 2>/dev/null | awk -F: '{print $5 ":" $1;}' | grep "$name" 2>/dev/null  | awk -F: '{print $2;}')
       fi
     fi
 
