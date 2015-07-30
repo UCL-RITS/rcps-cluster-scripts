@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+if [ $# -lt 1 ]; then
+  echo "No arguments provided -- please provide a filename." >&2
+  exit 2
+fi
+
+while [ -n "$1" ]; do
+  filename="$1"
+
+  if file "$filename" 2>/dev/null | grep -P "LSB (executable|shared object)" 2>/dev/null >/dev/null ; then
+    opcode_search=$(objdump -M intel -d $filename | /shared/ucl/apps/rcops_scripts/opcode -s AVX -m 1)
+    if [ -n "$opcode_search" ]; then
+      echo "$filename: has AVX instructions"
+    fi
+  else
+    echo "$filename: not a recognised binary executable type" >&2
+  fi
+
+  shift
+done
+
