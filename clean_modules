@@ -21,6 +21,7 @@ while :; do
         else
           echo "Not deleting $i : .keep file found"
         fi
+      done
       exit
       ;;
     "n")
