@@ -1,9 +1,42 @@
 #!/usr/bin/env bash
 
-if [ $# -lt 1 ]; then
-  echo "No arguments provided -- please provide a filename." >&2
+
+Helpfile="hasavx [-q] file [file [file...]] : Find avx instructions in executables.
+  Args:
+   -h   print this help message
+   -q   don't print error messages for files which aren't executables
+"
+
+#Get command line arguments
+while getopts  "qh" flag
+do
+  case "$flag" in
+    "q")
+      BeQuiet="y"
+      ;;
+    "h")
+      SendHelpAndQuit="y"
+      ;;
+    *)
+      echo "Invalid argument specified." >&2
+      exit 5
+      ;;
+  esac
+done
+
+#Send the help message and exit if -h was specified.
+if [[ "$SendHelpAndQuit" == "y" ]]; then
+  echo -e "$Helpfile"
+  exit
+fi
+
+shift $(( $OPTIND - 1 ))
+
+if [ -z "$1" ]; then
+  echo "No arguments provided -- please provide a filename or use -h for options." >&2
   exit 2
 fi
+
 
 while [ -n "$1" ]; do
   filename="$1"
@@ -14,7 +47,9 @@ while [ -n "$1" ]; do
       echo "$filename: has AVX instructions"
     fi
   else
-    echo "$filename: not a recognised binary executable type" >&2
+    if [ -z "$BeQuiet" ]; then
+      echo "$filename: not a recognised binary executable type" >&2
+    fi
   fi
 
   shift
