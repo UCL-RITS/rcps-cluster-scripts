@@ -3,7 +3,7 @@
 LDAPSEARCH_PATH=/usr/bin/ldapsearch
 
 
-while getopts ":eybh" opt; do
+while getopts ":eybhdm" opt; do
   case $opt in
     h)
       echo "
@@ -14,6 +14,8 @@ usage: $0 [options] username [username [...]]
     -b    reverse lookup -- i.e. search for user names, not usernames (slow)
     -y    ypcat mode -- requires ssh into socrates
     -e    getent mode -- requires ssh into socrates
+    -d    turns on some debugging output
+    -m    search for mail instead (LDAP only) (sort of a dodgy add-on)
     "
       exit 0
       ;;
@@ -28,6 +30,12 @@ usage: $0 [options] username [username [...]]
     y)
       echo "Using remote ypcat mode -- this can work for old usernames that are no longer in LDAP." >&2
       lookup_mode="ypcat"
+      ;;
+    d) 
+      debug_mode="y"
+      ;;
+    m)
+      mail_search="y"
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -49,6 +57,7 @@ for name in "$@"; do
     echo "Invalid username: \"${name}\"" >&2
     exit 2
   else
+    if [ -n "$debug_mode" ]; then echo "Debug: Searching for '$name'" >&2; fi
     if [ -z "$lookup_mode" ]; then
       if [ -z "$backwards_mode" ]; then
         search_key="cn"
@@ -57,16 +66,43 @@ for name in "$@"; do
         search_key="gecos"
         display_key="cn"
       fi
+      if [ -n "$mail_search" ]; then
+        display_key="mail"
+      fi
 
-      search_result=$($LDAPSEARCH_PATH \
-                          -x -LLL -y /shared/ucl/etc/ldappw \
-                          -H 'ldaps://openldap-auth2.ucl.ac.uk:636/' \
-                          -D  'cn=unixauth,ou=System Users,dc=uclusers,dc=ucl,dc=ac,dc=uk' \
-                          -b 'ou=Departments,dc=uclusers,dc=ucl,dc=ac,dc=uk' \
-                          "(${search_key}=${name})" \
-                          | \
-                          sed -rn "s/^${display_key}: (.+)$/\1/p" \
-                          )
+      # I still don't know what rdn stands for, but it's like the connection user I think?
+      ldap_uri="ldaps://openldap-auth2.ucl.ac.uk:636/"
+      ldap_rdn="cn=unixauth,ou=System Users,dc=uclusers,dc=ucl,dc=ac,dc=uk"
+
+      ldap_pass_file="/shared/ucl/etc/ldappw"
+      ldap_bind_user="ou=Departments,dc=uclusers,dc=ucl,dc=ac,dc=uk"
+      
+      ldap_search_term="(${search_key}=${name})"
+
+      if [ -n "$debug_mode" ]; then
+        echo "Debug: ldap_rdn: $ldap_rdn"
+        ldap_search_args=("-d5" "-vvv" "-x" "-LLL" "-y$ldap_pass_file" "-H$ldap_uri" "-D$ldap_rdn" "-b$ldap_bind_user" "$ldap_search_term")
+      else
+        ldap_search_args=("-x" "-LLL" "-y$ldap_pass_file" "-H$ldap_uri" "-D$ldap_rdn" "-b$ldap_bind_user" "$ldap_search_term")
+      fi
+
+      if [ -n "$debug_mode" ]; then 
+        echo "Debug: ldapsearch path is: $LDAPSEARCH_PATH" >&2
+        echo "Debug: ldapsearch arguments are: $ldap_search_args" >&2
+      fi
+
+      if [ -n "$debug_mode" ]; then
+        set -x
+      fi
+
+      # Have to set the NSS_HASH_ALT_SUPPORT environment variable to 
+      #  allow MD5 as a cert hash algorithm. Broken in RHEL6.5->6.6 change. Wooooo.
+      search_result=$(NSS_HASH_ALG_SUPPORT=+MD5 $LDAPSEARCH_PATH "${ldap_search_args[@]}" | sed -rn "s/^${display_key}: (.+)$/\1/p" )
+      
+      if [ -n "$debug_mode" ]; then
+        set +x
+      fi
+      # And that's us done with LDAP
 
     elif [ "$lookup_mode" = "getent" ]; then
       if [ -z "$backwards_mode" ]; then
