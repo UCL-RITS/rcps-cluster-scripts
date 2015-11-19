@@ -1,0 +1,230 @@
+#!/usr/bin/env bash
+
+# Warning: this script uses some of the more... esoteric bash syntax
+#  including extended globbing, arrays, and associative arrays
+
+# the following may be useful:
+
+# declare -a foo     # both these declare foo as an array
+# foo=()             # 
+# declare -A bar     # declare 'bar' as an associative array
+# foo+=(blah)        # adds blah as an element to the array 'foo'
+# bar+=([key]=blah)  # adds blah as the element under key to the associative array 'bar'
+# ${bar[@]}          # expands to all elements of (associative) array 'bar'
+# ${!bar[@]}         # keys of all elements of (associative) array 'bar'
+
+WHICH_CLUSTER_IS_THIS="Legion"
+
+get_pid_cmdline () {
+  sed -e 's_\x0_ _g' /proc/$1/cmdline
+}
+
+get_pid_owner () {
+  stat /proc/$1 -c %U
+}
+
+get_pid_parent_pid () {
+  cut -f 4 -d ' ' /proc/$1/stat
+}
+
+get_pid_children () {
+  shopt -s extglob
+  grep "PPid:	$1\$" /proc/+([0-9])/status | sed -e 's_^/proc/\([0-9]*\)/status.*_\1_'
+  #          ^- this is a tab, not spaces
+  # uses extended globbing to match all the /proc process directories 
+  #   -- equivalent to /proc/[0-9]+/status regex
+}
+
+while getopts ":fhnb" opt; do
+  case $opt in
+    h)
+      echo "
+usage: $0 [options] username [username [...]]
+      
+  Options:
+    -h    show this help message
+    -f    do not ask before killing processes
+    -n    do not send mail
+    -b    show mail that would be sent but do not send it
+    "
+      exit 0
+      ;;
+    f)
+      definitely_kill="y"
+      ;;
+    n)
+      do_not_mail="y"
+      ;;
+    b)
+      do_not_mail="y"
+      show_mail="y"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 4
+      ;;
+  esac
+done
+
+shift $((OPTIND-1));
+
+if which realname; then
+  :
+else
+  echo "Error: this script requires realname" >&2
+  exit 2
+fi
+
+killed_pids=()
+killed_cmdlines=()
+killed_owners=()
+
+for pid in "$@"; do
+  if [ ! -d "/proc/${pid}" ]; then
+    echo "Error: no process with pid $pid" >&2
+    continue
+  fi
+
+  echo "Examining process ${pid}..."
+  pid_owner=`get_pid_owner $pid`
+  pid_cmdline=`get_pid_cmdline $pid`
+  pid_parent_pid=`get_pid_parent_pid $pid`
+  pid_children=(`get_pid_children $pid`) 
+
+  echo "Process $pid owned by $pid_owner has command line: $pid_cmdline"
+  echo "  parent: $pid_parent_pid: `sed -e 's/\x0/ /g' /proc/$pid_parent_pid/cmdline`"
+
+  if [ ${#pid_children[@]} -ne 0 ]; then
+    echo "  and children:"
+    for child_pid in "${pid_children[@]}"; do
+      child_cmdline=`sed -e 's/\x0/ /g' /proc/$child_pid/cmdline`
+      printf "    %7d: %s\n" "$child_pid" "$child_cmdline"
+    done
+  fi
+
+  if [ -z "$option_force" ]; then
+    read -n 1 -p "Attempt to kill this process? [y|N]" definitely_kill
+    echo
+    # ^- read doesn't add a blank line
+  else
+    definitely_kill="y"
+  fi
+
+  if [ "$definitely_kill" != "y" ]; then
+    echo "Okay, skipping..."
+    continue
+  fi
+
+  # become user, kill process
+  # grumble grumble become is trash grumble
+  echo "Becoming process owner, ${pid_owner}..."
+  become_output=`sudo /shared/ucl/bin/become $pid_owner <<EOF
+  echo "Beacon"
+  kill -9 $pid
+EOF
+`
+  become_exit_status=$?
+
+  if [ "${become_output:0:6}" != "Beacon" ]; then
+    echo "Error: could not become user ${pid_owner}, failed to kill ${pid}" >&2
+  else
+    if [ $become_exit_status -ne 0 ]; then
+      echo "Error: became user but there was a problem killing the process ${pid}" >&2
+    else
+      echo "kill seems successful, checking... "
+      # if you get false failures, you might have to add a little sleep in here
+      if [ -d "/proc/${pid}" ]; then # there's still a directory in proc with the pid we just tried to kill
+        echo "Error: there is still a process with pid ${pid}" >&2
+        if [ "`get_pid_cmdline $pid`" = "$pid_cmdline" ]; then
+          echo "Error: (ctd.) remaining process has same cmdline so is unlikely to be a new process using the same pid. Try hitting it harder?" >&2
+        fi
+      else
+        echo "Yep, looks killed."
+        killed_pids+=("$pid")
+        killed_cmdlines+=("$pid_cmdline")
+        killed_owners+=("$pid_owner")
+      fi
+    fi
+  fi
+done
+
+############
+# Finished killing things, now send mails
+
+
+# v-- associative array
+declare -A mail_inserts
+
+# Format things we did into a mail-friendly list
+for (( i=0; i<${#killed_pids[@]}; i++ )); do
+  mail_inserts+=(["${killed_owners[$i]}"]="${mail_inserts[${killed_owners[$i]}]}\n   ${killed_pids[$i]}: ${killed_cmdlines[$i]}")
+done
+
+
+#echo "Variable inventory before attempting mail step:"
+#echo "Killed pids: ${!killed_pids[@]}"
+#echo "  -> ${killed_pids[@]}"
+#echo "Killed cmdlines: ${!killed_cmdlines[@]}"
+#echo "  -> ${killed_cmdlines[@]}"
+#echo "Killed owners: ${!killed_owners[@]}"
+#echo "  -> ${killed_owners[@]}"
+#echo "Mail inserts: ${!mail_inserts[@]}"
+
+
+for owner in "${!mail_inserts[@]}"; do
+  echo -e ${mail_inserts[$owner]}
+
+  mails_to_generate=${#mail_inserts[@]}
+
+  # Override mailx command with a shell function if we don't want to send mail
+  if [ -n "$do_not_mail" ]; then
+    if [ -n "$show_mail" ]; then
+      mailx() { (echo "$@" && cat); }
+    else
+      mailx() { :; }
+    fi
+  fi
+
+  owner_address=`realname -m "$owner"`
+  if [ -z "$owner_address" ]; then
+    echo "Error: could not get mail address for user $owner" >&2
+    exit 3
+  fi
+
+  mailx \
+    -s "Legion Login Node Processes Killed" \
+    -S from=rc-support@ucl.ac.uk \
+    -b rc-support@ucl.ac.uk \
+    `realname -m $owner` \
+    <<EOF
+[This is an automated mail.]
+
+One or more of your processes running on ${WHICH_CLUSTER_IS_THIS}'s login nodes have been identified as using excessive resources or being a misuse of these nodes, and have been killed.
+
+These were: ${mail_inserts[$owner]}
+
+Most often this is due to attempting to run workloads that should be submitted as a job to the batch system instead. If you require more information, please consult the documentation at http://wiki.rc.ucl.ac.uk/ or contact rc-support@ucl.ac.uk
+
+Regards,
+
+The RC Support Team
+
+EOF
+
+  if [ $? -eq 0 ]; then
+    echo "Successfully sent mail to $owner"
+  else
+    echo "Error: failed sending mail attempt to $owner" >&2
+  fi
+
+# e.g.
+# mailx -s "Processes killed: blah" -S from=rc-support@ucl.ac.uk i.kirker@ucl.ac.uk <<<"This is a test mail."
+# remember Heather wanted emails to come to us as well to keep track of numbers and repeat offenders
+
+done
+# Ends mailer block
+
+
+
+
+
