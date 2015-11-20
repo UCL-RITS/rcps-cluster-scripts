@@ -13,7 +13,14 @@
 # ${bar[@]}          # expands to all elements of (associative) array 'bar'
 # ${!bar[@]}         # keys of all elements of (associative) array 'bar'
 
-WHICH_CLUSTER_IS_THIS="Legion"
+if [[ "`hostname -f`" =~ legion.ucl.ac.uk ]]; then
+  WHICH_CLUSTER_IS_THIS="Legion"
+elif [[ "`hostname -f`" =~ grace.ucl.ac.uk ]]; then
+  WHICH_CLUSTER_IS_THIS="Grace"
+else
+  echo "Error: I do not know which cluster this is. Panicking..."
+  exit 1
+fi
 
 # Necessary for get_pid_children; has to be here rather than in function definition
 #  or else bash thinks extended globbing patterns are syntax errors
