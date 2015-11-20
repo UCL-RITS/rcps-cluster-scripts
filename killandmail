@@ -15,6 +15,10 @@
 
 WHICH_CLUSTER_IS_THIS="Legion"
 
+# Necessary for get_pid_children; has to be here rather than in function definition
+#  or else bash thinks extended globbing patterns are syntax errors
+shopt -s extglob
+
 get_pid_cmdline () {
   sed -e 's_\x0_ _g' /proc/$1/cmdline
 }
@@ -24,11 +28,12 @@ get_pid_owner () {
 }
 
 get_pid_parent_pid () {
+  if [ $1 -eq 1 ]; then echo "Error: no what are you doing do not kill the root process stop" >&2; kill -9 $$; fi 
+  # Unfortunately we can't exit the script from inside a function, but hey, the warning is there.
   cut -f 4 -d ' ' /proc/$1/stat
 }
 
 get_pid_children () {
-  shopt -s extglob
   grep "PPid:	$1\$" /proc/+([0-9])/status | sed -e 's_^/proc/\([0-9]*\)/status.*_\1_'
   #          ^- this is a tab, not spaces
   # uses extended globbing to match all the /proc process directories 
@@ -39,7 +44,7 @@ while getopts ":fhnb" opt; do
   case $opt in
     h)
       echo "
-usage: $0 [options] username [username [...]]
+usage: $0 [options] pid [pid [...]]
       
   Options:
     -h    show this help message
@@ -68,12 +73,22 @@ done
 
 shift $((OPTIND-1));
 
-if which realname; then
+if which realname >/dev/null; then
   :
 else
   echo "Error: this script requires realname" >&2
   exit 2
 fi
+
+if [ $# -lt 1 ]; then
+  echo "Error: no pids provided. Use '$0 -h' to see options and usage." >&2
+  exit 1
+fi
+
+
+#################
+# Okay, done checking and setting up, start with the doing stuff
+
 
 killed_pids=()
 killed_cmdlines=()
