@@ -29,7 +29,7 @@ get_pid_owner () {
 
 get_pid_parent_pid () {
   if [ $1 -eq 1 ]; then echo "Error: no what are you doing do not kill the root process stop" >&2; kill -9 $$; fi 
-  # Unfortunately we can't exit the script from inside a function, but hey, the warning is there.
+  # Unfortunately we can't exit the script from inside a function, so the script self-terminates
   cut -f 4 -d ' ' /proc/$1/stat
 }
 
