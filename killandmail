@@ -154,7 +154,8 @@ EOF
       echo "Error: became user but there was a problem killing the process ${pid}" >&2
     else
       echo "kill seems successful, checking... "
-      # if you get false failures, you might have to add a little sleep in here
+      # if this sleep isn't here, the process seems to not have time to die and clean-up
+      sleep 1
       if [ -d "/proc/${pid}" ]; then # there's still a directory in proc with the pid we just tried to kill
         echo "Error: there is still a process with pid ${pid}" >&2
         if [ "`get_pid_cmdline $pid`" = "$pid_cmdline" ]; then
