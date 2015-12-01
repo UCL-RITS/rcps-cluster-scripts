@@ -54,7 +54,7 @@ for source in "$@"; do
       # which isn't ideal but isn't the worst either
       #
       # At least I hope that's what'll happen
-      # Tar strips the leading / automatically
+      # oh and tar strips the leading / automatically
       ;;
     /home/${current_user}/*|/imports/home?/${current_user}/*|/scratch/scratch/${current_user}/*)
       tar -cz ${source_path} | ssh -t "$target_host" tar -xvz --xform="simports/home./${current_user}/./"
