@@ -15,7 +15,7 @@ fi
 
 while [[ -n "$1" ]]; do
   # First qstat call is for error messages, otherwise you get them in XML format
-  qstat -j $1 >/dev/null && echo -n "Job ID: $1 -- " && qstat -j $1 -xml | grep QIM_message | w3m -dump -T text/html
+  qstat -j $1 >/dev/null && echo -n "Job ID: $1 --" && qstat -j $1 -xml | grep QIM_message | perl -MHTML::Entities -pe 'decode_entities($_); $_ =~ s/<.*?>//g; $_ =~ s/ +/ /g;'
   shift
 done
 
