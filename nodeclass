@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-require "/shared/ucl/etc/jsvconfig/Jsvnode.pm";
+require "/opt/geassist/etc/jsv/Jsvnode.pm";
 
 our %types = %Jsvnode::types;
 
