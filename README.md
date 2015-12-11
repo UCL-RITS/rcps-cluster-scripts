@@ -1,2 +1,3 @@
-# rcps-rcops-scripts
-Various scripts for ops work on RCFS clusters, including Legion.
+# RCPS Cluster Scripts
+
+Various short scripts for work on UCL RITS clusters, including Legion.
