@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+usage() {
+  printf "Usage: $0\n  creates a base configuration file for iRODS for UCL Research Data storage.\n"
+}
+
+if [ "$1" = "-h" -o "$1" = "--help" ]; then
+  usage
+  exit
+elif [ "$1" = "-q" -o "$1" = "--quiet" ]; then
+  quiet_mode="y"
+elif [ "$#" -gt 0 ]; then
+  usage
+  exit 1
+fi
+
+
+irods_env_file="$HOME/.irods/irods_environment.json"
+
+if [ -a "$irods_env_file" -a -z "$quiet_mode" ]; then
+  printf "Warning: you already have an iRODS configuration file in:\n  $irods_env_file\n\n" >&2
+ 
+  if [[ -t 0 || -p /dev/stdin ]]; then # terminal is interactive
+    read -n 1 -p "Would you like to replace it? (a backup will be made) (yN) "  replace_file
+    echo
+
+    if [ "${replace_file,,}" != "y" ]; then
+      exit 1
+    fi
+  else
+    exit 1
+  fi
+fi
+
+if [ -z "$IRODS_PLUGINS_DIR" ]; then
+  echo "Fatal Error: variable IRODS_PLUGINS_DIR not set." >&2
+  exit 2
+fi
+
+template="{
+  \"irods_plugins_home\" : \"$IRODS_PLUGINS_DIR\",
+  \"irods_host\": \"arthur.rd.ucl.ac.uk\",
+  \"irods_port\": 1247,
+  \"irods_user_name\": \"$USER\",
+  \"irods_default_resource\": \"wos\",
+  \"irods_zone_name\": \"rdZone\",
+  \"irods_authentication_scheme\": \"PAM\"
+}
+"
+
+if [ ! -d "$HOME/.irods" ]; then
+  mkdir "$HOME/.irods"
+fi
+
+if [ -a "$irods_env_file" ]; then
+  backup_index=1
+  while [ -a "${irods_env_file}.bak.${backup_index}" ]; do
+    backup_index=$(( backup_index + 1 ))
+  done
+  mv "$irods_env_file" "${irods_env_file}.bak.${backup_index}"
+fi
+
+echo "$template" >$HOME/.irods/irods_environment.json
+
+exit
+
