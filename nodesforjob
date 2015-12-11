@@ -1,0 +1,286 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import subprocess
+
+class Cluster:
+  def __init__(qhost_root, qstat_root):
+    #
+    False
+    self.nodes = [ Node(node) for node in qhost_root.findall("host") ] # or something
+    self.jobs  = [ Job (job)  for job  in qstat_root.findall("djob_info") ] # or something
+
+
+
+
+# Covers 2.4-2.5 (where elementtree is in elementtree) to 2.6+ (where it is not)
+try:
+  import lxml.etree as ET
+except:
+  try: 
+    import elementtree.ElementTree as ET
+  except:
+    try:
+      import xml.etree.ElementTree as ET
+    except:
+      sys.stderr.write("Could not get an elementtree implementation.\n")
+      sys.exit(8)
+
+def parse_error(qstat_cmd, stdout, stderr):
+  sys.stderr.write("No information or failed to parse output.\n")
+  sys.stderr.write("Command executed was: \"%s\"\n" % qstat_cmd)
+  sys.stderr.write("Error is:\n%s\n" % stderr)
+  sys.stderr.write("\n")
+  sys.exit(1)
+
+"""
+ <host name='node-u32.data.legion.ucl.ac.uk'>
+   <hostvalue name='arch_string'>lx26-amd64</hostvalue>
+   <hostvalue name='num_proc'>16</hostvalue>
+   <hostvalue name='load_avg'>10.43</hostvalue>
+   <hostvalue name='mem_total'>63.0G</hostvalue>
+   <hostvalue name='mem_used'>9.2G</hostvalue>
+   <hostvalue name='swap_total'>1851.6G</hostvalue>
+   <hostvalue name='swap_used'>909.7M</hostvalue>
+   <job name='5924228'>
+     <jobvalue jobid='5924228' name='priority'>'2.093750'</jobvalue>
+     <jobvalue jobid='5924228' name='qinstance_name'>Ulm@node-u32.data.legion.ucl.ac.uk</jobvalue>
+     <jobvalue jobid='5924228' name='job_name'>CePydPym_INIT</jobvalue>
+     <jobvalue jobid='5924228' name='job_owner'>uccahu0</jobvalue>
+     <jobvalue jobid='5924228' name='job_state'>r</jobvalue>
+     <jobvalue jobid='5924228' name='start_time'>1428476907</jobvalue>
+     <jobvalue jobid='5924228' name='queue_name'>Ulm@node-u32.data.legion.ucl.ac.uk</jobvalue>
+     <jobvalue jobid='5924228' name='pe_master'>SLAVE</jobvalue>
+   </job>
+ </host>
+"""
+
+def deSI(value):
+  SI_prefixes = { "K": 1000,
+                  "M": 1000*1000,
+                  "G": 1000*1000*1000,
+                  "T": 1000*1000*1000*1000,
+                  }
+  if type(value) == int:
+    return value
+  if len(value) == 0:
+    raise TypeError
+
+  if len(value) < 2:
+    if value.isdigit():
+      return int(value)
+    else:
+      if value == "-":
+        return float("nan")
+      raise TypeError(value)
+
+  if value[-1] in SI_prefixes:
+    return float(value[:-2]) * SI_prefixes[value[-1]]
+  else:
+    if value[-1].isdigit() or value[-1] == ".":
+      return float(value)
+    else:
+      raise TypeError
+
+def dequote(value):
+  # Because for some reason, the priority comes wrapped in single-quotes
+  if len(value) > 2:
+    if value[0] == "'":
+      if value[-1] == "'":
+        return value[1:-2]
+      else:
+        raise TypeError(value)
+    else: 
+      raise TypeError(value)
+  else:
+    raise TypeError(value)
+
+class Node:
+  def __init__(self):
+    self.hostname   = ""
+    self.num_proc   = 0
+    self.load_avg   = 0
+    self.mem_total  = 0
+    self.mem_used   = 0
+    self.swap_total = 0
+    self.swap_used  = 0
+    self.jobs       = list()
+
+  def fix_types(self):
+    self.hostname   = str(self.hostname)
+    self.num_proc   = int(self.num_proc)
+    self.load_avg   = deSI(self.load_avg)
+    self.mem_total  = deSI(self.mem_total)
+    self.mem_used   = deSI(self.mem_used)
+    self.swap_total = deSI(self.swap_total)
+    self.swap_used  = deSI(self.swap_used)
+
+  def __repr__(self):
+    return repr(self.__dict__)
+
+  def print_props(self):
+    sys.stdout.write("    %s:  %3.1f %% load, %3.1f %% memory used, %3.1f %% swap used\n" % 
+                     (self.hostname,
+                      100 * float(self.load_avg) / self.num_proc,
+                      100 * float(self.mem_used) / self.mem_total,
+                      100 * float(self.swap_used) / self.swap_total)
+                     )
+
+class Job:
+  def __init__(self):
+    self.name           ="(no name)"
+    self.id             =0
+    self.owner          = "(no owner)"
+    self.state          = "!"
+    self.start_time     = 0
+    self.priority       = 0
+    self.pe_master      = "NO"
+    self.qinstance_name = "(no queue)"
+
+  def fix_types(self):
+    self.name           = str(self.name)
+    self.id             = str(self.id)
+    self.owner          = str(self.owner)
+    self.state          = str(self.state)
+    self.start_time     = int(self.start_time)
+    self.priority       = float(dequote(self.priority))
+    self.pe_master      = str(self.pe_master)
+    self.qinstance_name = str(self.qinstance_name)
+
+  def __repr__(self):
+    return repr(self.__dict__)
+
+def get_nodes(root):
+
+  job_property_translations = { 
+      'job_name': 'name',
+      'job_owner': 'owner',
+      'job_state': 'state',
+      }
+
+  node_list = list()
+  
+  for element in root:
+    if element.get('name')[0:5] == "node-":
+      new_node = Node()
+      new_node.hostname = element.get('name')
+      
+      for node_value in element.findall("hostvalue"):
+        new_node.__dict__[node_value.get('name')] = node_value.text
+
+      # Skip if the new is offline
+      if '-' in new_node.__dict__.values():
+        continue
+
+      for job_element in element.findall("job"):
+        new_job = Job()
+        new_job.id = job_element.get('name')
+
+        for job_value in job_element.findall("jobvalue"):
+          if job_value.get('name') in job_property_translations:
+            new_job.__dict__[job_property_translations[job_value.get('name')]] = job_value.text
+          else:
+            new_job.__dict__[job_value.get('name')] = job_value.text
+
+        new_job.fix_types()
+        new_node.jobs.append(new_job)
+
+      new_node.fix_types()
+      node_list.append(new_node)
+
+  return node_list
+
+def find_nodes_for_job(node_list, jobid):
+  have_found_master = False
+  found_nodes = dict()
+  found_nodes["slaves"] = list()
+  for node in node_list:
+    for job in node.jobs:
+      if job.id == jobid:
+        if job.pe_master == "MASTER":
+          found_nodes["master"] = node
+          have_found_master = True
+        else:
+          found_nodes["slaves"].append(node)
+  found_nodes["slaves"].sort(cmp=lambda x,y:x.hostname<y.hostname)
+  
+  prev_hostname=""
+  tmp_list = found_nodes["slaves"]
+  found_nodes["slaves"] = list()
+  for el in tmp_list:
+    if el.hostname != prev_hostname:
+      found_nodes["slaves"].append(el)
+    prev_hostname = el.hostname
+
+  if have_found_master == True:
+    return found_nodes
+  else:
+    return None
+
+def get_input_from_command():
+  qhost_cmd = "qhost -xml -j"
+
+  # Run qhost with a pipe
+  qhost_proc = subprocess.Popen(qhost_cmd,
+    shell=True,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    env=os.environ)
+  stdout, stderr = qhost_proc.communicate()
+  # Parse XML
+  try:
+    root = ET.fromstring(stdout)
+  except:
+    parse_error(qhost_cmd, stdout, stderr)
+  return root
+
+def get_input_from_file(path):
+  try:
+    tree = ET.parse(path)
+    root = tree.getroot()
+  except:
+    parse_error("","","")  
+  return root
+
+
+def main(source="command", source_file=None):
+  # If a user name is provided on the command line, use that
+  # otherwise get the USER variable.
+  user = os.getenv("USER")
+  if len(sys.argv) == 2:
+    jobid = sys.argv[1]
+  else:
+    sys.stderr.write("Incorrect arguments: please only provide a job id\n")
+    sys.exit(5)
+ 
+  if source == "file":
+    xml_root = get_input_from_file(source_file)
+  elif source=="command":
+    xml_root = get_input_from_command()
+
+  nodes = get_nodes(xml_root)
+
+  job_nodes = find_nodes_for_job(nodes, jobid)
+
+  if job_nodes == None:
+    sys.stderr.write("Error: no nodes found for job %s\n" % jobid)
+    sys.exit(6)
+
+  sys.stdout.write("Nodes for job %s:\n" % jobid)
+  sys.stdout.write("  Master:\n")
+  job_nodes["master"].print_props()
+
+  if len(job_nodes["slaves"]) != 0:
+    sys.stdout.write("  Slaves:\n")
+  for node in job_nodes["slaves"]:
+    node.print_props()
+
+  #print(nodes)
+
+if __name__ == "__main__":
+  main(source="command")
+
+  # For testing
+  #main("file", "test.xml")
+
