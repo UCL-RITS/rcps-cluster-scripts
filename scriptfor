@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+search_dirs=(/var/opt/sge/shared/qmaster/job_scripts /var/opt/sge/shared/saved_job_scripts)
+
+if [ -z "$1" -o -n "$2" ]  ; then
+  echo "Incorrect number of arguments." >&2
+  exit 1
+fi
+
+if [[ ! "$1" =~ ^[0-9]+$ ]]; then
+  echo "Invalid argument." >&2
+  exit 2
+fi
+
+files_found=""
+for directory in "${search_dirs[@]}"; do
+  if [[ -f "$directory/$1" ]]; then
+    files_found="$files_found $directory/$1"
+  fi
+done
+
+if [[ ${#files_found} -eq 0 ]]; then
+  echo "Job script not found." >&2
+  exit 3
+fi
+
+less $files_found
+
