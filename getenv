@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+if [ -z "$1" ]; then
+  echo "Usage: getenv <pid>" >&2
+  exit 1
+fi
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  echo -e "$0 - prints the environment of a running process\n" >&2
+  echo -e " Usage: $0 <pid>\n"
+  echo -e "  pid     the process id to get the environment for\n"
+  exit 0
+fi
+
+pid=${1}
+(cat /proc/$pid/environ; echo) | tr "\000" "\n" | ${PAGER:-less}
