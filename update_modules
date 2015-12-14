@@ -4,6 +4,21 @@
 #
 # by Ian Kirker, 2015
 
+moduledirs_path=/shared/ucl/apps
+
+if (id -Gn | grep -v '\bccsprcop\b') && (whoami | grep -v ccspapp); then
+  echo "Error: user should be in ccsprcop group to use this script." >&2
+  exit 1
+fi
+
+if (whoami | grep -v ccspapp); then
+  echo "Becoming ccspapp and re-running..." >&2
+  $become_path ccspapp <<EOF
+  $0 "$@"
+EOF
+  exit
+fi
+
 # Parse options (super-simple atm)
 
 if [[ -n "$1" ]]; then
@@ -15,6 +30,8 @@ fi
 
 # Don't try to continue if something breaks
 set -e
+
+cd $moduledirs_path
 
 if [[ ! -L "modulefiles" ]]; then
   if [[ "$force_update" != "y" ]]; then
@@ -29,7 +46,7 @@ if [[ ! -L "modulefiles" ]]; then
 fi
 
 
-# Config info
+# Repo config info
 
 branch="master"
 repo_url="https://github.com/UCL-RITS/rcps-modulefiles.git"
