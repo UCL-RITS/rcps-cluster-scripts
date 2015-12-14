@@ -140,7 +140,7 @@ for pid in "$@"; do
   # become user, kill process
   # grumble grumble become is trash grumble
   echo "Becoming process owner, ${pid_owner}..."
-  become_output=`sudo /shared/ucl/bin/become $pid_owner <<EOF
+  become_output=`/shared/ucl/sysops/bin/become $pid_owner <<EOF
   echo "Beacon"
   kill -9 $pid
 EOF
