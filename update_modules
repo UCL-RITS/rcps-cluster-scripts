@@ -5,10 +5,16 @@
 # by Ian Kirker, 2015
 
 moduledirs_path=/shared/ucl/apps
+become_path=`which become`
 
 if (id -Gn | grep -v '\bccsprcop\b') && (whoami | grep -v ccspapp); then
   echo "Error: user should be in ccsprcop group to use this script." >&2
   exit 1
+fi
+
+if [ -z $become_path ]; then
+  echo "Error: No become path provided." >&2
+  exit 3
 fi
 
 if (whoami | grep -v ccspapp); then
