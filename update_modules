@@ -12,16 +12,14 @@ if (id -Gn | grep -v '\bccsprcop\b' >/dev/null 2>/dev/null) && (whoami | grep -v
   exit 1
 fi
 
-if [ `whoami` = "ccspapp" -o -z $become_path ]; then
+if [ "`whoami`" = "ccspapp" -o -z $become_path ]; then
   echo "Error: No become path provided." >&2
   exit 3
 fi
 
 if (whoami | grep -v ccspapp >/dev/null 2>/dev/null); then
   echo "Becoming ccspapp and re-running..." >&2
-  OWD=`pwd`
   $become_path ccspapp <<EOF
-  cd "$OWD"
   $0 "$@"
 EOF
   exit
