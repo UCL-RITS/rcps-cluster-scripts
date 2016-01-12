@@ -1,6 +1,9 @@
 #!/usr/bin/env perl
 
-require "/shared/ucl/etc/jsvconfig/Jsvnode.pm";
+# Uses hostname regexes from JSV and properties from qhost to list node types and properties
+##
+
+require "/opt/geassist/etc/jsv/Jsvnode.pm";
 
 our %types = %Jsvnode::types;
 
@@ -19,37 +22,45 @@ if ($ARGV[0] == "") {
   $ARGV[0] = "qhost -h $ARGV[0] |";
 }
 
-
 while (<>) {
   if ($_ =~ m/ - /) {
     next;
   }
   # Sample line:
-  #  node-p05                lx26-amd64     12  7.17   23.6G    4.5G  221.4G  155.2M
+  # HOSTNAME                ARCH         NCPU NSOC NCOR NTHR  LOAD  MEMTOT  MEMUSE  SWAPTO  SWAPUS
+  # ----------------------------------------------------------------------------------------------
+  #  node-z00a-012           lx-amd64       12    2   12   12 27.01   47.0G    3.2G  128.0G    1.4G
   if ($_ !~ m/^[ \t]*
-              ([^ \t]+) [ \t]+
-              ([^ \t]+) [ \t]+
-              ([^ \t]+) [ \t]+
-              ([^ \t]+) [ \t]+
-              ([^ \t]+) [ \t]+
-              ([^ \t]+) [ \t]+
-              ([^ \t]+) [ \t]+
-              ([^ \t]+) [ \t]*$/x) {
+              (?<host>[^ \t]+) [ \t]+
+              (?<arch>[^ \t]+) [ \t]+
+              (?<cpus>[^ \t]+) [ \t]+
+              (?<sockets>[^ \t]+) [ \t]+
+              (?<cores>[^ \t]+) [ \t]+
+              (?<threads>[^ \t]+) [ \t]+
+              (?<load>[^ \t]+) [ \t]+
+              (?<ram_total>[^ \t]+) [ \t]+
+              (?<ram_used>[^ \t]+) [ \t]+
+              (?<swap_total>[^ \t]+) [ \t]+
+              (?<swap_used>[^ \t]+) [ \t]*$/x) {
     next;
+
   } else {
     if ($1 eq "HOSTNAME") {
       next;
     }
 
     %matches = (
-      "host" => $1,
-      "arch" => $2,
-      "cores" => $3,
-      "load"  => $4,
-      "ram_total" => $5,
-      "ram_used"  => $6,
-      "swap_total" => $7,
-      "swap_used"  => $8,
+      "host" => $+{host},
+      "arch" => $+{arch},
+      "cpus" => $+{cpus},
+      "sockets" => $+{sockets},
+      "cores" => $+{cores},
+      "threads" => $+{threads},
+      "load"  => $+{load},
+      "ram_total" => $+{ram_total},
+      "ram_used"  => $+{ram_used},
+      "swap_total" => $+{swap_total},
+      "swap_used"  => $+{swap_used},
     );
 
     # print "Host: ".$matches{"host"}." Arch:".$matches{'arch'}."\n";
