@@ -42,9 +42,9 @@ sub list_els() {
 my $domain = hostdomain();
 my $dbistr;
 if $domain eq "grace.ucl.ac.uk.") {
-  $dbistr = 'DBI:mysql:grace_sgelogs;host=mysql.data.legion.ucl.ac.uk'
+  $dbistr = 'DBI:mysql:grace_sgelogs;host=mysql.data.legion.ucl.ac.uk';
 } elsif ($domain eq "data.legion.ucl.ac.uk.") {
-  $dbistr = 'DBI:mysql:sgelogs2;host=mysql.data.legion.ucl.ac.uk'
+  $dbistr = 'DBI:mysql:sgelogs2;host=mysql.data.legion.ucl.ac.uk';
 } else {
   print "This script does not know where it is.\n It is panicking, like a lost kitten. \n It only knows it is at a host with DNS suffix: ", $domain, "\n";
   exit 1;
