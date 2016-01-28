@@ -7,6 +7,7 @@ use warnings;
 
 use DBI;
 use Getopt::Long;
+use Net::Domain qw(hostname hostfqdn hostdomain domainname);
 
 my $username = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
 my $current_time = time;
@@ -38,6 +39,18 @@ sub list_els() {
   exit 0;
 }
 
+my $domain = hostdomain();
+my $dbistr;
+if $domain eq "grace.ucl.ac.uk.") {
+  $dbistr = 'DBI:mysql:grace_sgelogs;host=mysql.data.legion.ucl.ac.uk'
+} elsif ($domain eq "data.legion.ucl.ac.uk.") {
+  $dbistr = 'DBI:mysql:sgelogs2;host=mysql.data.legion.ucl.ac.uk'
+} else {
+  print "This script does not know where it is.\n It is panicking, like a lost kitten. \n It only knows it is at a host with DNS suffix: ", $domain, "\n";
+  exit 1;
+}
+
+
 my $result = GetOptions("hours=f" => \$time_window_hours,
                         "u|user=s"  => \$username,
                         "n|node=s"  => \$nodename,
@@ -59,7 +72,7 @@ eval {
   alarm $timeout;
   
   # Use read-only account
-  $dbh = DBI->connect('DBI:mysql:sgelogs2;host=mysql.data.legion.ucl.ac.uk', 'ccspapp', 'U4Ah+fSt', {RaiseError => 1} );
+  $dbh = DBI->connect($dbistr, 'ccspapp', 'U4Ah+fSt', {RaiseError => 1} );
 
   alarm 0; # Remove alarm
 };
