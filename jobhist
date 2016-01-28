@@ -41,7 +41,7 @@ sub list_els() {
 
 my $domain = hostdomain();
 my $dbistr;
-if $domain eq "grace.ucl.ac.uk.") {
+if ($domain eq "grace.ucl.ac.uk.") {
   $dbistr = 'DBI:mysql:grace_sgelogs;host=mysql.data.legion.ucl.ac.uk';
 } elsif ($domain eq "data.legion.ucl.ac.uk.") {
   $dbistr = 'DBI:mysql:sgelogs2;host=mysql.data.legion.ucl.ac.uk';
