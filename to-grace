@@ -6,21 +6,16 @@ E_NOTYOURS=5
 E_NOTTHOSEFILES=6
 E_FAILEDREADLINK=7
 
-current_host=`hostname -f`
-current_host_stem="${current_host#*.}"
-
-case "${current_host_stem}" in
-  "data.legion.ucl.ac.uk")
-    target_host="login01.ext.grace.ucl.ac.uk"
-    ;;
-  "grace.ucl.ac.uk")
-    target_host="login05.external.legion.ucl.ac.uk"
-    ;;
-  *)
-    echo -e "This script does not know where it is.\n It is panicking, like a lost kitten. \n It only knows it is at a host with DNS suffix: ${current_host_stem}" >&2
-    exit $E_UNKNOWNSOURCE
-    ;;
-esac
+if  hostname -A | grep -q legion
+then
+   target_host="login01.ext.grace.ucl.ac.uk"
+elif hostname -A | grep -q grace
+then
+   target_host="login05.external.legion.ucl.ac.uk"
+else
+   echo -e "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
+   exit $E_UNKNOWNSOURCE
+fi
 
 for source in "$@"; do
   if [ ! -e "$source" ]; then
