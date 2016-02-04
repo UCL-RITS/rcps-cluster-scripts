@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+
+set -e
+
+PLATFORM=""
+ACL=""
+
+# Work out where we are
+if  hostname -A | grep -q grace
+then
+   PLATFORM="grace"
+   ACL="AY201516"
+elif hostname -A | grep -q legion
+then
+   PLATFORM="legion"
+   ACL="AY201415"
+else
+   echo "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
+   exit 1 
+fi
+
+
+echo "creating account for $1"
+qconf -au $1 $ACL
+
+RECIPIENT=$1@ucl.ac.uk
+echo "Emailing user ${RECIPIENT}"
+/usr/sbin/sendmail -t<<EOF
+From: rc-support@ucl.ac.uk
+To: ${RECIPIENT}
+Subject: ${PLATFORM^} account
+
+We are happy to confirm that your account to use the Research Computing ${PLATFORM^} 
+HPC cluster is now active. You should be able to log in within 5 minutes of 
+receiving this email.
+
+Please find below some information to help get you get started in your use of 
+the system. 
+
+GETTING HELP 
+
+Information to help you get started in using ${PLATFORM^} is available at 
+
+https://wiki.rc.ucl.ac.uk/wiki/Main_Page
+
+including a user guide covering all of our systems.
+
+ANNOUNCEMENTS 
+
+Emails relating to planned outages, service changes etc will be sent to the
+${PLATFORM}-users@ucl.ac.uk email list. You have been subscribed to this
+list using the email address associated with your main UCL userid - please
+make sure that you read all notices sent to this address promptly and
+observe the requests/guidelines they contain. 
+If you use a different email address for most of your correspondence, it is
+a condition of your account that you configure your UCL email account to
+have email redirected to an address of your choosing. 
+
+Please see http://www.ucl.ac.uk/isd/staff/mail/faq/faq-files/forwarding
+for further information on email forwarding. 
+
+If you have any queries relating to this information please email the 
+support address rc-support@ucl.ac.uk. 
+EOF
