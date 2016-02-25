@@ -3,21 +3,28 @@
 # A script for atomically updating the module files (via symlinks), without tempting people to modify them in place.
 #
 # by Ian Kirker, 2015
+#
+# Updated user detection stuff - OK, 20160225
 
 moduledirs_path=/shared/ucl/apps
-become_path=`which become`
+become_path=`which become  2>/dev/null`
 
-if (id -Gn | grep -v '\bccsprcop\b' >/dev/null 2>/dev/null) && (whoami | grep -v ccspapp >/dev/null 2>/dev/null); then
+# OK what we want to do:
+
+# 1 am I ccspapp?
+# 2 am I in ccsprcop
+# 3 if 2, does become exist?
+
+if [ "`whoami`" == "ccspapp" ]; then
+
+  echo "I am ccspapp.  No need to use become."
+elif (id -Gn | grep -v '\bccsprcop\b' >/dev/null 2>/dev/null); then
   echo "Error: user should be in ccsprcop group to use this script." >&2
   exit 1
-fi
-
-if [ "`whoami`" = "ccspapp" -o -z $become_path ]; then
+elif [ ! -x "$become_path" ]; then
   echo "Error: No become path provided." >&2
   exit 3
-fi
-
-if (whoami | grep -v ccspapp >/dev/null 2>/dev/null); then
+else
   echo "Becoming ccspapp and re-running..." >&2
   $become_path ccspapp <<EOF
   $0 "$@"
