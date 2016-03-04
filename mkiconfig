@@ -44,6 +44,7 @@ template="{
   \"irods_user_name\": \"$USER\",
   \"irods_default_resource\": \"wos\",
   \"irods_zone_name\": \"rdZone\",
+  \"irods_home\": \"/rdZone/live\",
   \"irods_authentication_scheme\": \"PAM\"
 }
 "
