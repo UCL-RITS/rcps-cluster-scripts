@@ -13,7 +13,7 @@ then
 elif hostname -A | grep -q legion
 then
    PLATFORM="legion"
-   ACL="AY201415"
+   ACL="AY201516"
 else
    echo "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
    exit 1 
