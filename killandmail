@@ -14,9 +14,9 @@
 # ${!bar[@]}         # keys of all elements of (associative) array 'bar'
 
 if [[ "`hostname -f`" =~ legion.ucl.ac.uk ]]; then
-  WHICH_CLUSTER_IS_THIS="Legion"
+  this_cluster="Legion"
 elif [[ "`hostname -f`" =~ grace.ucl.ac.uk ]]; then
-  WHICH_CLUSTER_IS_THIS="Grace"
+  this_cluster="Grace"
 else
   echo "Error: I do not know which cluster this is. Panicking..."
   exit 1
@@ -216,7 +216,7 @@ for owner in "${!mail_inserts[@]}"; do
     <<EOF
 [This is an automated mail.]
 
-One or more of your processes running on ${WHICH_CLUSTER_IS_THIS}'s login nodes have been identified as using excessive resources or being a misuse of these nodes, and have been killed.
+One or more of your processes running on ${this_cluster}'s login nodes have been identified as using excessive resources or being a misuse of these nodes, and have been killed.
 
 These were: ${mail_inserts[$owner]}
 
