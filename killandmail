@@ -22,10 +22,6 @@ else
   exit 1
 fi
 
-# Necessary for get_pid_children; has to be here rather than in function definition
-#  or else bash thinks extended globbing patterns are syntax errors
-shopt -s extglob
-
 get_pid_cmdline () {
   sed -e 's_\x0_ _g' /proc/$1/cmdline
 }
@@ -41,10 +37,8 @@ get_pid_parent_pid () {
 }
 
 get_pid_children () {
-  grep "PPid:	$1\$" /proc/+([0-9])/status | sed -e 's_^/proc/\([0-9]*\)/status.*_\1_'
+  grep "PPid:	$1\$" /proc/[0-9]*/status | sed -e 's_^/proc/\([0-9]*\)/status.*_\1_'
   #          ^- this is a tab, not spaces
-  # uses extended globbing to match all the /proc process directories 
-  #   -- equivalent to /proc/[0-9]+/status regex
 }
 
 while getopts ":fhnb" opt; do
