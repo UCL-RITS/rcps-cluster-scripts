@@ -218,7 +218,7 @@ for owner in "${!mail_inserts[@]}"; do
     -s "Legion Login Node Processes Killed" \
     -S from=rc-support@ucl.ac.uk \
     -b rc-support@ucl.ac.uk \
-    `realname -m $owner` \
+    "$owner_address" \
     <<EOF
 [This is an automated mail.]
 
