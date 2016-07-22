@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Warning: this script uses some of the more... esoteric bash syntax
-#  including extended globbing, arrays, and associative arrays
+#  including arrays, and associative arrays
 
 # the following may be useful:
 
