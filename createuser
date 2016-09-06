@@ -9,11 +9,11 @@ ACL=""
 if  hostname -A | grep -q grace
 then
    PLATFORM="grace"
-   ACL="AY201516"
+   ACL="AY201617"
 elif hostname -A | grep -q legion
 then
    PLATFORM="legion"
-   ACL="AY201516"
+   ACL="AY201617"
 else
    echo "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
    exit 1 
