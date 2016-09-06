@@ -4,12 +4,14 @@ search_dirs=(/var/opt/sge/shared/qmaster/job_scripts /var/opt/sge/shared/saved_j
 
 function Usage() {
 echo "
-    usage: $0 [options] username [username [...]]
+    usage: $0 [-p|-c] [-d DIR] jobid [jobid [...]]
+           $0 -D
+           $0 -h
 
     Options:
     -h      show this help message
-    -p      print path to script instead of opening
-    -c      cat script instead of using \$PAGER
+    -p      print path to script(s) instead of opening
+    -c      cat script(s) instead of using \$PAGER
     -d DIR  use DIR as search directory instead of default 
     -D      print default search directories
     "
