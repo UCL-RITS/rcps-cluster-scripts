@@ -2,27 +2,95 @@
 
 search_dirs=(/var/opt/sge/shared/qmaster/job_scripts /var/opt/sge/shared/saved_job_scripts)
 
-if [ -z "$1" -o -n "$2" ]  ; then
-  echo "Incorrect number of arguments." >&2
-  exit 1
+function Usage() {
+echo "
+    usage: $0 [options] username [username [...]]
+
+    Options:
+    -h      show this help message
+    -p      print path to script instead of opening
+    -c      cat script instead of using \$PAGER
+    -d DIR  use DIR as search directory instead of default 
+    -D      print default search directories
+    "
+}
+
+
+if [ -z "$1" ]  ; then
+    Usage
+    exit 1
 fi
 
-if [[ ! "$1" =~ ^[0-9]+$ ]]; then
-  echo "Invalid argument." >&2
-  exit 2
-fi
-
-files_found=""
-for directory in "${search_dirs[@]}"; do
-  if [[ -f "$directory/$1" ]]; then
-    files_found="$files_found $directory/$1"
-  fi
+while getopts ":hpcd:D" opt; do
+    case $opt in
+        h)
+            Usage
+            exit 0
+            ;;
+        p)
+            print_mode="just paths"
+            ;;
+        c)
+            print_mode="cat"
+            ;;
+        d)
+            search_dirs=("$OPTARG")
+            ;;
+        D) 
+            echo "Search dirs: ${search_dirs[*]}"
+            exit 0
+            ;;
+        :)
+            echo "Invalid parameter to option \"$OPTARG\"" >&2
+            exit 3
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 4
+            ;;
+    esac
 done
 
-if [[ ${#files_found} -eq 0 ]]; then
-  echo "Job script not found." >&2
-  exit 3
+shift $((OPTIND-1));
+
+declare -a files_found
+
+while [ -n "$1" ]; do
+    if [[ ! "$1" =~ ^[0-9]+$ ]]; then
+        echo "Invalid argument: $1" >&2
+        exit 2
+    fi
+
+    found_for_this_jobid=0
+
+    for directory in "${search_dirs[@]}"; do
+        if [[ -f "$directory/$1" ]]; then
+            files_found+=("$directory/$1")
+            found_for_this_jobid=$((found_for_this_jobid + 1))
+        fi
+    done
+
+    if [[ ${found_for_this_jobid} -eq 0 ]]; then
+        echo "Job script not found for id: $1" >&2
+    fi
+
+    shift
+done
+
+if [ ${#files_found[*]} -eq 0 ]; then
+    echo "No job scripts found.">&2
+    exit 5
 fi
 
-less $files_found
+case "${print_mode:-pager}" in
+    pager)
+        ${PAGER:-less} "${files_found[@]}"
+        ;;
+    cat)
+        cat "${files_found[@]}"
+        ;;
+    "just paths")
+        printf '%s\n' "${files_found[@]}"
+        ;;
+esac
 
