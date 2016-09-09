@@ -209,7 +209,7 @@ for owner in "${!mail_inserts[@]}"; do
   fi
 
   mailx \
-    -s "Legion Login Node Processes Killed" \
+    -s "${this_cluster} Login Node Processes Killed for $owner" \
     -S from=rc-support@ucl.ac.uk \
     -b rc-support@ucl.ac.uk \
     "$owner_address" \
