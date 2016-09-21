@@ -2,7 +2,10 @@
 # Checks the year-based ACLs to see whether a user has reapplied
 # for their RC accounts that session.
 
-qconf -su AY201516 | grep -q $1
+# use own username if none supplied as argument
+username=${1:-$USER}
+
+qconf -su AY201516 | grep -q $username
 if [ $? == 0 ]
 then
   echo "201516: yes"
@@ -10,7 +13,7 @@ else
   echo "201516: no"
 fi
 
-qconf -su AY201617 | grep -q $1
+qconf -su AY201617 | grep -q $username
 if [ $? == 0 ]
 then
   echo "201617: yes"
