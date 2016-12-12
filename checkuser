@@ -1,4 +1,4 @@
-#!/bin/bash -l
+#!/bin/bash
 # Checks the year-based ACLs to see whether a user has reapplied
 # for their RC accounts that session.
 
