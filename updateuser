@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Remove from NoSubmission and add to current ACL.
+
+set -e
+
+ACL="AY201617"
+
+echo "updating account for $1"
+qconf -du $1 NoSubmission
+qconf -au $1 $ACL
+
