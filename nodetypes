@@ -8,7 +8,7 @@ require "/opt/geassist/etc/jsv/Jsvnode.pm";
 our %types = %Jsvnode::types;
 
 # Because these aren't covered in the JSV
-$types{"L"} = { "match" => "^login[0-9]+" };
+$types{"*"} = { "match" => "^(login[0-9]+|nfs-)" };
 
 our $nodeclass;
 our $hostname;
