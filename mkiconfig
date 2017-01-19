@@ -45,7 +45,8 @@ template="{
   \"irods_default_resource\": \"wos\",
   \"irods_zone_name\": \"rdZone\",
   \"irods_home\": \"/rdZone/live\",
-  \"irods_authentication_scheme\": \"PAM\"
+  \"irods_authentication_scheme\": \"PAM\",
+  \"irods_default_hash_scheme\": \"sha256\"
 }
 "
 
