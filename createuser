@@ -6,11 +6,11 @@ PLATFORM=""
 ACL=""
 
 # Work out where we are
-if  hostname -A | grep -q grace
+if /usr/bin/hostname -A | grep -q grace
 then
    PLATFORM="grace"
    ACL="AY201617"
-elif hostname -A | grep -q legion
+elif /usr/bin/hostname -A | grep -q legion
 then
    PLATFORM="legion"
    ACL="AY201617"
