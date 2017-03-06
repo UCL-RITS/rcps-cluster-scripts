@@ -15,7 +15,7 @@ then
    PLATFORM="legion"
    ACL="AY201617"
 else
-   echo "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
+   echo -e "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
    exit 1 
 fi
 
