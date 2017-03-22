@@ -5,19 +5,20 @@
 # use own username if none supplied as argument
 username=${1:-$USER}
 
-qconf -su AY201516 | grep -q $username
-if [ $? == 0 ]
-then
-  echo "201516: yes"
-else
-  echo "201516: no"
-fi
-
 qconf -su AY201617 | grep -q $username
 if [ $? == 0 ]
 then
   echo "201617: yes"
 else
   echo "201617: no"
+fi
+
+# check NoSubmission for blocked users
+qconf -su NoSubmission | grep -q $username
+if [ $? == 0 ]
+then
+  echo "NoSubmission: yes"
+else
+  echo "NoSubmission: no"
 fi
 
