@@ -13,9 +13,10 @@
 # ${bar[@]}          # expands to all elements of (associative) array 'bar'
 # ${!bar[@]}         # keys of all elements of (associative) array 'bar'
 
-if [[ "`hostname -f`" =~ legion.ucl.ac.uk ]]; then
+hostnamef="$(hostname -f)"
+if [[ "$hostnamef" =~ legion.ucl.ac.uk ]]; then
   this_cluster="Legion"
-elif [[ "`hostname -f`" =~ grace.ucl.ac.uk ]]; then
+elif [[ "$hostnamef" =~ grace.ucl.ac.uk ]]; then
   this_cluster="Grace"
 else
   echo "Error: I do not know which cluster this is. Panicking..."
@@ -23,17 +24,17 @@ else
 fi
 
 get_pid_cmdline () {
-  sed -e 's_\x0_ _g' /proc/$1/cmdline
+  sed -e 's_\x0_ _g' "/proc/$1/cmdline"
 }
 
 get_pid_owner () {
-  stat /proc/$1 -c %U
+  stat "/proc/$1" -c %U
 }
 
 get_pid_parent_pid () {
-  if [ $1 -eq 1 ]; then echo "Error: no what are you doing do not kill the root process stop" >&2; kill -9 $$; fi 
+  if [ "$1" -eq 1 ]; then echo "Error: no what are you doing do not kill the root process stop" >&2; kill -9 $$; fi 
   # Unfortunately we can't exit the script from inside a function, so the script self-terminates
-  cut -f 4 -d ' ' /proc/$1/stat
+  cut -f 4 -d ' ' "/proc/$1/stat"
 }
 
 get_pid_children () {
@@ -56,7 +57,7 @@ usage: $0 [options] pid [pid [...]]
       exit 0
       ;;
     f)
-      definitely_kill="y"
+      option_force="y"
       ;;
     n)
       do_not_mail="y"
@@ -102,24 +103,24 @@ for pid in "$@"; do
   fi
 
   echo "Examining process ${pid}..."
-  pid_owner=`get_pid_owner $pid`
-  pid_cmdline=`get_pid_cmdline $pid`
-  pid_parent_pid=`get_pid_parent_pid $pid`
-  pid_children=(`get_pid_children $pid`) 
+  pid_owner=$(get_pid_owner "$pid")
+  pid_cmdline=$(get_pid_cmdline "$pid")
+  pid_parent_pid=$(get_pid_parent_pid "$pid")
+  pid_children=($(get_pid_children "$pid") ) 
 
   echo "Process $pid owned by $pid_owner has command line: $pid_cmdline"
-  echo "  parent: $pid_parent_pid: `sed -e 's/\x0/ /g' /proc/$pid_parent_pid/cmdline`"
+  echo "  parent: $pid_parent_pid: $(sed -e 's/\x0/ /g' "/proc/$pid_parent_pid/cmdline")"
 
   if [ ${#pid_children[@]} -ne 0 ]; then
     echo "  and children:"
     for child_pid in "${pid_children[@]}"; do
-      child_cmdline=`sed -e 's/\x0/ /g' /proc/$child_pid/cmdline`
+      child_cmdline=$(sed -e 's/\x0/ /g' "/proc/$child_pid/cmdline")
       printf "    %7d: %s\n" "$child_pid" "$child_cmdline"
     done
   fi
 
   if [ -z "$option_force" ]; then
-    read -n 1 -p "Attempt to kill this process? [y|N]" definitely_kill
+    read -n 1 -r -p "Attempt to kill this process? [y|N]" definitely_kill
     echo
     # ^- read doesn't add a blank line
   else
@@ -134,11 +135,11 @@ for pid in "$@"; do
   # become user, kill process
   # grumble grumble become is trash grumble
   echo "Becoming process owner, ${pid_owner}..."
-  become_output=`sudo /shared/ucl/sysops/libexec/become $pid_owner <<EOF
+  become_output=$(sudo /shared/ucl/sysops/libexec/become "$pid_owner" <<EOF
   echo "Beacon"
   kill -9 $pid
 EOF
-`
+)
   become_exit_status=$?
 
   if [ "${become_output:0:6}" != "Beacon" ]; then
@@ -152,7 +153,7 @@ EOF
       sleep 5
       if [ -d "/proc/${pid}" ]; then # there's still a directory in proc with the pid we just tried to kill
         echo "Error: there is still a process with pid ${pid}" >&2
-        if [ "`get_pid_cmdline $pid`" = "$pid_cmdline" ]; then
+        if [ "$(get_pid_cmdline "$pid")" = "$pid_cmdline" ]; then
           echo "Error: (ctd.) remaining process has same cmdline so is unlikely to be a new process using the same pid. Try hitting it harder?" >&2
         fi
       else
@@ -174,7 +175,7 @@ declare -A mail_inserts
 
 # Format things we did into a mail-friendly list
 for (( i=0; i<${#killed_pids[@]}; i++ )); do
-  mail_inserts+=(["${killed_owners[$i]}"]="${mail_inserts[${killed_owners[$i]}]}\n   ${killed_pids[$i]}: ${killed_cmdlines[$i]}")
+  mail_inserts+=(["${killed_owners[$i]}"]="${mail_inserts[${killed_owners[$i]}]}"$'\n'"   ${killed_pids[$i]}: ${killed_cmdlines[$i]}")
 done
 
 
@@ -189,9 +190,7 @@ done
 
 
 for owner in "${!mail_inserts[@]}"; do
-  echo -e ${mail_inserts[$owner]}
-
-  mails_to_generate=${#mail_inserts[@]}
+  echo -e "${mail_inserts[$owner]}"
 
   # Override mailx command with a shell function if we don't want to send mail
   if [ -n "$do_not_mail" ]; then
@@ -202,7 +201,7 @@ for owner in "${!mail_inserts[@]}"; do
     fi
   fi
 
-  owner_address=`realname -m "$owner"`
+  owner_address=$(realname -m "$owner")
   if [ -z "$owner_address" ]; then
     echo "Error: could not get mail address for user $owner" >&2
     exit 3

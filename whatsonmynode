@@ -5,7 +5,7 @@ if [ -z "$1" ]; then
   exit 1
 fi
 
-OwnedNodeList=`awk -F: /:"$1":/'{print $1}' </opt/geassist/etc/nodeowners`
+OwnedNodeList=$(awk -F: /:"$1":/'{print $1}' </opt/geassist/etc/nodeowners)
 
 if [ -z "$OwnedNodeList" ]; then
   echo "No nodes found for project pattern \"$1\"." >&2

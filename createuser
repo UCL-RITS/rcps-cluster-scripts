@@ -21,7 +21,7 @@ fi
 
 
 echo "creating account for $1"
-qconf -au $1 $ACL
+qconf -au "$1" "$ACL"
 
 RECIPIENT=$1@ucl.ac.uk
 echo "Emailing user ${RECIPIENT}"

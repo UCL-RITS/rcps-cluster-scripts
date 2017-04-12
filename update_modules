@@ -7,7 +7,7 @@
 # Updated user detection stuff - OK, 20160225
 
 moduledirs_path=/shared/ucl/apps
-become_path=`which become  2>/dev/null`
+become_path=$(which become  2>/dev/null)
 
 # OK what we want to do:
 
@@ -15,7 +15,7 @@ become_path=`which become  2>/dev/null`
 # 2 am I in ccsprcop
 # 3 if 2, does become exist?
 
-if [ "`whoami`" == "ccspapp" ]; then
+if [ "$(whoami)" == "ccspapp" ]; then
 
   echo "I am ccspapp.  No need to use become."
 elif (id -Gn | grep -v '\bccsprcop\b' >/dev/null 2>/dev/null); then
@@ -53,8 +53,8 @@ if [[ ! -L "modulefiles" ]]; then
   fi
   if [[ -d "modulefiles" ]]; then
     echo -e "Warning: an existing modulefiles directory is present. \n This script will attempt to move it out of the way, but this operation is not atomic and module accesses happening during the (hopefully very quick) transition may fail." >&2
-    RENDIR=modulefiles_prevcs_`date +%Y-%m-%d`
-    mv -bv modulefiles ${RENDIR} && ln -Tfs ${RENDIR} modulefiles
+    RENDIR=modulefiles_prevcs_$(date +%Y-%m-%d)
+    mv -bv modulefiles "${RENDIR}" && ln -Tfs "${RENDIR}" modulefiles
   fi
 fi
 
@@ -66,7 +66,7 @@ repo_url="https://github.com/UCL-RITS/rcps-modulefiles.git"
 
 
 echo "Getting latest commit hash for ${branch} branch..." >&2
-latest_sha=`git ls-remote --exit-code ${repo_url} ${branch} | cut -f 1`
+latest_sha=$(git ls-remote --exit-code ${repo_url} ${branch} | cut -f 1)
 
 if [[ -n "$DEBUG" ]]; then
   echo "latest_sha: ${latest_sha}" >&2
@@ -108,15 +108,15 @@ if [[ -d "$target_dir" || -d "$target_dir.*" ]]; then
 fi
 
 
-git clone --depth=1 -b ${branch} https://github.com/UCL-RITS/rcps-modulefiles.git ${target_dir}
-echo "${req_commit_sha}" >${target_dir}/.commit_sha
+git clone --depth=1 -b ${branch} https://github.com/UCL-RITS/rcps-modulefiles.git "${target_dir}"
+echo "${req_commit_sha}" >"${target_dir}/.commit_sha"
 
 # We remove the repo information to dissuade people performing git operations on the prod copy
 echo "Removing superfluous repo information..." >&2
-rm -Rf ${target_dir:-/if_you_see_this_it_means_target_dir_variable_was_empty_somehow}/.git
+rm -Rf "${target_dir:-/if_you_see_this_it_means_target_dir_variable_was_empty_somehow}/.git"
 
 echo "Linking..." >&2
-ln -Tfs ${target_dir} modulefiles
+ln -Tfs "${target_dir}" modulefiles
 
 echo "--Done--" >&2
 
