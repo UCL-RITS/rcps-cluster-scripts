@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+
+set -e
+
+ACL="AY201617"
+thomas_users="thomas-users-request@ucl.ac.uk"
+# Email address that subscribe command notification goes to.
+# Can't be rc-support or we get tickets and bounce messages
+mailing_requestor="h.kelly@ucl.ac.uk"
+email_cc=""
+
+usage () {
+  echo "Usage: $0 [options] -u <username> -e <email> -k <ssh_key>
+
+  Options:
+    -h    show this help message
+    -n    do not send welcome email
+    -m <email> mailing list request confirmation goes here
+    -c <email> welcome email is CCed here
+  "
+}
+
+while getopts ":hu:e:k:nm:c:" opt; do
+  case $opt in
+    h)
+      usage
+      exit 0
+      ;;
+    u)
+      username="$OPTARG"
+      echo "Username: $username"
+      ;;
+    e)
+      email="$OPTARG"
+      echo "Email: $email"
+      ;;
+    k)
+      ssh_key="$OPTARG"
+      echo "ssh key: $ssh_key"
+      ;;
+    n)
+      do_not_mail="y"
+      ;;
+    m)
+      mailing_requestor="$OPTARG"
+      ;;
+    c)
+      email_cc="$OPTARG"
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 4
+      ;;
+  esac
+done
+
+# make sure all arguments are supplied (checks for unset or empty)
+if [ ! "$username" ] || [ ! "$email" ] || [ ! "$ssh_key" ]
+then
+  usage
+  exit 1
+fi
+
+# become user, create ssh directory and add key
+echo "Becoming ${username}, creating ssh dir and adding key"
+become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
+echo "Beacon"
+mkdir .ssh
+chmod go-rwx .ssh
+echo "${ssh_key}" >> ~/.ssh/authorized_keys
+EOF
+)
+become_exit_status=$?
+if [ "${become_output:0:6}" != "Beacon" ]; then
+  echo "Error: could not become user ${username}" >&2
+fi
+
+# add user to ACL so they can log in and submit jobs
+echo "Allowing ${username} to log in"
+qconf -au $username $ACL
+
+# add user to thomas-users mailing list
+echo "Emailing ${thomas_users} to add ${email}"
+/usr/sbin/sendmail -t<<EOF
+From: ${mailing_requestor}
+To: ${thomas_users}
+Subject: subscribe address=${email}
+
+EOF
+
+# email welcome to user, unless do_not_mail was set
+if [ -n "$do_not_mail" ] 
+then
+  echo "Emailing user ${username} at ${email}"
+  /usr/sbin/sendmail -t<<EOF
+From: rc-support@ucl.ac.uk
+To: ${email}
+CC: ${email_cc}
+Subject: Thomas: EPSRC Tier 2 MMM Hub account
+
+We are happy to confirm that your account to use Thomas, the UK National Tier 2
+High Performance Computing Hub in Materials and Molecular Modelling, is now 
+active. You should be able to log in within 5 minutes of receiving this email.
+
+Your username is ${username} and you should ssh to thomas.rc.ucl.ac.uk.
+You will be logging in using the ssh key you provided us.
+
+GETTING HELP 
+
+Information to help you get started in using Thomas is available at 
+
+https://wiki.rc.ucl.ac.uk/wiki/Thomas
+
+including a user guide covering all of our systems.
+
+ANNOUNCEMENTS 
+
+Emails relating to planned outages, service changes etc will be sent to the
+thomas-users@ucl.ac.uk email list. You have been subscribed to this
+list using the email address provided with your account application - please
+make sure that you read all notices sent to this address promptly and
+observe the requests/guidelines they contain. 
+
+If you have any queries relating to this information please email the 
+support address rc-support@ucl.ac.uk. 
+EOF
+
+fi
