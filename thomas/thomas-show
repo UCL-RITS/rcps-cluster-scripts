@@ -22,7 +22,9 @@ def tableprint(cursor):
     # make the column width the maximum necessary width
     # name[2] is the char length of the longest value
     # name[0] is the column header text
+    # ^ Sadly, name[2] is always None so THIS DOES NOT WORK
     for name in cursor.description:
+        print("%s, %s", name[0], name[2])
         widths.append(max(name[2], len(name[0])))
         columns.append(name[0])
 
@@ -72,41 +74,46 @@ if __name__ == "__main__":
 
         # Print all info for the given user
         if (args.user != None):
-            query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username=%s", args.user)
-            cursor.execute(query)
+            query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username=%(user)s")
+            cursor.execute(query, args_dict)
             print("All information for %s:", args.user)
-            tableprint(cursor)
+            #tableprint(cursor)
+            simpleprint(cursor)
             # print ssh key separately as it is huge
-            query = ("SELECT ssh_key FROM users WHERE username=%s", args.user)
-            cursor.execute(query)
+            query = ("SELECT ssh_key FROM users WHERE username=%(user)s")
+            cursor.execute(query, args_dict)
             print("SSH key on file:")
             simpleprint(cursor)
             # show all of user's projects and related points of contact
-            query = ("SELECT project, poc_id, creation_date, modification_date FROM projectusers WHERE username=%s", args.user)
-            cursor.execute(query)
+            query = ("SELECT project, poc_id, creation_date, modification_date FROM projectusers WHERE username=%(user)s")
+            cursor.execute(query, args_dict)
             print("User is in these projects:")
-            tableprint(cursor)
+            #tableprint(cursor)
+            simpleprint(cursor)
 
         # Show all allowed values for poc_id
         if (args.contacts):
             query = ("SELECT poc_id, poc_givenname, poc_surname, poc_email FROM pointofcontact")
             cursor.execute(query)
             print("All current Points of Contact:")
-            tableprint(cursor)
+            #tableprint(cursor)
+            simpleprint(cursor)
         
         # Show all allowed values for inst_id
         if (args.institutes):
             query = ("SELECT inst_id, name FROM institutes")
             cursor.execute(query)
             print("All current institutes")
-            tableprint(cursor)
+            #tableprint(cursor)
+            simpleprint(cursor)
 
         # Print all existing users (username, names, email, dates but not ssh keys)
         if (args.allusers):
             query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users")
             cursor.execute(query)
             print("All current users:")
-            tableprint(cursor)
+            #tableprint(cursor)
+            simpleprint(cursor)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:

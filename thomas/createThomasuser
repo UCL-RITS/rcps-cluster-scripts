@@ -124,5 +124,6 @@ observe the requests/guidelines they contain.
 If you have any queries relating to this information please email the 
 support address rc-support@ucl.ac.uk. 
 EOF
-
+else
+  echo "Sending no welcome email"
 fi
