@@ -89,7 +89,7 @@ Subject: subscribe address=${email}
 EOF
 
 # email welcome to user, unless do_not_mail was set
-if [ -n "$do_not_mail" ] 
+if [ ! "$do_not_mail" ] 
 then
   echo "Emailing user ${username} at ${email}"
   /usr/sbin/sendmail -t<<EOF
