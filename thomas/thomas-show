@@ -64,6 +64,7 @@ if __name__ == "__main__":
     # usernames must be 7 characters
     if (args.user != None and len(args.user) != 7):
         print("Invalid username, must be 7 characters: {}".format(args.user))
+        exit(1)
 
     # connect to MySQL database with read access.
     # (.thomas.cnf has readonly connection details as the default option group)
