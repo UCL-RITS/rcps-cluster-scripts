@@ -63,7 +63,7 @@ if __name__ == "__main__":
     # sanity check input
     # usernames must be 7 characters
     if (args.user != None and len(args.user) != 7):
-        print("Invalid username, must be 7 characters: %s"), args.user
+        print("Invalid username, must be 7 characters: {}".format(args.user))
 
     # connect to MySQL database with read access.
     # (.thomas.cnf has readonly connection details as the default option group)
@@ -76,7 +76,7 @@ if __name__ == "__main__":
         if (args.user != None):
             query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username=%(user)s")
             cursor.execute(query, args_dict)
-            print("All information for %s:", args.user)
+            print("All information for {}:".format(args.user))
             #tableprint(cursor)
             simpleprint(cursor)
             # print ssh key separately as it is huge
