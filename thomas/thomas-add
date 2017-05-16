@@ -32,7 +32,8 @@ args_dict = vars(args)
 # sanity check input
 # usernames must exist and be 7 characters
 if (len(args.user) != 7):
-    print("Invalid username, must be 7 characters: %s"), args.user
+    print("Invalid username, must be 7 characters: {}".format(args.user))
+    exit (1)
 # look at sshpubkeys package for ssh validation eventually
 
 
