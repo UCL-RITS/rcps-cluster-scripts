@@ -14,18 +14,18 @@ from mysql.connector import errorcode
 #
 # -p, --project <project>       initial project the user belongs to
 # -c, --contact <poc_id>        short ID of the Point of Contact who approved user
-# -d, --debug			show SQL query submitted without committing the change
+# --debug			show SQL query submitted without committing the change
 
 parser = argparse.ArgumentParser(description="manage user data in the Thomas database")
 parser.add_argument("-u", "--user", metavar="username", help="UCL username of user", required=True)
-parser.add_argument("-n", "--name", metavar="given name", help="Given name of user", required=True)
+parser.add_argument("-n", "--name", metavar="given_name", help="Given name of user", required=True)
 parser.add_argument("-s", "--surname", metavar="surname", help="Surname of user (optional)")
-parser.add_argument("-e", "--email", metavar="email address", help="Institutional email address of user", required=True)
-parser.add_argument("-k", "--key", metavar='"ssh key"', help="User's public ssh key (quotes necessary)", required=True)
+parser.add_argument("-e", "--email", metavar="email_address", help="Institutional email address of user", required=True)
+parser.add_argument("-k", "--key", metavar='"ssh_key"', help="User's public ssh key (quotes necessary)", required=True)
 
-parser.add_argument("-p", "--project", metavar="project ID", help="Initial project the user belongs to", required=True)
+parser.add_argument("-p", "--project", metavar="project_ID", help="Initial project the user belongs to", required=True)
 parser.add_argument("-c", "--contact", metavar="poc_id", help="Short ID of the user's Point of Contact", required=True)
-parser.add_argument("-d", "--debug", help="Show SQL query submitted without committing the change", action='store_true')
+parser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
 args = parser.parse_args()
 # make a dictionary from args
