@@ -4,81 +4,126 @@ import os.path
 import argparse
 import mysql.connector
 from mysql.connector import errorcode
+import validate
 
 ###############################################################
-# -u, --user <username>
-# -n, --name <givenname>
-# -s, --surname <surname> (optional)
-# -e, --email <institutional email address> 
-# -k, --key <"ssh_key"> (quotes necessary)
+# Subcommands:
+# user, project, projectuser, poc, institute
 #
-# -p, --project <project>       initial project the user belongs to
-# -c, --contact <poc_id>        short ID of the Point of Contact who approved user
 # --debug			show SQL query submitted without committing the change
 
-parser = argparse.ArgumentParser(description="manage user data in the Thomas database")
-parser.add_argument("-u", "--user", metavar="username", help="UCL username of user", required=True)
-parser.add_argument("-n", "--name", metavar="given_name", help="Given name of user", required=True)
-parser.add_argument("-s", "--surname", metavar="surname", help="Surname of user (optional)")
-parser.add_argument("-e", "--email", metavar="email_address", help="Institutional email address of user", required=True)
-parser.add_argument("-k", "--key", metavar='"ssh_key"', help="User's public ssh key (quotes necessary)", required=True)
+# custom Action class, must override __call__
+class ValidateUser(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        # raises a ValueError if the value is incorrect
+        validate.user(values)
+        setattr(namespace, self.dest, values)
+# end class ValidateUser
 
-parser.add_argument("-p", "--project", metavar="project_ID", help="Initial project the user belongs to", required=True)
-parser.add_argument("-c", "--contact", metavar="poc_id", help="Short ID of the user's Point of Contact", required=True)
-parser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+def getargs():
+    parser = argparse.ArgumentParser(description="Add data to the Thomas database. Use [positional argument -h] for more help.")
+    subparsers = parser.add_subparsers()
 
-args = parser.parse_args()
-# make a dictionary from args
-args_dict = vars(args)
+    # the arguments for subcommand 'user'
+    userparser = subparsers.add_parser("user", help="Adding a new user with their initial project")
+    userparser.add_argument("-u", "--user", dest="username", help="UCL username of user", required=True, action=ValidateUser)
+    userparser.add_argument("-n", "--name", dest="given_name", help="Given name of user", required=True)
+    userparser.add_argument("-s", "--surname", dest="surname", help="Surname of user (optional)")
+    userparser.add_argument("-e", "--email", dest="email_address", help="Institutional email address of user", required=True)
+    userparser.add_argument("-k", "--key", dest='"ssh_key"', help="User's public ssh key (quotes necessary)", required=True)
+    userparser.add_argument("-p", "--project", dest="project_ID", help="Initial project the user belongs to", required=True)
+    userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
+    userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
-# sanity check input
-# usernames must exist and be 7 characters
-if (len(args.user) != 7):
-    print("Invalid username, must be 7 characters: {}".format(args.user))
-    exit (1)
-# look at sshpubkeys package for ssh validation eventually
+    # the arguments for subcommand 'project'
+    projectparser = subparsers.add_parser("project", help="Adding a new project")
+    projectparser.add_argument("-p", "--project", dest="project_ID", help="A new unique project ID", required=True)
+    projectparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID this project belongs to", required=True)
+
+    # the arguments for subcommand 'projectuser'
+    projectuserparser = subparsers.add_parser("projectuser", help="Adding a new user-project-contact relationship")
+    projectuserparser.add_argument("-u", "--user", dest="username", help="An existing UCL username", required=True, action=ValidateUser)
+    projectuserparser.add_argument("-p", "--project", dest="project_ID", help="An existing project ID", required=True)
+    projectuserparser.add_argument("-c", "--contact", dest="poc_id", help="An existing Point of Contact ID", required=True)
+    projectuserparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+
+    # the arguments for subcommand 'poc'
+    pocparser = subparsers.add_parser("poc", help="Adding a new Point of Contact")
+    pocparser.add_argument("-p", "--poc_id", dest="poc_id", help="Unique PoC ID, in form N(ame)N(ame)_instituteID", required=True)
+    pocparser.add_argument("-n", "--name", dest="given_name", help="Given name of PoC", required=True)
+    pocparser.add_argument("-s", "--surname", dest="surname", help="Surname of PoC (optional)")
+    pocparser.add_argument("-e", "--email", dest="email_address", help="Email address of PoC", required=True)
+    pocparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID of PoC", required=True)
+    pocparser.add_argument("-u", "--user", dest="username", help="The PoC's UCL username", required=True, action=ValidateUser)
+    pocparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+
+    # the arguments for subcommand 'institute'
+    instituteparser = subparsers.add_parser("institute", help="Adding a new institute/consortium")
+    instituteparser.add_argument("-i", "--id", dest="inst_ID", help="Unique institute ID, eg QMUL, Imperial, Soton", required=True)
+    instituteparser.add_argument("-n", "--name", dest="institute", help="Full name of institute/consortium", required=True)
+    instituteparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+
+    # return the arguments
+    # contains only the attributes for the main parser and the subparser that was used
+    return parser.parse_args()
+# end getargs
 
 
-# connect to MySQL database with write access.
-# (.thomas.cnf has readonly connection details as the default option group)
+if __name__ == "__main__":
 
-try:
-    conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
-    cursor = conn.cursor()
+    # get all the parsed args
+    try:
+        args = getargs()
+        # make a dictionary from args to make string substitutions doable by key name
+        args_dict = vars(args)
+    except ValueError as err
+        print (err)
+        exit 1
 
-    # add user
-    # the values will be taken from the dictionary given to cursor.execute()
-    add_user = ("""INSERT INTO users SET username=%(user)s, givenname=%(name)s, """
+    # look at sshpubkeys package for ssh validation eventually
+
+
+    # connect to MySQL database with write access.
+    # (.thomas.cnf has readonly connection details as the default option group)
+
+    try:
+        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
+        cursor = conn.cursor()
+
+        # add user
+        # the values will be taken from the dictionary given to cursor.execute()
+        add_user = ("""INSERT INTO users SET username=%(user)s, givenname=%(name)s, """
                """email=%(email)s, ssh_key=%(key)s, creation_date=now()""")
-    user_values = (args.user, args.name, args.email, args.key)
-    # surname is optional so may not be inserted
-    if (args.surname != None):
-        add_user += ", surname=%(surname)s"
+        user_values = (args.user, args.name, args.email, args.key)
+        # surname is optional so may not be inserted
+        if (args.surname != None):
+            add_user += ", surname=%(surname)s"
 
-    # add information to projectusers
-    add_projectuser = ("""INSERT INTO projectusers SET username=%(user)s, """
+        # add information to projectusers
+        add_projectuser = ("""INSERT INTO projectusers SET username=%(user)s, """
                        """project=%(project)s, poc_id=%(contact)s, creation_date=now()""")
 
-    # takes a query string and a dictionary or tuple
-    cursor.execute(add_user, args_dict)
-    print(">>>> Queries being sent:")
-    print(cursor.statement)
-    cursor.execute(add_projectuser, args_dict)
-    print (cursor.statement)
+        # takes a query string and a dictionary or tuple
+        cursor.execute(add_user, args_dict)
+        print(">>>> Queries being sent:")
+        print(cursor.statement)
+        cursor.execute(add_projectuser, args_dict)
+        print (cursor.statement)
 
-    # commit the change to the database unless we are debugging
-    if (not args.debug):
-        print("Committing database change")
-        conn.commit()
+        # commit the change to the database unless we are debugging
+        if (not args.debug):
+            print("Committing database change")
+            conn.commit()
 
-except mysql.connector.Error as err:
-    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print("Access denied: Something is wrong with your user name or password")
-    elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print("Database does not exist")
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print("Access denied: Something is wrong with your user name or password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            print("Database does not exist")
+        else:
+            print(err)
     else:
-        print(err)
-else:
-  cursor.close()
-  conn.close()
+        cursor.close()
+        conn.close()
 
+# end main
