@@ -76,9 +76,10 @@ if __name__ == "__main__":
         args = getargs()
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
-    except ValueError as err
-        print (err)
-        exit 1
+        print(args_dict)
+    except ValueError as err:
+        print(err)
+        exit(1)
 
     # look at sshpubkeys package for ssh validation eventually
 
@@ -92,16 +93,16 @@ if __name__ == "__main__":
 
         # add user
         # the values will be taken from the dictionary given to cursor.execute()
-        add_user = ("""INSERT INTO users SET username=%(user)s, givenname=%(name)s, """
-               """email=%(email)s, ssh_key=%(key)s, creation_date=now()""")
-        user_values = (args.user, args.name, args.email, args.key)
+        add_user = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
+               """email=%(email_address)s, ssh_key=%("ssh_key")s, creation_date=now()""")
+        #user_values = (args.user, args.name, args.email, args.key)
         # surname is optional so may not be inserted
         if (args.surname != None):
             add_user += ", surname=%(surname)s"
 
         # add information to projectusers
-        add_projectuser = ("""INSERT INTO projectusers SET username=%(user)s, """
-                       """project=%(project)s, poc_id=%(contact)s, creation_date=now()""")
+        add_projectuser = ("""INSERT INTO projectusers SET username=%(username)s, """
+                       """project=%(project_ID)s, poc_id=%(poc_id)s, creation_date=now()""")
 
         # takes a query string and a dictionary or tuple
         cursor.execute(add_user, args_dict)
