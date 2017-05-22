@@ -22,7 +22,8 @@ class ValidateUser(argparse.Action):
 
 def getargs():
     parser = argparse.ArgumentParser(description="Add data to the Thomas database. Use [positional argument -h] for more help.")
-    subparsers = parser.add_subparsers()
+    # store which subparser was used in args.subcommand
+    subparsers = parser.add_subparsers(dest="subcommand")
 
     # the arguments for subcommand 'user'
     userparser = subparsers.add_parser("user", help="Adding a new user with their initial project")
@@ -68,6 +69,41 @@ def getargs():
     return parser.parse_args()
 # end getargs
 
+# query to run for 'user' subcommand
+# the values are inserted by cursor.execute from args.dict
+def run_user(surname):
+    query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
+             """email=%(email_address)s, ssh_key=%("ssh_key")s, creation_date=now()""")
+    if (surname != None):
+        add_user += ", surname=%(surname)s"
+    return query
+
+# query to run for 'user' and 'projectuser' subcommands
+def run_projectuser():
+    query = ("""INSERT INTO projectusers SET username=%(username)s, """
+             """project=%(project_ID)s, poc_id=%(poc_id)s, creation_date=now()""")
+    return query
+
+# query to run for 'project' subcommand
+def run_project():
+    query = ("""INSERT INTO projects SET project=%(project_ID)s,  """
+             """institute_id=%(inst_ID)s, creation_date=now()""")
+    return query
+
+# query to run for 'poc' subcommand
+def run_poc(surname):
+    query = ("""INSERT INTO pointsofcontact SET poc_id=%(poc_id)s, """
+             """poc_givenname=%(given_name)s, poc_email=%(email_address)s,  """
+             """institute=%(inst_ID)s, username=%(username)s, creation_date=now()""")
+    if (surname != None):
+        add_user += ", poc_surname=%(surname)s"
+    return query
+
+# query to run for 'institute' subcommand
+def run_institute(args):
+    query = ("""INSERT INTO institutes SET inst_id=%(ist_ID)s, full_name=%(institute)s, """
+             """creation_date=now()""") 
+    return query
 
 if __name__ == "__main__":
 
@@ -82,7 +118,6 @@ if __name__ == "__main__":
 
     # look at sshpubkeys package for ssh validation eventually
 
-
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
 
@@ -90,25 +125,25 @@ if __name__ == "__main__":
         conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
         cursor = conn.cursor()
 
-        # add user
-        # the values will be taken from the dictionary given to cursor.execute()
-        add_user = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-               """email=%(email_address)s, ssh_key=%("ssh_key")s, creation_date=now()""")
-        #user_values = (args.user, args.name, args.email, args.key)
-        # surname is optional so may not be inserted
-        if (args.surname != None):
-            add_user += ", surname=%(surname)s"
-
-        # add information to projectusers
-        add_projectuser = ("""INSERT INTO projectusers SET username=%(username)s, """
-                       """project=%(project_ID)s, poc_id=%(poc_id)s, creation_date=now()""")
-
-        # takes a query string and a dictionary or tuple
-        cursor.execute(add_user, args_dict)
         print(">>>> Queries being sent:")
-        print(cursor.statement)
-        cursor.execute(add_projectuser, args_dict)
-        print (cursor.statement)
+
+        # cursor.execute takes a querystring and a dictionary or tuple
+        if (args.subcommand == "user"):
+            cursor.execute(run_user(args.surname), args_dict)
+            print(cursor.statement)
+        # this is run in both cases
+        if (args.subcommand == "user" or args.subcommand == "projectuser"):
+            cursor.execute(run_projectuser(), args_dict)
+            print(cursor.statement)
+        elif (args.subcommand == "project"):
+            cursor.execute(run_project(), args_dict)
+            print(cursor.statement)
+        elif (args.subcommand == "poc"):
+            cursor.execute(run_poc(), args_dict)
+            print(cursor.statement)
+        elif (args.subcommand == "institute"):
+            cursor.execute(run_institute(), args_dict)
+            print(cursor.statement)
 
         # commit the change to the database unless we are debugging
         if (not args.debug):
