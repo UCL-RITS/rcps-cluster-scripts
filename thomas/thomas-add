@@ -92,7 +92,7 @@ def run_project():
 
 # query to run for 'poc' subcommand
 def run_poc(surname):
-    query = ("""INSERT INTO pointsofcontact SET poc_id=%(poc_id)s, """
+    query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
              """poc_givenname=%(given_name)s, poc_email=%(email_address)s,  """
              """institute=%(inst_ID)s, username=%(username)s, creation_date=now()""")
     if (surname != None):
