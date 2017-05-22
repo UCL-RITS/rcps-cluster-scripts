@@ -56,7 +56,7 @@ def getargs():
     pocparser.add_argument("-s", "--surname", dest="surname", help="Surname of PoC (optional)")
     pocparser.add_argument("-e", "--email", dest="email_address", help="Email address of PoC", required=True)
     pocparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID of PoC", required=True)
-    pocparser.add_argument("-u", "--user", dest="username", help="The PoC's UCL username", required=True, action=ValidateUser)
+    pocparser.add_argument("-u", "--user", dest="username", help="The PoC's UCL username (optional)", action=ValidateUser)
     pocparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'institute'
@@ -76,7 +76,7 @@ def run_user(surname):
     query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
              """email=%(email_address)s, ssh_key=%("ssh_key")s, creation_date=now()""")
     if (surname != None):
-        add_user += ", surname=%(surname)s"
+        query += ", surname=%(surname)s"
     return query
 
 # query to run for 'user' and 'projectuser' subcommands
@@ -92,12 +92,14 @@ def run_project():
     return query
 
 # query to run for 'poc' subcommand
-def run_poc(surname):
+def run_poc(surname, username):
     query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
              """poc_givenname=%(given_name)s, poc_email=%(email_address)s,  """
-             """institute=%(inst_ID)s, username=%(username)s, creation_date=now()""")
+             """institute=%(inst_ID)s, creation_date=now()""")
     if (surname != None):
-        add_user += ", poc_surname=%(surname)s"
+        query += ", poc_surname=%(surname)s"
+    if (username != None):
+        query += ", username=%(username)s"
     return query
 
 # query to run for 'institute' subcommand
@@ -140,7 +142,7 @@ if __name__ == "__main__":
             cursor.execute(run_project(), args_dict)
             print(cursor.statement)
         elif (args.subcommand == "poc"):
-            cursor.execute(run_poc(), args_dict)
+            cursor.execute(run_poc(args.surname, args.username), args_dict)
             print(cursor.statement)
         elif (args.subcommand == "institute"):
             cursor.execute(run_institute(), args_dict)
