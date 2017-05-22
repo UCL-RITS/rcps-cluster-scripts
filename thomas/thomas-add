@@ -76,7 +76,6 @@ if __name__ == "__main__":
         args = getargs()
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
-        print(args_dict)
     except ValueError as err:
         print(err)
         exit(1)
