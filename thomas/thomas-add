@@ -40,6 +40,7 @@ def getargs():
     projectparser = subparsers.add_parser("project", help="Adding a new project")
     projectparser.add_argument("-p", "--project", dest="project_ID", help="A new unique project ID", required=True)
     projectparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID this project belongs to", required=True)
+    projectparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'projectuser'
     projectuserparser = subparsers.add_parser("projectuser", help="Adding a new user-project-contact relationship")
