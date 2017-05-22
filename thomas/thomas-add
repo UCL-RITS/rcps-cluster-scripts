@@ -100,7 +100,7 @@ def run_poc(surname):
     return query
 
 # query to run for 'institute' subcommand
-def run_institute(args):
+def run_institute():
     query = ("""INSERT INTO institutes SET inst_id=%(ist_ID)s, full_name=%(institute)s, """
              """creation_date=now()""") 
     return query
