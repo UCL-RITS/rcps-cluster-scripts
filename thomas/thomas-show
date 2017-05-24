@@ -25,7 +25,7 @@ class ValidateUser(argparse.Action):
 # end class ValidateUser
 
 def getargs():
-    parser = argparse.ArgumentParser(description="Show data from the Thomas database")
+    parser = argparse.ArgumentParser(description="Show data from the Thomas database. Use [positional argument -h] for more help.")
     parser.add_argument("--user", metavar="username", help="Show all current info for this user", action=ValidateUser)
     parser.add_argument("--contacts", help="Show all allowed values for contact", action='store_true')
     parser.add_argument("--institutes", help="Show all allowed values for institute", action='store_true')
