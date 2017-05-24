@@ -4,6 +4,55 @@ import os.path
 import argparse
 import mysql.connector
 from mysql.connector import errorcode
+import validate
+
+###############################################################
+# user <username>           show all current info for this user
+# contacts                  show all allowed values for poc_id
+# institutes                show all allowed values for inst_id
+# allusers                  show all current users
+# recentusers <n>           show the n newest users (5 by default)
+# getmmm                    show the most recent mmm username used
+# getusers --project --institute --contact 
+# whois --user --email --name --surname
+
+# custom Action class, must override __call__
+class ValidateUser(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        # raises a ValueError if the value is incorrect
+        validate.user(values)
+        setattr(namespace, self.dest, values)
+# end class ValidateUser
+
+def getargs():
+    parser = argparse.ArgumentParser(description="Show data from the Thomas database")
+    parser.add_argument("--user", metavar="username", help="Show all current info for this user", action=ValidateUser)
+    parser.add_argument("--contacts", help="Show all allowed values for contact", action='store_true')
+    parser.add_argument("--institutes", help="Show all allowed values for institute", action='store_true')
+    parser.add_argument("--allusers", help="Show all current users", action='store_true')
+    parser.add_argument("--recentusers", metavar="n", type=int, default=5, help="show the n newest users (5 by default)")
+    parser.add_argument("--getmmm", help="Show the highest mmm username used", action='store_true')
+
+    # store which subparser was used in args.subcommand
+    subparsers = parser.add_subparsers(dest="subcommand")
+
+    # the arguments for subcommand getusers
+    getusers = subparsers.add_parser("getusers", help="Show all users with this project, institute, contact")
+    getusers.add_argument("-p", "--project", dest="project", help="Project name")
+    getusers.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID")
+    getusers.add_argument("-c", "--contact", dest="poc_ID", help="Point of Contact ID")    
+
+    # the arguments for subcommand whois
+    whois = subparsers.add_parser("whois", help="Show all users meeting the given requirements")
+    whois.add_argument("-u", "--user", dest="username", help="UCL username of user", action=ValidateUser)
+    whois.add_argument("-e", "--email", dest="email", help="Email address of user")
+    whois.add_argument("-n", "--name", dest="given_name", help="Given name of user")
+    whois.add_argument("-s", "--surname", dest="surname", help="Surname of user")
+
+    # return the arguments
+    # contains only the attributes for the main parser and the subparser that was used
+    return parser.parse_args()
+# end getargs
 
 # simplest possible outputting of query result
 def simpleprint(cursor):
@@ -43,20 +92,7 @@ def tableprint(cursor):
 
 if __name__ == "__main__":
 
-    ###############################################################
-    # --user <username>         show all current info for this user
-    # --contacts                show all allowed values for poc_id
-    # --institutes              show all allowed values for inst_id
-    # --allusers			show all current users
-
-    parser = argparse.ArgumentParser(description="Show data from the Thomas database")
-
-    parser.add_argument("--user", metavar="username", help="Show all current info for this user")
-    parser.add_argument("--contacts", help="Show all allowed values for contact", action='store_true')
-    parser.add_argument("--institutes", help="Show all allowed values for institute", action='store_true')
-    parser.add_argument("--allusers", help="Show all current users", action='store_true')
-
-    args = parser.parse_args()
+    args = getargs()
     # make a dictionary from args
     args_dict = vars(args)
 
@@ -115,6 +151,41 @@ if __name__ == "__main__":
             print("All current users:")
             #tableprint(cursor)
             simpleprint(cursor)
+
+        # Print the n latest users (not ssh keys)
+        if (args.recentusers):
+            query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users ORDER BY creation_date DESC LIMIT %(n)s") 
+
+        # Show the most recent mmm user added    
+        if (args.getmmm):        
+            query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username like 'mmm%' ORDER BY creation_date DESC LIMIT 1")
+
+        # Show all users in this project/inst/PoC combo
+        #if (args.subcommand == "getusers"):
+            #query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE ")
+
+        # Who is this person?
+        if (args.subcommand == "whois"):
+            query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE ")
+            if (args.username):
+                query += "username=%(username)s"
+                # Need to know if something is not the first condition to build query
+                condition = True
+            if (args.email):
+                if (condition):
+                    query += "AND "
+                query += "email=%(email)s"
+                condition = True
+            if (args.name):
+                if (condition):
+                    query += "AND "
+                query += "givenname=%(name)s"
+                condition = True
+            if (args.surname):
+                if (condition):
+                    query += "AND "
+                query += "surname=%(surname)s"
+                
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
