@@ -30,28 +30,29 @@ def getargs():
     parser.add_argument("--contacts", help="Show all allowed values for contact", action='store_true')
     parser.add_argument("--institutes", help="Show all allowed values for institute", action='store_true')
     parser.add_argument("--allusers", help="Show all current users", action='store_true')
-    #parser.add_argument("--recentusers", dest="n", help="show the n newest users (5 by default)")
     parser.add_argument("--getmmm", help="Show the highest mmm username used", action='store_true')
 
     # store which subparser was used in args.subcommand
     subparsers = parser.add_subparsers(dest="subcommand")
 
+    # the argument for subcommand recentusers
     recentusers = subparsers.add_parser("recentusers", help="show the n newest users (5 by default)")
     recentusers.add_argument("-n", type=int, default=5)
 
     # the arguments for subcommand getusers
-    # uses default='*' so all results are kept if that constraint is not used
+    # uses default='%' so all results are kept if that constraint is not used
     getusers = subparsers.add_parser("getusers", help="Show all users with this project, institute, contact")
-    getusers.add_argument("-p", "--project", dest="project", default='*', help="Project name")
-    getusers.add_argument("-i", "--institute", dest="inst_ID", default='*', help="Institute ID")
-    getusers.add_argument("-c", "--contact", dest="poc_ID", default='*', help="Point of Contact ID")    
+    getusers.add_argument("-p", "--project", dest="project", default='%', help="Project name")
+    getusers.add_argument("-i", "--institute", dest="inst_ID", default='%', help="Institute ID")
+    getusers.add_argument("-c", "--contact", dest="poc_ID", default='%', help="Point of Contact ID")    
 
     # the arguments for subcommand whois
-    whois = subparsers.add_parser("whois", help="Show all users meeting the given requirements")
-    whois.add_argument("-u", "--user", dest="username", default='*', help="UCL username of user", action=ValidateUser)
-    whois.add_argument("-e", "--email", dest="email", default='*', help="Email address of user")
-    whois.add_argument("-n", "--name", dest="given_name", default='*', help="Given name of user")
-    whois.add_argument("-s", "--surname", dest="surname", default='*', help="Surname of user")
+    # not validating username as this can be partial
+    whois = subparsers.add_parser("whois", help="Search for users matching the given requirements")
+    whois.add_argument("-u", "--user", dest="username", default='', help="UCL username of user")
+    whois.add_argument("-e", "--email", dest="email", default='', help="Email address of user")
+    whois.add_argument("-n", "--name", dest="given_name", default='', help="Given name of user")
+    whois.add_argument("-s", "--surname", dest="surname", default='', help="Surname of user")
 
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
@@ -147,32 +148,38 @@ def recentinfo(cursor, args_dict):
 
 # Show the most recent mmm user added 
 def lastmmm(cursor):
-    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username like 'mmm%' ORDER BY creation_date DESC LIMIT 1")
+    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE 'mmm%' ORDER BY creation_date DESC LIMIT 1")
     cursor.execute(query)
     simpleprint(cursor)
 
 # Show all users in this project/inst/PoC combo
+# Need to use LIKE so can match all by default with % when an option is not specified
 def projectcombo(cursor, args_dict):
     query = ("""SELECT users.username, givenname, surname, email, projectusers.project, """
              """poc_id, institute_id FROM projectusers """
              """INNER JOIN users ON projectusers.username=users.username """
              """INNER JOIN projects ON projectusers.project=projects.project """
-             """WHERE projectusers.project=%(project)s AND institute_id=%(inst_ID)s """
-             """AND poc_id=%(poc_ID)s""")
+             """WHERE projectusers.project LIKE %(project)s AND institute_id LIKE %(inst_ID)s """
+             """AND poc_id LIKE %(poc_ID)s""")
     cursor.execute(query, args_dict)
     simpleprint(cursor)
 
-
+# The literal % need to be escaped so there are %% before and after %(username)s
+# The default is a blank, so ends up as %% which matches all
 def whoisuser(cursor, args_dict):
-    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username=%(username)s AND email=%(email)s AND givenname=%(name)s AND surname=%(surname)s")
+    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args.username + "%", "%" + args.email + "%", "%" + args.given_name + "%", "%" + args.surname + "%")
     cursor.execute(query, args_dict)
     simpleprint(cursor)
 
 if __name__ == "__main__":
 
-    args = getargs()
-    # make a dictionary from args
-    args_dict = vars(args)
+    try:
+        args = getargs()
+        # make a dictionary from args to make string substitutions doable by key name
+        args_dict = vars(args)
+    except ValueError as err:
+        print(err)
+        exit(1)
 
     # connect to MySQL database with read access.
     # (.thomas.cnf has readonly connection details as the default option group)
@@ -180,8 +187,6 @@ if __name__ == "__main__":
     try:
         conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database='thomas')
         cursor = conn.cursor()
-
-        print(args)
 
         # Print all info for the given user
         if (args.user != None):
