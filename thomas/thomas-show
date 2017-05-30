@@ -190,7 +190,7 @@ if __name__ == "__main__":
 
         # Print all info for the given user
         if (args.user != None):
-            userinfo(cursor)
+            userinfo(cursor, args_dict)
             sshinfo(cursor, args_dict)
             projectinfo(cursor, args_dict)
 
