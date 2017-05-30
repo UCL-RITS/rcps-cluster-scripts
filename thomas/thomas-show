@@ -37,7 +37,7 @@ def getargs():
     subparsers = parser.add_subparsers(dest="subcommand")
 
     # the argument for subcommand recentusers
-    recentusers = subparsers.add_parser("recentusers", help="show the n newest users (5 by default)")
+    recentusers = subparsers.add_parser("recentusers", help="Show the n newest users (5 by default)")
     recentusers.add_argument("-n", type=int, default=5)
 
     # the arguments for subcommand getusers
@@ -60,10 +60,12 @@ def getargs():
     return parser.parse_args()
 # end getargs
 
-# simplest possible outputting of query result
+# simplest possible outputting of query result without brackets
+# (Just printing the cursor shows structure like ('a','b','c'))
 def simpleprint(cursor):
-    for row in cursor:
-        print (row)
+    results=cursor.fetchall()
+    for row in results:
+        print (row[0])
     print("")
 
 # write out results as a table with header and separators
