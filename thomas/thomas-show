@@ -4,6 +4,7 @@ import os.path
 import argparse
 import mysql.connector
 from mysql.connector import errorcode
+from tabulate import tabulate
 import validate
 
 ###############################################################
@@ -63,45 +64,20 @@ def getargs():
 def simpleprint(cursor):
     for row in cursor:
         print (row)
+    print("")
 
 # write out results as a table with header and separators
 def tableprint(cursor):
-    results = cursor.fetchall()
-
-    widths = []
-    columns = []
-    lines = '|'
-    separator = '+'
-
-    # make the column width the maximum necessary width
-    # name[2] is the char length of the longest value
-    # name[0] is the column header text
-    # ^ Sadly, name[2] is always None so THIS DOES NOT WORK
-    for name in cursor.description:
-        print("%s, %s", name[0], name[2])
-        widths.append(max(name[2], len(name[0])))
-        columns.append(name[0])
-
-    # format the text lines and separator lines of the table
-    for w in widths:
-        lines += " %-"+"%ss |" % (w,)
-        separator += '-'*w + '--+'
-
-    print(separator)
-    print(lines % tuple(columns))
-    print(separator)
-    for row in results:
-        print(lines % row)
-    print(separator)
-# end tableprint
+    print(tabulate(cursor, headers="keys", tablefmt="psql"))
+    print("")
 
 # show user info (not ssh key as it is huge)
 def userinfo(cursor, args_dict):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username=%(user)s")
     cursor.execute(query, args_dict)
     print("All information for {}:".format(args.user))
-    #tableprint(cursor)
-    simpleprint(cursor)
+    tableprint(cursor)
+    #simpleprint(cursor)
 
 # show ssh key on file
 def sshinfo(cursor, args_dict):
@@ -115,28 +91,28 @@ def projectinfo(cursor, args_dict):
     query = ("SELECT project, poc_id, creation_date, modification_date FROM projectusers WHERE username=%(user)s")
     cursor.execute(query, args_dict)
     print("User is in these projects:")
-    simpleprint(cursor)
+    tableprint(cursor)
 
 # Show all points of contact
 def contactsinfo(cursor):
     query = ("SELECT poc_id, poc_givenname, poc_surname, poc_email FROM pointofcontact")
     cursor.execute(query)
     print("All current Points of Contact:")
-    simpleprint(cursor)
+    tableprint(cursor)
 
 # Show all institutes
 def instituteinfo(cursor):
     query = ("SELECT inst_id, name FROM institutes")
     cursor.execute(query)
     print("All current institutes")
-    simpleprint(cursor)
+    tableprint(cursor)
 
 # Print all existing users (username, names, email, dates but not ssh keys)
 def alluserinfo(cursor):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users")
     cursor.execute(query)
     print("All current users:")
-    simpleprint(cursor)
+    tableprint(cursor)
 
 # Print the n latest users (not ssh keys). Default is 5.
 def recentinfo(cursor, args_dict):
@@ -144,13 +120,13 @@ def recentinfo(cursor, args_dict):
     #    args_dict.n = 5
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users ORDER BY creation_date DESC LIMIT %(n)s")
     cursor.execute(query, args_dict)
-    simpleprint(cursor)
+    tableprint(cursor)
 
 # Show the most recent mmm user added 
 def lastmmm(cursor):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE 'mmm%' ORDER BY creation_date DESC LIMIT 1")
     cursor.execute(query)
-    simpleprint(cursor)
+    tableprint(cursor)
 
 # Show all users in this project/inst/PoC combo
 # Need to use LIKE so can match all by default with % when an option is not specified
@@ -162,14 +138,14 @@ def projectcombo(cursor, args_dict):
              """WHERE projectusers.project LIKE %(project)s AND institute_id LIKE %(inst_ID)s """
              """AND poc_id LIKE %(poc_ID)s""")
     cursor.execute(query, args_dict)
-    simpleprint(cursor)
+    tableprint(cursor)
 
 # The literal % need to be escaped so there are %% before and after %(username)s
 # The default is a blank, so ends up as %% which matches all
 def whoisuser(cursor, args_dict):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args.username + "%", "%" + args.email + "%", "%" + args.given_name + "%", "%" + args.surname + "%")
     cursor.execute(query, args_dict)
-    simpleprint(cursor)
+    tableprint(cursor)
 
 if __name__ == "__main__":
 
