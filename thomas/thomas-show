@@ -50,10 +50,10 @@ def getargs():
     # the arguments for subcommand whois
     # not validating username as this can be partial
     whois = subparsers.add_parser("whois", help="Search for users matching the given requirements")
-    whois.add_argument("-u", "--user", dest="username", default='', help="UCL username of user")
-    whois.add_argument("-e", "--email", dest="email", default='', help="Email address of user")
-    whois.add_argument("-n", "--name", dest="given_name", default='', help="Given name of user")
-    whois.add_argument("-s", "--surname", dest="surname", default='', help="Surname of user")
+    whois.add_argument("-u", "--user", dest="username", default='', help="UCL username of user contains")
+    whois.add_argument("-e", "--email", dest="email", default='', help="Email address of user contains")
+    whois.add_argument("-n", "--name", dest="given_name", default='', help="Given name of user contains")
+    whois.add_argument("-s", "--surname", dest="surname", default='', help="Surname of user contains")
 
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
