@@ -10,5 +10,7 @@ module load gcc-libs
 module load python3/3.5
 module load mysql-connector-python/2.0.4
 
-./thomas/thomas-show "$@"
+# get script location
+DIR=$(dirname "$(readlink -f "$0")")
+$DIR/thomas/thomas-show "$@"
 
