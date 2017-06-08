@@ -26,6 +26,9 @@ elif [ ! -x "$become_path" ]; then
   exit 3
 else
   echo "Becoming ccspapp and re-running..." >&2
+  if [[ "${0:0:1}" != "/" ]] && [[ "${0}" =~ ^[^\ ]*/ ]]; then
+    echo "Warning: relative paths will not work when this script has to change user" >&2
+  fi
   $become_path ccspapp <<EOF
   $0 "$@"
 EOF
@@ -120,3 +123,6 @@ ln -Tfs "${target_dir}" modulefiles
 
 echo "--Done--" >&2
 
+num_old_module_dirs="$(find /shared/ucl/apps -maxdepth 1 -type d -name ".mf_*" | wc -l)"
+echo "Module dirs in ${moduledirs_path}: ${num_old_module_dirs}" >&2
+echo "Most recent log in active dir: $(cd "${moduledirs_path}/modulefiles" && git log -n 1 --no-decorate --oneline)"
