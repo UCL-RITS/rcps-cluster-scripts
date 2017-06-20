@@ -26,7 +26,7 @@ class ValidateUser(argparse.Action):
         setattr(namespace, self.dest, values)
 # end class ValidateUser
 
-def getargs():
+def getargs(argv):
     parser = argparse.ArgumentParser(description="Show data from the Thomas database. Use [positional argument -h] for more help.")
     parser.add_argument("--user", metavar="username", help="Show all current info for this user", action=ValidateUser)
     parser.add_argument("--contacts", help="Show all allowed values for contact", action='store_true')
@@ -55,10 +55,10 @@ def getargs():
     whois.add_argument("-e", "--email", dest="email", default='', help="Email address of user contains")
     whois.add_argument("-n", "--name", dest="given_name", default='', help="Given name of user contains")
     whois.add_argument("-s", "--surname", dest="surname", default='', help="Surname of user contains")
-
+ 
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
-    return parser.parse_args()
+    return parser.parse_args(argv)
 # end getargs
 
 # Simplest possible outputting of query result without brackets
@@ -144,16 +144,16 @@ def whoisuser(cursor, args_dict):
     return cursor
 
 # Put main in a function so it is importable.
-def main(printoutput):
+def main(argv, printoutput):
 
+    print(argv)
     try:
-        args = getargs()
+        args = getargs(argv)
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
     except ValueError as err:
         print(err)
         exit(1)
-
     # connect to MySQL database with read access.
     # (.thomas.cnf has readonly connection details as the default option group)
 
@@ -248,5 +248,5 @@ def main(printoutput):
 
 # When not imported, set print to True
 if __name__ == "__main__":
-    main(True)
+    main(sys.argv[1:], True)
 

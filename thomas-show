@@ -12,5 +12,5 @@ module load mysql-connector-python/2.0.4
 
 # get script location
 DIR=$(dirname "$(readlink -f "$0")")
-$DIR/thomas/thomas-show "$@"
+$DIR/thomas/thomas_show.py "$@"
 
