@@ -2,6 +2,7 @@
 
 import os.path
 import argparse
+import sys
 import mysql.connector
 from mysql.connector import errorcode
 from tabulate import tabulate
@@ -60,77 +61,68 @@ def getargs():
     return parser.parse_args()
 # end getargs
 
-# simplest possible outputting of query result without brackets
-# (Just printing the cursor shows structure like ('a','b','c'))
-def simpleprint(cursor):
-    results=cursor.fetchall()
+# Simplest possible outputting of query result without brackets
+# (Just printing the fetchall results shows structure like ('a','b','c'))
+def simpleprint(results):
     for row in results:
         print (row[0])
     print("")
 
-# write out results as a table with header and separators
-def tableprint(cursor):
-    print(tabulate(cursor, headers="keys", tablefmt="psql"))
+# Write out results as a table with header and separators
+def tableprint(cursor, results):
+    columns = (d[0] for d in cursor.description)
+    print(tabulate(results, headers=columns, tablefmt="psql"))
     print("")
 
-# show user info (not ssh key as it is huge)
+# Get user info (not ssh key as it is huge)
 def userinfo(cursor, args_dict):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username=%(user)s")
     cursor.execute(query, args_dict)
-    print("All information for {}:".format(args.user))
-    tableprint(cursor)
-    #simpleprint(cursor)
+    return cursor
 
-# show ssh key on file
+# Get ssh key on file
 def sshinfo(cursor, args_dict):
     query = ("SELECT ssh_key FROM users WHERE username=%(user)s")
     cursor.execute(query, args_dict)
-    print("SSH key on file:")
-    simpleprint(cursor)
+    return cursor
 
-# show all of user's projects and related points of contact
+# Get all of user's projects and related points of contact
 def projectinfo(cursor, args_dict):
     query = ("SELECT project, poc_id, creation_date, modification_date FROM projectusers WHERE username=%(user)s")
     cursor.execute(query, args_dict)
-    print("User is in these projects:")
-    tableprint(cursor)
+    return cursor
 
-# Show all points of contact
+# Get all points of contact
 def contactsinfo(cursor):
     query = ("SELECT poc_id, poc_givenname, poc_surname, poc_email FROM pointofcontact")
     cursor.execute(query)
-    print("All current Points of Contact:")
-    tableprint(cursor)
+    return cursor
 
-# Show all institutes
+# Get all institutes
 def instituteinfo(cursor):
     query = ("SELECT inst_id, name FROM institutes")
     cursor.execute(query)
-    print("All current institutes")
-    tableprint(cursor)
+    return cursor
 
-# Print all existing users (username, names, email, dates but not ssh keys)
+# Get all existing users (username, names, email, dates but not ssh keys)
 def alluserinfo(cursor):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users")
     cursor.execute(query)
-    print("All current users:")
-    tableprint(cursor)
+    return cursor
 
-# Print the n latest users (not ssh keys). Default is 5.
+# Get the n latest users (not ssh keys). Default n provided by argparser.
 def recentinfo(cursor, args_dict):
-    #if (args_dict.n == None):
-    #    args_dict.n = 5
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users ORDER BY creation_date DESC LIMIT %(n)s")
     cursor.execute(query, args_dict)
-    tableprint(cursor)
+    return cursor
 
-# Show the most recent mmm user added 
+# Get the most recent mmm username used
 def lastmmm(cursor):
-    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE 'mmm%' ORDER BY creation_date DESC LIMIT 1")
+    query = ("SELECT username FROM users WHERE username LIKE 'mmm%' ORDER BY creation_date DESC LIMIT 1")
     cursor.execute(query)
-    tableprint(cursor)
+    return cursor
 
-# Show all users in this project/inst/PoC combo
+# Get all users in this project/inst/PoC combo
 # Need to use LIKE so can match all by default with % when an option is not specified
 def projectcombo(cursor, args_dict):
     query = ("""SELECT users.username, givenname, surname, email, projectusers.project, """
@@ -140,16 +132,17 @@ def projectcombo(cursor, args_dict):
              """WHERE projectusers.project LIKE %(project)s AND institute_id LIKE %(inst_ID)s """
              """AND poc_id LIKE %(poc_ID)s""")
     cursor.execute(query, args_dict)
-    tableprint(cursor)
+    return cursor
 
-# The literal % need to be escaped so there are %% before and after %(username)s
+# Allowing partial matches with %username%.
 # The default is a blank, so ends up as %% which matches all
 def whoisuser(cursor, args_dict):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args.username + "%", "%" + args.email + "%", "%" + args.given_name + "%", "%" + args.surname + "%")
     cursor.execute(query, args_dict)
-    tableprint(cursor)
+    return cursor
 
-if __name__ == "__main__":
+# Put main in a function so it is importable.
+def main(printoutput):
 
     try:
         args = getargs()
@@ -166,39 +159,78 @@ if __name__ == "__main__":
         conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database='thomas')
         cursor = conn.cursor()
 
-        # Print all info for the given user
+        # Get info for the given user, print if running directly.
+        # Fetchall removes the rows from the cursor, but the description is still there
+        # so the cursor must also be passed to tableprint to print the headers.
         if (args.user != None):
-            userinfo(cursor, args_dict)
-            sshinfo(cursor, args_dict)
-            projectinfo(cursor, args_dict)
+            userresults = userinfo(cursor, args_dict).fetchall()
+            if (printoutput):
+                print("All information for {}:".format(args.user))
+                tableprint(cursor, userresults)
 
-        # Show all allowed values for poc_id
+            sshresults = sshinfo(cursor, args_dict).fetchall()
+            if (printoutput):
+                print("SSH key on file:")
+                simpleprint(sshresults)
+
+            projectresults = projectinfo(cursor, args_dict).fetchall()
+            if (printoutput):
+                print("User is in these projects:")
+                tableprint(cursor, projectresults)
+            return (userresults, sshresults, projectresults)
+
+        # Get all allowed values for poc_id
         if (args.contacts):
-            contactsinfo(cursor)       
+            contactresults = contactsinfo(cursor).fetchall()
+            if (printoutput):
+                print("All current Points of Contact:")
+                tableprint(cursor, contactresults)
+            return contactresults      
  
-        # Show all allowed values for inst_id
+        # Get all allowed values for inst_id
         if (args.institutes):
-            instituteinfo(cursor)
+            instresults = instituteinfo(cursor).fetchall()
+            if (printoutput):
+                print("All current institutes:")
+                tableprint(cursor, instresults)
+            return instresults
 
-        # Print all existing users (username, names, email, dates but not ssh keys)
+        # Get all existing users (username, names, email, dates but not ssh keys)
         if (args.allusers):
-            alluserinfo(cursor)
+            alluserresults = alluserinfo(cursor).fetchall()
+            if (printoutput):
+                print("All current users:")
+                tableprint(cursor, alluserresults)
+            return alluserresults
 
-        # Print the n latest users (not ssh keys)
+        # Get the n latest users (not ssh keys)
         if (args.subcommand == "recentusers"):
-            recentinfo(cursor, args_dict)
+            recentresults = recentinfo(cursor, args_dict).fetchall()
+            if (printoutput):
+                tableprint(cursor, recentresults)
+            return recentresults
 
-        # Show the most recent mmm user added    
+        # Get the most recent mmm user added    
         if (args.getmmm):        
-            lastmmm(cursor)
+            lastresult = lastmmm(cursor).fetchall()
+            if (printoutput):
+                simpleprint(lastresult)
+            return lastresult
 
-        # Show all users in this project/inst/PoC combo
+        # Get all users in this project/inst/PoC combo
         if (args.subcommand == "getusers"):
-            projectcombo(cursor, args_dict)
+            comboresults = projectcombo(cursor, args_dict).fetchall()
+            if (printoutput):
+                tableprint(cursor, comboresults)
+            return comboresults
 
         # Who is this person?
         if (args.subcommand == "whois"):
-            whoisuser(cursor, args_dict)
+            whoisresults = whoisuser(cursor, args_dict).fetchall()
+            if (printoutput):
+                tableprint(cursor, whoisresults)
+            return whoisresults
+
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
@@ -210,4 +242,9 @@ if __name__ == "__main__":
     else:
         cursor.close()
         conn.close()
+# end main
+
+# When not imported, set print to True
+if __name__ == "__main__":
+    main(True)
 
