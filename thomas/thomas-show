@@ -92,9 +92,11 @@ def projectinfo(cursor, args_dict):
     cursor.execute(query, args_dict)
     return cursor
 
-# Get all points of contact
+# Get all points of contact and their username if they have one.
 def contactsinfo(cursor):
-    query = ("SELECT poc_id, poc_givenname, poc_surname, poc_email FROM pointofcontact")
+    query = ("""SELECT poc_id, poc_givenname, poc_surname, poc_email, users.username """
+             """FROM pointofcontact """
+             """LEFT JOIN users on poc_email=users.email """)
     cursor.execute(query)
     return cursor
 
