@@ -228,7 +228,7 @@ def main(argv, printoutput):
 
         # Who is this person?
         if (args.subcommand == "whois"):
-            whoisresults = whoisuser(cursor, args_dict, args).fetchall()
+            whoisresults = whoisuser(cursor, args_dict).fetchall()
             if (printoutput):
                 tableprint(cursor, whoisresults)
             return whoisresults
