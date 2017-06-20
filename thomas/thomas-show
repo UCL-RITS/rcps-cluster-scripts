@@ -136,7 +136,7 @@ def projectcombo(cursor, args_dict):
 
 # Allowing partial matches with %username%.
 # The default is a blank, so ends up as %% which matches all
-def whoisuser(cursor, args_dict):
+def whoisuser(cursor, args_dict, args):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args.username + "%", "%" + args.email + "%", "%" + args.given_name + "%", "%" + args.surname + "%")
     cursor.execute(query, args_dict)
     return cursor
@@ -226,7 +226,7 @@ def main(printoutput):
 
         # Who is this person?
         if (args.subcommand == "whois"):
-            whoisresults = whoisuser(cursor, args_dict).fetchall()
+            whoisresults = whoisuser(cursor, args_dict, args).fetchall()
             if (printoutput):
                 tableprint(cursor, whoisresults)
             return whoisresults
