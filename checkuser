@@ -1,0 +1,102 @@
+#!/bin/bash
+
+# Checks the year-based ACLs to see whether a user has reapplied
+# for their RC accounts that session.
+
+# use own username if none supplied as argument
+username=${1:-$USER}
+
+GREEN="$(tput setaf 2)"
+BLUE="$(tput setaf 4)"
+RED="$(tput setaf 1)"
+RESET="$(tput sgr0)"
+
+echo -n "Can id user: "
+id "$username" >/dev/null 2>/dev/null && echo "${GREEN}yes${RESET}" || echo "${RED}no${RESET}"
+
+echo -n "Checking whether user is in access group for 2016-2017: "
+qconf -su AY201617 | grep -q "$username"
+if [ $? == 0 ]
+then
+  echo "${GREEN}yes${RESET}"
+else
+  echo "${RED}no${RESET}"
+fi
+
+echo -n "Checking whether user has been blocked from submitting jobs: "
+# check NoSubmission for blocked users
+qconf -su NoSubmission | grep -q "$username"
+if [ $? == 0 ]
+then
+  echo "${RED}yes${RESET}"
+else
+  echo "${GREEN}no${RESET}"
+fi
+
+echo "" # Blank line for section separation
+
+echo -n "Checking whether user has a home directory: "
+stat --printf='' "/home/${username}" 2>/dev/null
+if [ $? == 0 ]
+then
+  echo "${GREEN}yes${RESET}"
+else
+  echo "${RED}no${RESET}"
+fi
+
+echo -n "Checking whether user has a scratch directory: "
+stat --printf='' "/scratch/scratch/${username}" 2>/dev/null
+if [ $? == 0 ]
+then
+  echo "${GREEN}yes${RESET}"
+else
+  echo "${RED}no${RESET}"
+fi
+
+echo -n "Checking whether home directory is *owned* by that user: "
+owner="$(stat --printf=%U "/home/${username}" 2>/dev/null)"
+if [ "$owner" == "$username" ]
+then
+  echo "${GREEN}yes${RESET}"
+else
+  echo "${RED}no${RESET}"
+fi
+
+echo -n "Checking whether scratch directory is *owned* by that user: "
+owner="$(stat --printf=%U "/home/${username}" 2>/dev/null)"
+if [ "$owner" == "$username" ]
+then
+  echo "${GREEN}yes${RESET}"
+else
+  echo "${RED}no${RESET}"
+fi
+
+echo ""
+
+echo -n "Checking whether user has jobs in the queue: "
+has_jobs="$(qstat -u "$username" | wc -l)"
+if [ "$has_jobs" -gt 0 ]
+then
+  echo "${GREEN}yes${RESET}"
+else
+  echo "${BLUE}no${RESET}"
+fi
+
+echo -n "Checking when user last logged in to this node: "
+last_login="$(last -adwn 1 "${username}" | head -n 1)"
+if [ -z "$last_login" ]; then
+    echo "${RED}never${RESET}"
+else
+    echo "${BLUE}$last_login${RESET}"
+fi
+
+echo ""
+
+echo -n "User is in groups: "
+user_groups="$(groups "$username" 2>&1)"
+if [ $? == 0 ]; then
+    echo "${GREEN}${user_groups#*:}${RESET}"
+else
+    echo "${RED}${user_groups#groups: *:}${RESET}"
+fi
+
