@@ -115,7 +115,7 @@ fi
 git clone --depth=1 -b ${branch} https://github.com/UCL-RITS/rcps-modulefiles.git "${target_dir}"
 echo "${req_commit_sha}" >"${target_dir}/.commit_sha"
 
-most_recent_log="$(cd "${moduledirs_path}/modulefiles" && git log -n 1 --no-decorate --oneline)"
+most_recent_log="$(cd "${moduledirs_path}/${target_dir}" && git log -n 1 --no-decorate --oneline)"
 
 # We remove the repo information to dissuade people performing git operations on the prod copy
 echo "Removing superfluous repo information..." >&2
