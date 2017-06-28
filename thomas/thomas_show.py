@@ -146,7 +146,6 @@ def whoisuser(cursor, args_dict):
 # Put main in a function so it is importable.
 def main(argv, printoutput):
 
-    print(argv)
     try:
         args = getargs(argv)
         # make a dictionary from args to make string substitutions doable by key name
