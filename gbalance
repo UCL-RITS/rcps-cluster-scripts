@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+# Make sure we are on Thomas
+
+if hostname -A | grep -q thomas
+then
+  ssh util04 gbalance -h "$@"
+else 
+  echo "There is no resource management on this cluster."
+fi
+
