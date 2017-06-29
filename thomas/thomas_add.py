@@ -2,6 +2,7 @@
 
 import os.path
 import argparse
+import sys
 import mysql.connector
 from mysql.connector import errorcode
 import validate
@@ -20,7 +21,7 @@ class ValidateUser(argparse.Action):
         setattr(namespace, self.dest, values)
 # end class ValidateUser
 
-def getargs():
+def getargs(argv):
     parser = argparse.ArgumentParser(description="Add data to the Thomas database. Use [positional argument -h] for more help.")
     # store which subparser was used in args.subcommand
     subparsers = parser.add_subparsers(dest="subcommand")
@@ -67,7 +68,7 @@ def getargs():
 
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
-    return parser.parse_args()
+    return parser.parse_args(argv)
 # end getargs
 
 # query to run for 'user' subcommand
@@ -108,11 +109,12 @@ def run_institute():
              """creation_date=now()""") 
     return query
 
-if __name__ == "__main__":
+# Put main in a function so it is importable.
+def main(argv):
 
     # get all the parsed args
     try:
-        args = getargs()
+        args = getargs(argv)
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
     except ValueError as err:
@@ -150,6 +152,7 @@ if __name__ == "__main__":
 
         # commit the change to the database unless we are debugging
         if (not args.debug):
+            print("")
             print("Committing database change")
             conn.commit()
 
@@ -163,5 +166,9 @@ if __name__ == "__main__":
     else:
         cursor.close()
         conn.close()
-
 # end main
+
+# When not imported, use the normal global arguments
+if __name__ == "__main__":
+    main(sys.argv[1:])
+
