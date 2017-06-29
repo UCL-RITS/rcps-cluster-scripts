@@ -4,7 +4,7 @@
 
 if hostname -A | grep -q thomas
 then
-  ssh util04 glsalloc -h "$@"
+  ssh util04 glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
 else 
   echo "There is no resource management on this cluster."
 fi
