@@ -2,7 +2,9 @@
 
 import os.path
 import argparse
+import subprocess
 import thomas_show
+import thomas_add
 
 # This should take all the arguments necessary to run both thomas-add user 
 # and createThomasuser in one. It gets the next available mmm username
@@ -38,6 +40,32 @@ def getargs():
     return parser.parse_args()
 # end getargs
 
+# Return the next available mmm username (without printing result).
+# mmm usernames are in the form mmmxxxx, get the integers and increment
+def nextmmm():
+    latestmmm = thomas_show.main(['--getmmm'], False)
+    #print(latestmmm)
+    mmm_int = int(latestmmm[-4:]) + 1
+    return 'mmm' + str(mmm_int)
+
+def addtodb(args):
+    user_args = ['user', '-u', args.username, '-n', args.given_name, '-e', args.email, '-k', args.ssh_key,
+                 '-p', args.project_ID, '-c', args.poc_id]
+    # add surname if there is one
+    if (args.surname != None):
+        user_args.append(['-s', args.surname])
+    if (args.debug):
+        user_args.append(['--debug'])
+    thomas_add.main(user_args)
+
+def createaccount(args):
+    create_args = ['createThomasuser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
+    if (args.cc_email != None):
+        create_args.append(['-c', args.cc_email])
+    if (args.noemail):
+        create_args.append(['-n']) 
+    return subprocess.check_output(create_args)
+
 if __name__ == "__main__":
 
     # get all the parsed args
@@ -49,8 +77,15 @@ if __name__ == "__main__":
         print(err)
         exit(1)
     #print(args)
-    # use getmmm and do not print result
-    latestmmm = thomas_show.main(['--getmmm'], False)
-    print(latestmmm) 
+
+    # if no username was specified, get the next available mmm username
+    if (args.user == None):
+        args.user = nextmmm()
+    
+    # First, add the information to the database, as it enforces unique usernames etc.
+    addtodb(args)
+
+    # Now create the account.
+    createaccount(args)
 
 # end main
