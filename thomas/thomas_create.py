@@ -67,7 +67,7 @@ def createaccount(args):
         create_args.extend(['-c', args.cc_email])
     if (args.noemail):
         create_args.append('-n') 
-    return subprocess.check_output(create_args)
+    return subprocess.check_call(create_args)
 
 if __name__ == "__main__":
 
