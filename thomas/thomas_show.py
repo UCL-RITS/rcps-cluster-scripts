@@ -215,7 +215,8 @@ def main(argv, printoutput):
             lastresult = lastmmm(cursor).fetchall()
             if (printoutput):
                 simpleprint(lastresult)
-            return lastresult
+            # This is a list of tuples with one element - returning the string is more useful
+            return lastresult[0][0]
 
         # Get all users in this project/inst/PoC combo
         if (args.subcommand == "getusers"):

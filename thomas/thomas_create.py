@@ -28,7 +28,7 @@ def getargs():
     parser.add_argument("-e", "--email", dest="email", help="Institutional email address of user", required=True, action=CheckUCL)
     parser.add_argument("-n", "--name", dest="given_name", help="Given name of user", required=True)
     parser.add_argument("-s", "--surname", dest="surname", help="Surname of user")
-    parser.add_argument("-k", "--key", dest='"ssh_key"', help="User's public ssh key (quotes necessary)", required=True)
+    parser.add_argument("-k", "--key", dest='ssh_key', help="User's public ssh key (quotes necessary)", required=True)
     parser.add_argument("-p", "--project", dest="project_ID", help="Initial project the user belongs to", required=True)
     parser.add_argument("-c", "--contact", dest="poc_id", help="An existing Point of Contact ID", required=True)
     parser.add_argument("-b", "--cc", dest="cc_email", help="CC the welcome email to this address")
@@ -44,26 +44,29 @@ def getargs():
 # mmm usernames are in the form mmmxxxx, get the integers and increment
 def nextmmm():
     latestmmm = thomas_show.main(['--getmmm'], False)
-    #print(latestmmm)
     mmm_int = int(latestmmm[-4:]) + 1
-    return 'mmm' + str(mmm_int)
+    # pad to four digits with leading zeroes, giving a string
+    mmm_string = '{0:04}'.format(mmm_int)
+    return 'mmm' + mmm_string
 
+# Add new user to Thomas database
 def addtodb(args):
     user_args = ['user', '-u', args.username, '-n', args.given_name, '-e', args.email, '-k', args.ssh_key,
                  '-p', args.project_ID, '-c', args.poc_id]
     # add surname if there is one
     if (args.surname != None):
-        user_args.append(['-s', args.surname])
+        user_args.extend(['-s', args.surname])
     if (args.debug):
-        user_args.append(['--debug'])
+        user_args.append('--debug')
     thomas_add.main(user_args)
 
+# Activate account on Thomas and add user's key
 def createaccount(args):
     create_args = ['createThomasuser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
     if (args.cc_email != None):
-        create_args.append(['-c', args.cc_email])
+        create_args.extend(['-c', args.cc_email])
     if (args.noemail):
-        create_args.append(['-n']) 
+        create_args.append('-n') 
     return subprocess.check_output(create_args)
 
 if __name__ == "__main__":
@@ -76,11 +79,10 @@ if __name__ == "__main__":
     except ValueError as err:
         print(err)
         exit(1)
-    #print(args)
 
     # if no username was specified, get the next available mmm username
-    if (args.user == None):
-        args.user = nextmmm()
+    if (args.username == None):
+        args.username = nextmmm()
     
     # First, add the information to the database, as it enforces unique usernames etc.
     addtodb(args)
