@@ -3,7 +3,7 @@
 import os.path
 import argparse
 import subprocess
-from sshpubkeys import SSHKey
+import validate
 import thomas_show
 import thomas_add
 
@@ -71,19 +71,6 @@ def createaccount(args):
         create_args.append('-n') 
     return subprocess.check_call(create_args)
 
-# Verify the ssh key. sshpubkeys 2.2.0 currently supports
-# ssh-rsa, ssh-dss (DSA), ssh-ed25519 and ecdsa keys with NIST curves.
-def ssh_verify(key_string):
-    key = SSHKey(key_string, strict_mode=True)
-    try:
-        key.parse()
-    except InvalidKeyException as err:
-        print("Invalid key:", err)
-        exit(1)
-    except NotImplementedError as err:
-        print("Invalid/unsupported key type:", err)
-        exit(1)
-
 if __name__ == "__main__":
 
     # get all the parsed args
@@ -97,7 +84,7 @@ if __name__ == "__main__":
 
     # if nosshverify is not set, verify the ssh key
     if (!args.nosshverify):
-        ssh_verify(args.ssh_key)
+        validate.ssh_key(args.ssh_key)
 
     # if no username was specified, get the next available mmm username
     if (args.username == None):
