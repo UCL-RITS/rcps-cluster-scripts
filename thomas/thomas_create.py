@@ -16,7 +16,7 @@ import thomas_add
 # custom Action class, must override __call__
 class CheckUCL(argparse.Action):
     def __call__(self, parser, namespace, values, option_string=None):
-        if ("ucl.ac.uk" in values):
+        if ("ucl.ac.uk" in values and namespace.username == None):
             print ("This is a UCL email address - please provide the user's UCL username with --user USERNAME")
             exit(1)
         setattr(namespace, self.dest, values)
