@@ -6,6 +6,7 @@ import sys
 import mysql.connector
 from mysql.connector import errorcode
 import validate
+import thomas_show
 
 ###############################################################
 # Subcommands:
@@ -28,13 +29,14 @@ def getargs(argv):
 
     # the arguments for subcommand 'user'
     userparser = subparsers.add_parser("user", help="Adding a new user with their initial project")
-    userparser.add_argument("-u", "--user", dest="username", help="UCL username of user", required=True, action=ValidateUser)
+    userparser.add_argument("-u", "--user", dest="username", help="UCL username of user", action=ValidateUser)
     userparser.add_argument("-n", "--name", dest="given_name", help="Given name of user", required=True)
     userparser.add_argument("-s", "--surname", dest="surname", help="Surname of user (optional)")
     userparser.add_argument("-e", "--email", dest="email_address", help="Institutional email address of user", required=True)
-    userparser.add_argument("-k", "--key", dest='"ssh_key"', help="User's public ssh key (quotes necessary)", required=True)
+    userparser.add_argument("-k", "--key", dest="ssh_key", help="User's public ssh key (quotes necessary)", required=True)
     userparser.add_argument("-p", "--project", dest="project_ID", help="Initial project the user belongs to", required=True)
     userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
+    userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'project'
@@ -71,11 +73,20 @@ def getargs(argv):
     return parser.parse_args(argv)
 # end getargs
 
+# Return the next available mmm username (without printing result).
+# mmm usernames are in the form mmmxxxx, get the integers and increment
+def nextmmm():
+    latestmmm = thomas_show.main(['--getmmm'], False)
+    mmm_int = int(latestmmm[-4:]) + 1
+    # pad to four digits with leading zeroes, giving a string
+    mmm_string = '{0:04}'.format(mmm_int)
+    return 'mmm' + mmm_string
+
 # query to run for 'user' subcommand
 # the values are inserted by cursor.execute from args.dict
 def run_user(surname):
     query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-             """email=%(email_address)s, ssh_key=%("ssh_key")s, creation_date=now()""")
+             """email=%(email_address)s, ssh_key=%(ssh_key)s, creation_date=now()""")
     if (surname != None):
         query += ", surname=%(surname)s"
     return query
@@ -121,7 +132,18 @@ def main(argv):
         print(err)
         exit(1)
 
-    # look at sshpubkeys package for ssh validation eventually
+    if (args.subcommand == "user"):
+        # UCL user validation - if this is a UCL email, make sure username was given 
+        # and that it wasn't an mmm one.
+        validate.ucl_user(args.email_address, args.username)
+        # Unless nosshverify is set, verify the ssh key
+        if (args.nosshverify == False):
+            validate.ssh_key(args.ssh_key)
+            print("SSH key verified.")
+
+    # if no username was specified, get the next available mmm username
+    if (args.username == None):
+        args.username = nextmmm()
 
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)

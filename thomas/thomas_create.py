@@ -83,7 +83,7 @@ if __name__ == "__main__":
         exit(1)
 
     # if nosshverify is not set, verify the ssh key
-    if (args.nosshverify != None):
+    if (args.nosshverify == False):
         validate.ssh_key(args.ssh_key)
 
     # if no username was specified, get the next available mmm username
