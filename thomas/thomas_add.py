@@ -3,6 +3,7 @@
 import os.path
 import argparse
 import sys
+import subprocess
 import mysql.connector
 from mysql.connector import errorcode
 import validate
@@ -37,6 +38,7 @@ def getargs(argv):
     userparser.add_argument("-p", "--project", dest="project_ID", help="Initial project the user belongs to", required=True)
     userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
+    userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'project'
@@ -120,6 +122,32 @@ def run_institute():
              """creation_date=now()""") 
     return query
 
+# send an email to RC-Support with the command to run to create this account,
+# unless debugging in which case just print it.
+#def contact_rc_support(args):
+#    command = "createThomasuser -u " + args.username + " -e " + args.email_address 
+#              + " -k " + args.ssh_key + " -c " + get_poc_email(args.poc_id)
+#    email = """<<EOF
+#From: rc-support@ucl.ac.uk
+#To: rc-support@ucl.ac.uk
+#Subject: Thomas account request
+
+#Command to run:
+
+#"""
+#+ command + """
+#EOF
+#"""
+#    if (args.debug):
+#        print(email)
+#    else:
+#        subprocess.check_output(["/usr/sbin/sendmail", "-t", email])
+
+# query to run to get PoC email address
+#def run_poc_email(poc_id):
+#    query = ("""SELECT poc_email FROM pointsofcontact WHERE poc_id=$(poc_id)s""")
+#    return query
+
 # Put main in a function so it is importable.
 def main(argv):
 
@@ -139,11 +167,12 @@ def main(argv):
         # Unless nosshverify is set, verify the ssh key
         if (args.nosshverify == False):
             validate.ssh_key(args.ssh_key)
+            print("")
             print("SSH key verified.")
-
-    # if no username was specified, get the next available mmm username
-    if (args.username == None):
-        args.username = nextmmm()
+            print("")
+        # if no username was specified, get the next available mmm username
+        if (args.username == None):
+            args.username = nextmmm()
 
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
@@ -176,7 +205,14 @@ def main(argv):
         if (not args.debug):
             print("")
             print("Committing database change")
+            print("")
             conn.commit()
+
+        # Unless nosupportemail is set, email RC Support to create the account
+        #if (args.nosupportemail == False):
+            #contact_rc_support(args)
+            #print("RC Support has been notified to create this account.")
+
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:

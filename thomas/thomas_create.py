@@ -51,10 +51,10 @@ def nextmmm():
     mmm_string = '{0:04}'.format(mmm_int)
     return 'mmm' + mmm_string
 
-# Add new user to Thomas database
+# Add new user to Thomas database. Do not send support email as we are acting on one!
 def addtodb(args):
     user_args = ['user', '-u', args.username, '-n', args.given_name, '-e', args.email, '-k', args.ssh_key,
-                 '-p', args.project_ID, '-c', args.poc_id]
+                 '-p', args.project_ID, '-c', args.poc_id, '--nosupportemail']
     # add surname if there is one
     if (args.surname != None):
         user_args.extend(['-s', args.surname])
