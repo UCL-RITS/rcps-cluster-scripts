@@ -3,7 +3,9 @@
 import os.path
 import argparse
 import sys
+from email.mime.text import MIMEText
 import subprocess
+from subprocess import Popen, PIPE
 import mysql.connector
 from mysql.connector import errorcode
 import validate
@@ -37,6 +39,7 @@ def getargs(argv):
     userparser.add_argument("-k", "--key", dest="ssh_key", help="User's public ssh key (quotes necessary)", required=True)
     userparser.add_argument("-p", "--project", dest="project_ID", help="Initial project the user belongs to", required=True)
     userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
+    userparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
     userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
@@ -45,6 +48,7 @@ def getargs(argv):
     projectparser = subparsers.add_parser("project", help="Adding a new project")
     projectparser.add_argument("-p", "--project", dest="project_ID", help="A new unique project ID", required=True)
     projectparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID this project belongs to", required=True)
+    projectparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'projectuser'
@@ -52,6 +56,7 @@ def getargs(argv):
     projectuserparser.add_argument("-u", "--user", dest="username", help="An existing UCL username", required=True, action=ValidateUser)
     projectuserparser.add_argument("-p", "--project", dest="project_ID", help="An existing project ID", required=True)
     projectuserparser.add_argument("-c", "--contact", dest="poc_id", help="An existing Point of Contact ID", required=True)
+    parser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectuserparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'poc'
@@ -62,12 +67,14 @@ def getargs(argv):
     pocparser.add_argument("-e", "--email", dest="email_address", help="Email address of PoC", required=True)
     pocparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID of PoC", required=True)
     pocparser.add_argument("-u", "--user", dest="username", help="The PoC's UCL username (optional)", action=ValidateUser)
+    pocparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     pocparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'institute'
     instituteparser = subparsers.add_parser("institute", help="Adding a new institute/consortium")
     instituteparser.add_argument("-i", "--id", dest="inst_ID", help="Unique institute ID, eg QMUL, Imperial, Soton", required=True)
     instituteparser.add_argument("-n", "--name", dest="institute", help="Full name of institute/consortium", required=True)
+    instituteparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     instituteparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # return the arguments
@@ -124,29 +131,36 @@ def run_institute():
 
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
-#def contact_rc_support(args):
-#    command = "createThomasuser -u " + args.username + " -e " + args.email_address 
-#              + " -k " + args.ssh_key + " -c " + get_poc_email(args.poc_id)
-#    email = """<<EOF
-#From: rc-support@ucl.ac.uk
-#To: rc-support@ucl.ac.uk
-#Subject: Thomas account request
+def contact_rc_support(args, poc_email):
+    command = ("""createThomasuser -u """ + args.username + """ -e """ + args.email_address 
+              + """ -k '""" + args.ssh_key + """' -c """ + poc_email)
+    body = ("""
+Thomas user account request has been received.
 
-#Command to run:
+Command to run on a Thomas login node:
 
-#"""
-#+ command + """
-#EOF
-#"""
-#    if (args.debug):
-#        print(email)
-#    else:
-#        subprocess.check_output(["/usr/sbin/sendmail", "-t", email])
+"""
++ command + """
+
+""")
+    msg = MIMEText(body)
+    msg["From"] = "rc-support@ucl.ac.uk"
+    msg["To"] = "rc-support@ucl.ac.uk"
+    msg["Subject"] = "Thomas account request"
+    if (args.debug):
+        print("")
+        print("Email that would be sent:")
+        print(msg)
+    else:
+        p = Popen(["/usr/sbin/sendmail", "-t", "-oi"], stdin=PIPE, universal_newlines=True)
+        p.communicate(msg.as_string())
+        print("RC Support has been notified to create this account.")
+# end contact_rc_support
 
 # query to run to get PoC email address
-#def run_poc_email(poc_id):
-#    query = ("""SELECT poc_email FROM pointsofcontact WHERE poc_id=$(poc_id)s""")
-#    return query
+def run_poc_email():
+    query = ("""SELECT poc_email FROM pointofcontact WHERE poc_id=%(poc_id)s""")
+    return query
 
 # Put main in a function so it is importable.
 def main(argv):
@@ -167,9 +181,10 @@ def main(argv):
         # Unless nosshverify is set, verify the ssh key
         if (args.nosshverify == False):
             validate.ssh_key(args.ssh_key)
-            print("")
-            print("SSH key verified.")
-            print("")
+            if (args.verbose or args.debug):
+                print("")
+                print("SSH key verified.")
+                print("")
         # if no username was specified, get the next available mmm username
         if (args.username == None):
             args.username = nextmmm()
@@ -181,38 +196,48 @@ def main(argv):
         conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
         cursor = conn.cursor()
 
-        print(">>>> Queries being sent:")
+        if (args.verbose or args.debug):
+            print("")
+            print(">>>> Queries being sent:")
 
         # cursor.execute takes a querystring and a dictionary or tuple
         if (args.subcommand == "user"):
             cursor.execute(run_user(args.surname), args_dict)
-            print(cursor.statement)
+            if (args.verbose or args.debug):
+                print(cursor.statement)
+
         # this is run in both cases
         if (args.subcommand == "user" or args.subcommand == "projectuser"):
             cursor.execute(run_projectuser(), args_dict)
-            print(cursor.statement)
+            if (args.verbose or args.debug):
+                print(cursor.statement)
         elif (args.subcommand == "project"):
             cursor.execute(run_project(), args_dict)
-            print(cursor.statement)
+            if (args.verbose or args.debug):
+                print(cursor.statement)
         elif (args.subcommand == "poc"):
             cursor.execute(run_poc(args.surname, args.username), args_dict)
-            print(cursor.statement)
+            if (args.verbose or args.debug):
+                print(cursor.statement)
         elif (args.subcommand == "institute"):
             cursor.execute(run_institute(), args_dict)
-            print(cursor.statement)
+            if (args.verbose or args.debug):
+                print(cursor.statement)
 
         # commit the change to the database unless we are debugging
         if (not args.debug):
-            print("")
-            print("Committing database change")
-            print("")
+            if (args.verbose):
+                print("")
+                print("Committing database change")
+                print("")
             conn.commit()
 
-        # Unless nosupportemail is set, email RC Support to create the account
-        #if (args.nosupportemail == False):
-            #contact_rc_support(args)
-            #print("RC Support has been notified to create this account.")
-
+        # Databases are updated, now email rc-support unless nosupportemail is set
+        if (args.subcommand == "user" and args.nosupportemail == False):
+            # fetchall result is a list of tuples containing one element - get the string
+            cursor.execute(run_poc_email(), args_dict)
+            poc_email = cursor.fetchall()[0][0]
+            contact_rc_support(args, poc_email)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:

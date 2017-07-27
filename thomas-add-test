@@ -1,0 +1,38 @@
+#!/bin/bash
+# Very non-exhaustive tests for thomas-add
+
+echo "------ Test add non-UCL user"
+thomas-add user -s Bar -k "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCtvJrcdoiH/5HNg+gxlpM6B0W7+2oq0q/5WrhgUXIhHj2BO+9KaZw/hOxZUQ18cehNCOHT7g3WNbbKlnu//WUbQ+rR0+3C0aU2dGkxLc8Jf21wgjMQynTBgQjaAo9rraeioCApzY1TGYFCZz6BuCsMb/FMWfnbd5xOaT0GN9/FWZOf/Md/Xs+s64SKwQcF2q7qqE5RoWC2EwcE0q1oO/Z6hFJyxuByyXRyvHu0UNTwPL3tknm2A6Z2nLZa9/LBDusiwqYblBy1wwFvfsa/h1NtQx/rvBmwZelcNN8sbDFMGntCP8ywGKCPCf2e7prQi7DC98v6LrhN13mGkMfowcc/ tester" -p Test_subproject -c PMaccallum_UCL -e email -n Foo --debug
+
+echo ""
+echo "------ Test add non-UCL user verbosely"
+thomas-add user --verbose -c PMaccallum_UCL -p Test_subproject -k "ssh-dss AAAAB3NzaC1kc3MAAACBAKejSl1IRNXVoX3TfXVZU2q2uoBSglz4pYWp+VHP1v6LZpnoFe8BcrjMzkbzG1qwSYb3s0IqMrxdYAf877rHCykTZG4j73XVfCEQV03ykT4+zzRUFHin7JNbtvwLNO/Anyhp/X7Ge5ElJrY1BeZNgoQ6K752Y8DNSo70RWakKjahAAAAFQDbNCcxRpNm7V+I9afYG6qH8r7sJwAAAIB0+jrn0L5+LH6Td3c+9b8nb5543F1wKbjCC5541D25uoNyvzKbf9uze2PDO2AkDVOWx4rsOw2ZgbgJbszah0ZH8DnkulLz9ud9Rjaf0bu8zvRVws5ftJYjbMp6Unfjoj0ByEsen8qk4vrqvxS7Nla6lqZ60AOzJSMov1s18Kd51wAAAIA4sPvHU5EaPivam4ob9HEeoToEpw6cuieyk9ch3gKfsA4plM6eExI8oY9L5m0CrzqDCaimQJsEdA2AdxpprwcjINKne797oxvKtu9QkvcipCvULqkHsYBfqpYcRIhL+jr5CRJr5bH4hh02eL2TJ+pMUPNdKBdCdOsN/A+pPEhXKQ== test@testpc15" -n Foo -s Bar -e email@example.com --debug
+
+echo ""
+echo "------ Test add UCL user (no username, should fail)"
+thomas-add user -e email@ucl.ac.uk -n Foo -s Bar -k "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCZlSG6BcqIZyyg7ldpSRjPCeW/p66szIAhygRnMzuX936iUVO0b8QGBywUij51mCtitn4R3XQL6/xDebis9tjn3cB7uAZqTR+/7FkrEofYFRcJxGNRYD2RveWFHvVEssCtQu4mqFkQlTZgIqELfczJWxGtxQd6BSsFQ+QQ73wXPi6AjEdD7Y8FTgcV5GNQp9VlGMcl15NxXIQv/KA8WuIh8JsLYdRucMQcPfgCfaIta4U71Fvcbp5amfYfRKReSPRqNQQITNMExLmpc5AxqdzLx/WGu4Z2cTzVIJrFzAJN+D2y/REjnIzlqM+dwwACcpDQxG9MOs73dBE+3/fxTK2F tester@TestMac" -p Test_subproject -c PMaccallum_UCL --debug 
+
+echo ""
+echo "------ Test add UCL user inc username and no surname"
+thomas-add user -e email@ucl.ac.uk -u userfoo -k "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCWesbeiVRc4/EEgzA9y28VnGLiA/h6KnRl5KsUIIQPUePsKXoFMNAjWlMA6yRu7YtZk4i6Nxdbf/DW8JNN1dLazBUL4RHn0jXeNTK/XarP9kXU+0CxXoriKBL8zpHpKr42wKaCYMv3j9n28U8wtFmRTeSMz0iOwtq9iNyWYSxN1WGg30LXntl0B31pWDzhCrQjIAE9UZIoJBXVfJZmHebOLXzXP1vRNw81+kZzHAelJBJxXHlcTkofA+1w5WPezpanJxGd8kyQaf9LvRx6IzsZSs+CniTEzdFpi3z9ZDiqYDQmbPyoOUICQnvGxyW6eAb8I/iLewgCum80H/Euw84QZ2IakrUKQgprkHyEJorLQs2wAo3/RR29T56dW4OZhvI8zzlP6D2FTglqtYTEgqEt1+kL/vbaEdZsUfkqE5BibFGu7zjRkAbKtETxCqSQCG1LsicCIr/xvgRGJkZkqLUqV0EdjFDCfHfua0bG+OP6vra7f56ThooByw7BLKNDfwmv1BbjkWUgyzF7Ib4OHncBadZs+bUkvW3QA50azZZS0sNdHps7mydvDaKhmkyldrPfQymRl4+9swekT31Si2RF4RyGstHjaNRtNHl9aV1Ue+Wgj77H5cqpfypEtPF0n42dI5PGjiVA6Ky1St5IiGBwOlrTKUhpLSF3XkYXYZ27HQ== test.user@ucl.ac.uk" -p Test_subproject -c PMaccallum_UCL --debug -n Foo
+
+echo ""
+echo "------ Test ssh-1 key (should fail)"
+thomas-add user -n Foo -s Bar -e email -k "2048 37 29194713539665158636518912912713159944307405162787657362651047869273005738021550186868926744793709685319171843819013099767406642275022942709355357508163437703284981771378836755368056131198801951267739274727543695521816928087750374666023548800848691050210898219034515329818661298912546221488856048251414912330207973987886865586850690575050609653844033092817901615277396291489687402312352683699860402826554399976204500589840689595234337086057338845767871624033436820576449628436890360235890432953158429981915124888338101406579050878653798338160469926525010215964801300176283064605093485431116719678957150540541932260199 test_for_thomas" -c PMaccallum_UCL -p Test_subproject --debug
+
+echo ""
+echo "------ Test add project"
+thomas-add project -p Test_test -i UCL --debug
+
+echo ""
+echo "------ Test add projectuser"
+thomas-add projectuser --debug -p Test_subproject -u cceahke -c PMaccallum_UCL --debug
+
+echo ""
+echo "------ Test add poc"
+thomas-add poc -p Test_UCL -n Test -s Testing -e email@example.com -i UCL --debug
+
+echo ""
+echo "------ Test add institute"
+thomas-add institute -i Testinst -n "Institute of Testing" --debug
+
