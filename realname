@@ -70,7 +70,7 @@ for name in "$@"; do
       fi
 
       # I still don't know what rdn stands for, but it's like the connection user I think?
-      ldap_uri="ldaps://openldap-auth2.ucl.ac.uk:636/"
+      ldap_uri="ldaps://openldap-auth3.ucl.ac.uk:636/"
       ldap_rdn="cn=unixauth,ou=System Users,dc=uclusers,dc=ucl,dc=ac,dc=uk"
 
       ldap_pass_file="/shared/ucl/etc/ldappw"
@@ -103,9 +103,7 @@ for name in "$@"; do
         set -x
       fi
 
-      # Have to set the NSS_HASH_ALT_SUPPORT environment variable to 
-      #  allow MD5 as a cert hash algorithm. Broken in RHEL6.5->6.6 change. Wooooo.
-      search_result=$(NSS_HASH_ALG_SUPPORT=+MD5 $LDAPSEARCH_PATH "${ldap_search_args[@]}" | sed -rn "s/^${display_key}: (.+)$/\1/p" )
+      search_result=$($LDAPSEARCH_PATH "${ldap_search_args[@]}" | sed -rn "s/^${display_key}: (.+)$/\1/p" )
       
       if [ -n "$debug_mode" ]; then
         set +x
