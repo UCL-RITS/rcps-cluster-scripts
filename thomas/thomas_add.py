@@ -129,20 +129,26 @@ def run_institute():
              """creation_date=now()""") 
     return query
 
+def run_addrequest():
+    query = ("""INSERT INTO requests SET request=%(request)s, creation_date=now()""")
+    return query
+
+def creation_command(args, poc_email):
+    command = ("""createThomasuser -u """ + args.username + """ -e """ + args.email_address
+              + """ -k '""" + args.ssh_key + """' -c """ + poc_email)
+    return command
+
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
-def contact_rc_support(args, poc_email):
-    command = ("""createThomasuser -u """ + args.username + """ -e """ + args.email_address 
-              + """ -k '""" + args.ssh_key + """' -c """ + poc_email)
+def contact_rc_support(args, request_id):
+
     body = ("""
-Thomas user account request has been received.
+Thomas user account request id """ + str(request_id) + """ has been received.
 
-Command to run on a Thomas login node:
-
-"""
-+ command + """
+Please run 'thomas-show requests' on a Thomas login node to see pending requests.
 
 """)
+
     msg = MIMEText(body)
     msg["From"] = "rc-support@ucl.ac.uk"
     msg["To"] = "rc-support@ucl.ac.uk"
@@ -161,6 +167,35 @@ Command to run on a Thomas login node:
 def run_poc_email():
     query = ("""SELECT poc_email FROM pointofcontact WHERE poc_id=%(poc_id)s""")
     return query
+
+# run all this for a new user
+def new_user(cursor, args, args_dict):
+
+    # if no username was specified, get the next available mmm username
+    if (args.username == None):
+        args.username = nextmmm()
+
+    # cursor.execute takes a querystring and a dictionary or tuple
+    cursor.execute(run_user(args.surname), args_dict)
+    debug_cursor(cursor, args)
+    # add a project-user entry for the new user
+    cursor.execute(run_projectuser(), args_dict)
+    debug_cursor(cursor, args)
+
+    # get the poc_email
+    cursor.execute(run_poc_email(), args_dict)
+    poc_email = cursor.fetchall()[0][0]
+
+    # add the account creation request
+    command = creation_command(args, poc_email)
+    cursor.execute(run_addrequest(), {'request': command})
+    debug_cursor(cursor, args)
+
+# end new_user
+
+def debug_cursor(cursor, args):
+    if (args.verbose or args.debug):
+        print(cursor.statement)
 
 # Put main in a function so it is importable.
 def main(argv):
@@ -185,9 +220,6 @@ def main(argv):
                 print("")
                 print("SSH key verified.")
                 print("")
-        # if no username was specified, get the next available mmm username
-        if (args.username == None):
-            args.username = nextmmm()
 
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
@@ -202,27 +234,20 @@ def main(argv):
 
         # cursor.execute takes a querystring and a dictionary or tuple
         if (args.subcommand == "user"):
-            cursor.execute(run_user(args.surname), args_dict)
-            if (args.verbose or args.debug):
-                print(cursor.statement)
+            new_user(cursor, args, args_dict)
 
-        # this is run in both cases
-        if (args.subcommand == "user" or args.subcommand == "projectuser"):
+        elif (args.subcommand == "projectuser"):
             cursor.execute(run_projectuser(), args_dict)
-            if (args.verbose or args.debug):
-                print(cursor.statement)
+            debug_cursor(cursor, args)
         elif (args.subcommand == "project"):
             cursor.execute(run_project(), args_dict)
-            if (args.verbose or args.debug):
-                print(cursor.statement)
+            debug_cursor(cursor, args)
         elif (args.subcommand == "poc"):
             cursor.execute(run_poc(args.surname, args.username), args_dict)
-            if (args.verbose or args.debug):
-                print(cursor.statement)
+            debug_cursor(cursor, args)
         elif (args.subcommand == "institute"):
             cursor.execute(run_institute(), args_dict)
-            if (args.verbose or args.debug):
-                print(cursor.statement)
+            debug_cursor(cursor, args)
 
         # commit the change to the database unless we are debugging
         if (not args.debug):
@@ -234,10 +259,10 @@ def main(argv):
 
         # Databases are updated, now email rc-support unless nosupportemail is set
         if (args.subcommand == "user" and args.nosupportemail == False):
-            # fetchall result is a list of tuples containing one element - get the string
-            cursor.execute(run_poc_email(), args_dict)
-            poc_email = cursor.fetchall()[0][0]
-            contact_rc_support(args, poc_email)
+            # get the last id added (which is from the requests table)
+            # this has to be run after the commit
+            last_id = cursor.lastrowid
+            contact_rc_support(args, last_id)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:

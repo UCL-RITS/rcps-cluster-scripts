@@ -14,9 +14,11 @@ import validate
 # institutes                show all allowed values for inst_id
 # allusers                  show all current users
 # getmmm                    show the most recent mmm username used
+#
 # recentusers <-n N>        show the n newest users (5 by default)
 # getusers --project --institute --contact 
 # whois --user --email --name --surname
+# requests < pending | all | recent <n> >
 
 # custom Action class, must override __call__
 class ValidateUser(argparse.Action):
@@ -56,6 +58,13 @@ def getargs(argv):
     whois.add_argument("-n", "--name", dest="given_name", default='', help="Given name of user contains")
     whois.add_argument("-s", "--surname", dest="surname", default='', help="Surname of user contains")
  
+    # the arguments for subcommand requests
+    requests = subparsers.add_parser("requests", help="Show account requests (default is all pending requests)")
+    requestgroup = requests.add_mutually_exclusive_group()
+    requestgroup.add_argument("pending", help="Show all pending requests", action='store_true')
+    requestgroup.add_argument("all", help="Show all requests", action='store_true')
+    requestgroup.add_argument("recent", type=int, default=5, help="Show recent requests (default 5)")
+
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
     return parser.parse_args(argv)
@@ -141,6 +150,42 @@ def whoisuser(cursor, args_dict):
     query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args_dict["username"] + "%", "%" + args_dict["email"] + "%", "%" + args_dict["given_name"] + "%", "%" + args_dict["surname"] + "%")
     cursor.execute(query, args_dict)
     return cursor
+
+# Get all pending account requests 
+# ('is not true' will pick up any nulls, though there shouldn't be any).
+def pendingrequests(cursor):
+    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests
+                WHERE isdone IS NOT TRUE """)
+    cursor.execute(query)
+    return cursor
+
+# Get all existing requests
+def allrequests(cursor):
+    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests""")
+    cursor.execute(query)
+    return cursor
+
+# Get the n most recent requests, in any state. Default n provided by argparser.
+def recentrequests(cursor, args_dict):
+    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests
+                ORDER BY creation_date DESC LIMIT %(n)s""")
+    cursor.execute(query)
+    return cursor
+
+# Get the account requests, print if appropriate
+def showrequests(cursor, args, args_dict):
+    if (args.all):
+        results = allrequests(cursor).fetchall()
+    elif (args.recent):
+        results = recentrequests(cursor, args_dict).fetchall()
+    # if pending or not specified, show pending
+    else: 
+        results = pendingrequests(cursor).fetchall()
+
+    if (printoutput):
+        tableprint(cursor, results)
+    return results
+
 
 # Put main in a function so it is importable.
 def main(argv, printoutput):
@@ -231,6 +276,10 @@ def main(argv, printoutput):
             if (printoutput):
                 tableprint(cursor, whoisresults)
             return whoisresults
+        
+        # Get account requests
+        if (args.subcommand == "requests"):
+            return showrequests(cursor, args, args_dict)
 
 
     except mysql.connector.Error as err:
