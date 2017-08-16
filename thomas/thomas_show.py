@@ -60,10 +60,14 @@ def getargs(argv):
  
     # the arguments for subcommand requests
     requests = subparsers.add_parser("requests", help="Show account requests (default is all pending requests)")
-    requestgroup = requests.add_mutually_exclusive_group()
-    requestgroup.add_argument("pending", help="Show all pending requests", action='store_true')
-    requestgroup.add_argument("all", help="Show all requests", action='store_true')
-    requestgroup.add_argument("recent", type=int, default=5, help="Show recent requests (default 5)")
+    requests.add_argument("--pending", help="Show all pending requests", action='store_true')
+    requests.add_argument("--all", help="Show all requests", action='store_true')
+
+    # to choose the number of requests to show, including a default,
+    # it seems we need another subparser
+    requestsubparsers = requests.add_subparsers(dest="requestsubcommand")
+    recent = requestsubparsers.add_parser("recent", help="Show n most recent requests (default 5)")
+    recent.add_argument("-n", type=int, default=5)
 
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
@@ -167,16 +171,16 @@ def allrequests(cursor):
 
 # Get the n most recent requests, in any state. Default n provided by argparser.
 def recentrequests(cursor, args_dict):
-    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests
+    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests 
                 ORDER BY creation_date DESC LIMIT %(n)s""")
-    cursor.execute(query)
+    cursor.execute(query, args_dict)
     return cursor
 
 # Get the account requests, print if appropriate
-def showrequests(cursor, args, args_dict):
+def showrequests(cursor, args, args_dict, printoutput):
     if (args.all):
         results = allrequests(cursor).fetchall()
-    elif (args.recent):
+    elif (args.requestsubcommand == "recent"):
         results = recentrequests(cursor, args_dict).fetchall()
     # if pending or not specified, show pending
     else: 
@@ -279,7 +283,7 @@ def main(argv, printoutput):
         
         # Get account requests
         if (args.subcommand == "requests"):
-            return showrequests(cursor, args, args_dict)
+            return showrequests(cursor, args, args_dict, printoutput)
 
 
     except mysql.connector.Error as err:

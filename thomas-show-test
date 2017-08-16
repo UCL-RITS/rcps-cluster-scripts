@@ -1,0 +1,69 @@
+#!/bin/bash
+# Very non-exhaustive tests for thomas-show
+
+# generate random number between 1 and 145 ($RANDOM starts at 0)
+range=144
+let "number=$RANDOM % $range +1"
+# pad to 4 digits
+printf -v number "%04d" $number
+
+echo "------ Test show mmm user"
+./thomas-show --user mmm$number
+
+echo ""
+echo "------ Test show contacts"
+./thomas-show --contacts
+
+echo ""
+echo "------ Test show institutes"
+./thomas-show --institutes
+
+echo ""
+echo "------ Test show allusers"
+./thomas-show --allusers
+
+echo ""
+echo "------ Test show getmmm"
+./thomas-show --getmmm
+
+echo ""
+echo "------ Test show recentusers (default 5)"
+./thomas-show recentusers
+
+echo ""
+echo "------ Test show 8 recentusers"
+./thomas-show recentusers -n 8
+
+echo ""
+echo "------ Test getusers in Soton"
+./thomas-show getusers -i Soton
+
+echo ""
+echo "------ Test getusers in Soton that were in the pilot"
+./thomas-show getusers -i Soton -p Soton_pilot
+
+echo ""
+echo "------ Test whois - containing ucl in email address"
+./thomas-show whois -e ucl
+
+echo ""
+echo "------ Test requests (default)"
+./thomas-show requests
+
+echo ""
+echo "------ Test requests pending"
+./thomas-show requests --pending
+
+echo ""
+echo "------ Test requests all"
+./thomas-show requests --all
+
+echo ""
+echo "------ Test requests recent (default 5)"
+./thomas-show requests recent
+
+echo ""
+echo "------ Test requests recent 8"
+./thomas-show requests recent -n 8
+
+
