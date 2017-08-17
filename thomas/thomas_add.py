@@ -130,13 +130,15 @@ def run_institute():
     return query
 
 def run_addrequest():
-    query = ("""INSERT INTO requests SET request=%(request)s, creation_date=now()""")
+    #query = ("""INSERT INTO requests SET request=%(request)s, creation_date=now()""")
+    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email_address)s, 
+             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, creation_date=now() """)
     return query
 
-def creation_command(args, poc_email):
-    command = ("""createThomasuser -u """ + args.username + """ -e """ + args.email_address
-              + """ -k '""" + args.ssh_key + """' -c """ + poc_email)
-    return command
+#def creation_command(args, poc_email):
+#    command = ('''createThomasuser -u ''' + args.username + ''' -e ''' + args.email_address
+#              + ''' -k "''' + args.ssh_key + '''" -c ''' + poc_email)
+#    return command
 
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
@@ -182,13 +184,15 @@ def new_user(cursor, args, args_dict):
     cursor.execute(run_projectuser(), args_dict)
     debug_cursor(cursor, args)
 
-    # get the poc_email
+    # get the poc_email and add to dictionary
     cursor.execute(run_poc_email(), args_dict)
     poc_email = cursor.fetchall()[0][0]
+    args_dict['poc_email'] = poc_email
 
     # add the account creation request
-    command = creation_command(args, poc_email)
-    cursor.execute(run_addrequest(), {'request': command})
+    #command = creation_command(args, poc_email)
+    #cursor.execute(run_addrequest(), {'request': command})
+    cursor.execute(run_addrequest(), args_dict)
     debug_cursor(cursor, args)
 
 # end new_user

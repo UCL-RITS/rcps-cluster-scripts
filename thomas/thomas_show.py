@@ -139,12 +139,13 @@ def lastmmm(cursor):
 # Get all users in this project/inst/PoC combo
 # Need to use LIKE so can match all by default with % when an option is not specified
 def projectcombo(cursor, args_dict):
-    query = ("""SELECT users.username, givenname, surname, email, projectusers.project, """
-             """poc_id, institute_id FROM projectusers """
-             """INNER JOIN users ON projectusers.username=users.username """
-             """INNER JOIN projects ON projectusers.project=projects.project """
-             """WHERE projectusers.project LIKE %(project)s AND institute_id LIKE %(inst_ID)s """
-             """AND poc_id LIKE %(poc_ID)s""")
+    query = ("""SELECT users.username, givenname, surname, email, projectusers.project, 
+                    poc_id, institute_id FROM projectusers 
+                  INNER JOIN users ON projectusers.username=users.username 
+                  INNER JOIN projects ON projectusers.project=projects.project 
+                WHERE projectusers.project LIKE %(project)s 
+                  AND institute_id LIKE %(inst_ID)s 
+                  AND poc_id LIKE %(poc_ID)s""")
     cursor.execute(query, args_dict)
     return cursor
 
@@ -158,20 +159,37 @@ def whoisuser(cursor, args_dict):
 # Get all pending account requests 
 # ('is not true' will pick up any nulls, though there shouldn't be any).
 def pendingrequests(cursor):
-    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests
-                WHERE isdone IS NOT TRUE """)
+    #query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests
+    #            WHERE isdone IS NOT TRUE """)
+    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
+                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
+                  approver, requests.creation_date, requests.modification_date 
+                FROM requests
+                  INNER JOIN users ON requests.username = users.username
+                WHERE isdone IS NOT TRUE""")
     cursor.execute(query)
     return cursor
 
-# Get all existing requests
+# Get all existing requests and also display the user's names.
 def allrequests(cursor):
-    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests""")
+    #query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests""")
+    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
+                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
+                  approver, requests.creation_date, requests.modification_date 
+                FROM requests
+                  INNER JOIN users ON requests.username = users.username""")
     cursor.execute(query)
     return cursor
 
 # Get the n most recent requests, in any state. Default n provided by argparser.
 def recentrequests(cursor, args_dict):
-    query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests 
+    #query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests 
+    #            ORDER BY creation_date DESC LIMIT %(n)s""")
+    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
+                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
+                  approver, requests.creation_date, requests.modification_date 
+                FROM requests
+                  INNER JOIN users ON requests.username = users.username
                 ORDER BY creation_date DESC LIMIT %(n)s""")
     cursor.execute(query, args_dict)
     return cursor
