@@ -24,7 +24,9 @@ class CheckUCL(argparse.Action):
 
 def getargs():
     parser = argparse.ArgumentParser(description="Create a new active user account and add their info to the Thomas database. Non-UCL users will be given the next free mmm username automatically.")
+    subparsers = parser.add_subparsers(dest="subcommand")
 
+    # Create a user entirely manually and add them to the database
     parser.add_argument("-u", "--user", dest="username", help="Existing UCL username")
     parser.add_argument("-e", "--email", dest="email", help="Institutional email address of user", required=True, action=CheckUCL)
     parser.add_argument("-n", "--name", dest="given_name", help="Given name of user", required=True)
@@ -35,7 +37,16 @@ def getargs():
     parser.add_argument("-b", "--cc", dest="cc_email", help="CC the welcome email to this address")
     parser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     parser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
-    parser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')    
+    parser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
+    
+
+    # Used when a request exists in the thomas database and we get the input from there
+    requestparser = subparsers.add_parser("request", help="The request id to carry out")
+
+    # Show the usage if no arguments are supplied
+    if len(argv) < 1:
+        parser.print_usage()
+        exit(1)
 
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used

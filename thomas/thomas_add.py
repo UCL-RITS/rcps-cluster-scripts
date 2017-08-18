@@ -77,6 +77,11 @@ def getargs(argv):
     instituteparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     instituteparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
+    # Show the usage if no arguments are supplied
+    if len(argv) < 1:
+        parser.print_usage()
+        exit(1)
+
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
     return parser.parse_args(argv)

@@ -69,6 +69,11 @@ def getargs(argv):
     recent = requestsubparsers.add_parser("recent", help="Show n most recent requests (default 5)")
     recent.add_argument("-n", type=int, default=5)
 
+    # Show the usage if no arguments are supplied
+    if len(argv) < 1:
+        parser.print_usage()
+        exit(1)
+
     # return the arguments
     # contains only the attributes for the main parser and the subparser that was used
     return parser.parse_args(argv)
