@@ -16,17 +16,6 @@ import thomas_add
 # automatically if this is not a UCL user.
 # It also acts on account requests existing in the Thomas database.
 
-# If a UCL email is given, this should be an active UCL user and their
-# existing username should have been supplied.
-# custom Action class, must override __call__
-class CheckUCL(argparse.Action):
-    def __call__(self, parser, namespace, values, option_string=None):
-        if ("ucl.ac.uk" in values and namespace.username == None):
-            print ("This is a UCL email address - please provide the user's UCL username with --user USERNAME")
-            exit(1)
-        setattr(namespace, self.dest, values)
-# end class CheckUCL
-
 def getargs():
     parser = argparse.ArgumentParser(description="Create a new user account, either from an account request in the Thomas database or from scratch.")
     subparsers = parser.add_subparsers(dest="subcommand")
@@ -36,7 +25,7 @@ def getargs():
     # can't be given after the arguments for user
     userparser = subparsers.add_parser("user", help="Create a new active user account and add their info to the Thomas database. Non-UCL users will be given the next free mmm username automatically.")
     userparser.add_argument("-u", "--user", dest="username", help="Existing UCL username")
-    userparser.add_argument("-e", "--email", dest="email", help="Institutional email address of user", required=True, action=CheckUCL)
+    userparser.add_argument("-e", "--email", dest="email", help="Institutional email address of user", required=True)
     userparser.add_argument("-n", "--name", dest="given_name", help="Given name of user", required=True)
     userparser.add_argument("-s", "--surname", dest="surname", help="Surname of user")
     userparser.add_argument("-k", "--key", dest='ssh_key', help="User's public ssh key (quotes necessary)", required=True)
@@ -192,6 +181,9 @@ if __name__ == "__main__":
 
     # Either create a user from scratch or approve an existing request
     if (args.subcommand == "user"):
+        # UCL user validation - if this is a UCL email, make sure username was given 
+        # and that it wasn't an mmm one.
+        validate.ucl_user(args.email, args.username)
         create_and_add_user(args)
     elif (args.subcommand == "request"):
         approverequest(args, args_dict)
