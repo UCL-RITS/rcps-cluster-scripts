@@ -35,7 +35,7 @@ def getargs(argv):
     userparser.add_argument("-u", "--user", dest="username", help="UCL username of user", action=ValidateUser)
     userparser.add_argument("-n", "--name", dest="given_name", help="Given name of user", required=True)
     userparser.add_argument("-s", "--surname", dest="surname", help="Surname of user (optional)")
-    userparser.add_argument("-e", "--email", dest="email_address", help="Institutional email address of user", required=True)
+    userparser.add_argument("-e", "--email", dest="email", help="Institutional email address of user", required=True)
     userparser.add_argument("-k", "--key", dest="ssh_key", help="User's public ssh key (quotes necessary)", required=True)
     userparser.add_argument("-p", "--project", dest="project_ID", help="Initial project the user belongs to", required=True)
     userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
@@ -64,7 +64,7 @@ def getargs(argv):
     pocparser.add_argument("-p", "--poc_id", dest="poc_id", help="Unique PoC ID, in form N(ame)N(ame)_instituteID", required=True)
     pocparser.add_argument("-n", "--name", dest="given_name", help="Given name of PoC", required=True)
     pocparser.add_argument("-s", "--surname", dest="surname", help="Surname of PoC (optional)")
-    pocparser.add_argument("-e", "--email", dest="email_address", help="Email address of PoC", required=True)
+    pocparser.add_argument("-e", "--email", dest="email", help="Email address of PoC", required=True)
     pocparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID of PoC", required=True)
     pocparser.add_argument("-u", "--user", dest="username", help="The PoC's UCL username (optional)", action=ValidateUser)
     pocparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
@@ -100,7 +100,7 @@ def nextmmm():
 # the values are inserted by cursor.execute from args.dict
 def run_user(surname):
     query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-             """email=%(email_address)s, ssh_key=%(ssh_key)s, creation_date=now()""")
+             """email=%(email)s, ssh_key=%(ssh_key)s, creation_date=now()""")
     if (surname != None):
         query += ", surname=%(surname)s"
     return query
@@ -120,7 +120,7 @@ def run_project():
 # query to run for 'poc' subcommand
 def run_poc(surname, username):
     query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
-             """poc_givenname=%(given_name)s, poc_email=%(email_address)s,  """
+             """poc_givenname=%(given_name)s, poc_email=%(email)s,  """
              """institute=%(inst_ID)s, creation_date=now()""")
     if (surname != None):
         query += ", poc_surname=%(surname)s"
@@ -135,15 +135,9 @@ def run_institute():
     return query
 
 def run_addrequest():
-    #query = ("""INSERT INTO requests SET request=%(request)s, creation_date=now()""")
-    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email_address)s, 
+    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
              ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, creation_date=now() """)
     return query
-
-#def creation_command(args, poc_email):
-#    command = ('''createThomasuser -u ''' + args.username + ''' -e ''' + args.email_address
-#              + ''' -k "''' + args.ssh_key + '''" -c ''' + poc_email)
-#    return command
 
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
@@ -195,8 +189,6 @@ def new_user(cursor, args, args_dict):
     args_dict['poc_email'] = poc_email
 
     # add the account creation request
-    #command = creation_command(args, poc_email)
-    #cursor.execute(run_addrequest(), {'request': command})
     cursor.execute(run_addrequest(), args_dict)
     debug_cursor(cursor, args)
 
@@ -221,7 +213,7 @@ def main(argv):
     if (args.subcommand == "user"):
         # UCL user validation - if this is a UCL email, make sure username was given 
         # and that it wasn't an mmm one.
-        validate.ucl_user(args.email_address, args.username)
+        validate.ucl_user(args.email, args.username)
         # Unless nosshverify is set, verify the ssh key
         if (args.nosshverify == False):
             validate.ssh_key(args.ssh_key)
