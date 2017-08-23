@@ -7,9 +7,8 @@ import subprocess
 import validate
 import mysql.connector
 from mysql.connector import errorcode
-from tabulate import tabulate
-import thomas_show
-import thomas_add
+import thomas_queries
+import thomas_utils
 
 # This should take all the arguments necessary to run both thomas-add user 
 # and createThomasuser in one. It gets the next available mmm username
@@ -44,7 +43,6 @@ def getargs():
     requestparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
     requestparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
 
-
     # Show the usage if no arguments are supplied
     if len(sys.argv[1:]) < 1:
         parser.print_usage()
@@ -54,26 +52,6 @@ def getargs():
     # contains only the attributes for the main parser and the subparser that was used
     return parser.parse_args()
 # end getargs
-
-# Return the next available mmm username (without printing result).
-# mmm usernames are in the form mmmxxxx, get the integers and increment
-def nextmmm():
-    latestmmm = thomas_show.main(['--getmmm'], False)
-    mmm_int = int(latestmmm[-4:]) + 1
-    # pad to four digits with leading zeroes, giving a string
-    mmm_string = '{0:04}'.format(mmm_int)
-    return 'mmm' + mmm_string
-
-# Add new user to Thomas database. Do not send support email as we are acting on one!
-def addtodb(args):
-    user_args = ['user', '-u', args.username, '-n', args.given_name, '-e', args.email, '-k', args.ssh_key,
-                 '-p', args.project_ID, '-c', args.poc_id, '--nosupportemail']
-    # add surname if there is one
-    if (args.surname != None):
-        user_args.extend(['-s', args.surname])
-    if (args.debug):
-        user_args.append('--debug')
-    thomas_add.main(user_args)
 
 # Activate account on Thomas and add user's key
 def createaccount(args):
@@ -88,48 +66,39 @@ def createaccount(args):
     else:
         return subprocess.check_call(create_args)
 
-def create_and_add_user(args):
+def create_and_add_user(args, args_dict, cursor):
 # if nosshverify is not set, verify the ssh key
         if (args.nosshverify == False):
             validate.ssh_key(args.ssh_key)
 
         # if no username was specified, get the next available mmm username
         if (args.username == None):
-            args.username = nextmmm()
+            args.username = thomas_utils.getunusedmmm(cursor)
     
-        # First, add the information to the database, as it enforces unique usernames etc.
-        addtodb(args)
+        # First add the information to the database, as it enforces unique usernames etc.
+        thomas_utils.addusertodb(args, args_dict, cursor)
+        thomas_utils.addprojectuser(args, args_dict, cursor)
 
         # Now create the account.
         createaccount(args)
 # end createuser
 
 def updaterequest(args, cursor):
-    query = ("""UPDATE requests SET isdone='1', approver=%s 
-                WHERE id=%s""")
-    cursor.execute(query, (args.approver, args.id))
-    if (args.debug):
-        print(cursor.statement)    
+    #query = ("""UPDATE requests SET isdone='1', approver=%s 
+    #            WHERE id=%s""")
+    cursor.execute(thomas_queries.updaterequest(), (args.approver, args.id))
+    thomas_utils.debugcursor(cursor, args.debug)
 
-def approverequest(args, args_dict):
+def approverequest(args, args_dict, cursor):
 
-    # connect to MySQL database with write access.
-    # (.thomas.cnf has readonly connection details as the default option group)
-    try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
-        cursor = conn.cursor(dictionary=True)
-
-        # get the arguments from the database
-        # args.request is a list of ids     
-        # make the format string for the number of ids we are checking
-        format_strings = ','.join(['%s'] * len(args.request))
-        query = ("""SELECT id, username, email, ssh_key, poc_cc_email, isdone, approver FROM requests 
-                    WHERE id IN (%s)""" % format_strings)
-        cursor.execute(query, tuple(args.request))
+        # args.request is a list of ids - we use the length of it to add enough
+        # parameter placeholders to the querystring
+        cursor.execute(thomas_queries.getrequestbyid(len(args.request)), tuple(args.request))
         results = cursor.fetchall()
         if (args.debug):
-            tableprint(results)
-        # check if this request still needs doing
+            print("Requests found:")
+            thomas_utils.tableprint(results)
+        # carry out the request unless it is already done
         for row in results:
             if (row['isdone'] == 0):
                 # set the variables
@@ -142,11 +111,38 @@ def approverequest(args, args_dict):
                 # create the account
                 createaccount(args)
                 # update the request status
-                updaterequest(args, cursor)
-               
+                updaterequest(args, cursor)               
             else:
                 print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
 
+# end approverequest    
+
+if __name__ == "__main__":
+
+    # get all the parsed args
+    try:
+        args = getargs()
+        # make a dictionary from args to make string substitutions doable by key name
+        args_dict = vars(args)
+    except ValueError as err:
+        print(err)
+        exit(1)
+
+    # connect to MySQL database with write access.
+    # (.thomas.cnf has readonly connection details as the default option group)
+    try:
+        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
+        cursor = conn.cursor(dictionary=True)
+
+        # Either create a user from scratch or approve an existing request
+        if (args.subcommand == "user"):
+            # UCL user validation - if this is a UCL email, make sure username was given 
+            # and that it wasn't an mmm one.
+            validate.ucl_user(args.email, args.username)
+            create_and_add_user(args, args_dict, cursor)
+        elif (args.subcommand == "request"):
+            approverequest(args, args_dict, cursor)
+        
         # commit the change to the database unless we are debugging
         if (not args.debug):
             conn.commit()
@@ -161,32 +157,5 @@ def approverequest(args, args_dict):
     else:
         cursor.close()
         conn.close()
-# end approverequest    
-
-# Write out results as a table with header and separators
-def tableprint(results):
-    print(tabulate(results, headers="keys", tablefmt="psql"))
-    print("")
-    
-if __name__ == "__main__":
-
-    # get all the parsed args
-    try:
-        args = getargs()
-        # make a dictionary from args to make string substitutions doable by key name
-        args_dict = vars(args)
-    except ValueError as err:
-        print(err)
-        exit(1)
-
-    # Either create a user from scratch or approve an existing request
-    if (args.subcommand == "user"):
-        # UCL user validation - if this is a UCL email, make sure username was given 
-        # and that it wasn't an mmm one.
-        validate.ucl_user(args.email, args.username)
-        create_and_add_user(args)
-    elif (args.subcommand == "request"):
-        approverequest(args, args_dict)
-        
 
 # end main
