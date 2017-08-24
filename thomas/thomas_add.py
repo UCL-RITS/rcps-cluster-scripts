@@ -147,6 +147,7 @@ def contact_rc_support(args, request_id):
 Thomas user account request id """ + str(request_id) + """ has been received.
 
 Please run 'thomas-show requests' on a Thomas login node to see pending requests.
+Requests can then be approved by running 'thomas-create request id1 [id2 id3 ...]'
 
 """)
 
