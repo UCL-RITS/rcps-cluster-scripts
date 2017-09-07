@@ -7,7 +7,7 @@ if [ -n "$1" ]; then
   for file in "$@" 
   do
     sum=$(sha256sum "$file" | xxd -r -p | base64)
-    echo "$sum  $file"
+    echo "sha2:$sum  $file"
   done
 else
   echo "Usage: $0 [file 1] [file 2] ..."
