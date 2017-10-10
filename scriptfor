@@ -11,7 +11,7 @@ echo "
     Options:
     -h      show this help message
     -p      print path to script(s) instead of opening
-    -c      cat script(s) instead of using \$PAGER
+    -c      cat -v script(s) instead of using \$PAGER (shows non printing chars)
     -d DIR  use DIR as search directory instead of default 
     -D      print default search directories
     "
@@ -89,7 +89,7 @@ case "${print_mode:-pager}" in
         ${PAGER:-less} "${files_found[@]}"
         ;;
     cat)
-        cat "${files_found[@]}"
+        cat -v "${files_found[@]}"
         ;;
     "just paths")
         printf '%s\n' "${files_found[@]}"
