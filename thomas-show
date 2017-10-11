@@ -8,7 +8,7 @@ fi
 
 module load gcc-libs
 module load python3/3.5
-module load mysql-connector-python/2.0.4
+module load mysql-connector-python/2.0.4/python-3.5.2
 
 # get script location
 DIR=$(dirname "$(readlink -f "$0")")
