@@ -135,9 +135,10 @@ def recentinfo(cursor, args_dict):
     cursor.execute(query, args_dict)
     return cursor
 
-# Get the most recent mmm username used
+# Get the most recent mmm username used - sorting by username as well as date
+# in case of identical timestamps.
 def lastmmm(cursor):
-    query = ("SELECT username FROM users WHERE username LIKE 'mmm%' ORDER BY creation_date DESC LIMIT 1")
+    query = ("SELECT username FROM users WHERE username LIKE 'mmm%' ORDER BY creation_date DESC, username DESC LIMIT 1")
     cursor.execute(query)
     return cursor
 
