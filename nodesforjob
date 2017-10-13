@@ -203,7 +203,7 @@ def find_nodes_for_job(node_list, jobid):
           have_found_master = True
         else:
           found_nodes["slaves"].append(node)
-  found_nodes["slaves"].sort(cmp=lambda x,y:x.hostname<y.hostname)
+  found_nodes["slaves"].sort(key=lambda x:x.hostname)
   
   prev_hostname=""
   tmp_list = found_nodes["slaves"]
