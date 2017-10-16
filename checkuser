@@ -61,6 +61,7 @@ then
   echo "${GREEN}yes${RESET}"
 else
   echo "${RED}no${RESET}"
+  flag_has_no_scratch=y
 fi
 
 echo -n "Checking whether home directory is *owned* by that user: "
@@ -73,12 +74,17 @@ else
 fi
 
 echo -n "Checking whether scratch directory is *owned* by that user: "
-owner="$(stat --printf=%U "/home/${username}" 2>/dev/null)"
-if [ "$owner" == "$username" ]
+owner="$(stat --printf=%U "/scratch/scratch/${username}" 2>/dev/null)"
+if [ -z "$flag_has_no_scratch" ]; 
 then
-  echo "${GREEN}yes${RESET}"
+    if [ "$owner" == "$username" ]
+    then
+      echo "${GREEN}yes${RESET}"
+    else
+      echo "${RED}no${RESET}"
+    fi
 else
-  echo "${RED}no${RESET}"
+    echo "${BLUE}skipped${RESET}"
 fi
 
 echo ""
