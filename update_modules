@@ -126,6 +126,6 @@ ln -Tfs "${target_dir}" modulefiles
 
 echo "--Done--" >&2
 
-num_old_module_dirs="$(find /shared/ucl/apps -maxdepth 1 -type d -name ".mf_*" | wc -l)"
+num_old_module_dirs="$(find /shared/ucl/apps/ -maxdepth 1 -type d -name ".mf_*" | wc -l)"
 echo "Module dirs in ${moduledirs_path}: ${num_old_module_dirs}" >&2
 echo "Most recent log in active dir: $most_recent_log"
