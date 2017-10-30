@@ -18,7 +18,7 @@ fi
   
 
 # v-- gets a list of all directories named .mf_* created more than 7 days ago
-dirs_to_remove=`find $moduledirs_path -maxdepth 1 -type d -name ".mf_*" -ctime +7`
+dirs_to_remove=`find -L $moduledirs_path -maxdepth 1 -type d -name ".mf_*" -ctime +7`
 
 num_dirs=`echo "$dirs_to_remove" | wc -l`
 
