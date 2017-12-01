@@ -81,7 +81,7 @@ for name in "$@"; do
       ldap_rdn="cn=unixauth,ou=System Users,dc=uclusers,dc=ucl,dc=ac,dc=uk"
 
       ldap_pass_file="/shared/ucl/etc/ldappw"
-      ldap_bind_user="ou=Departments,dc=uclusers,dc=ucl,dc=ac,dc=uk"
+      ldap_bind_user="dc=uclusers,dc=ucl,dc=ac,dc=uk"
       
       ldap_search_term="(${search_key}=${name})"
 
