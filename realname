@@ -137,8 +137,15 @@ for name in "$@"; do
       else
         echo "${search_result}"
       fi
+    elif [ -n "$mail_search" ]; then
+      echo "No mail address found for username \"${name}\"" >&2
+      exit 8
+    elif [ -n "$department_search" ]; then
+      echo "Warning: no department found for username \"${name}\" -- returning None/Unknown" >&2
+      echo "None/Unknown"
     else
       echo "Error: no user found for username \"${name}\"" >&2
+      exit 7
     fi
   fi
 done
