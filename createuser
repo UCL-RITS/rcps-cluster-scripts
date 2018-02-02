@@ -5,6 +5,13 @@ set -e
 PLATFORM=""
 ACL=""
 
+# Make sure we have a userid to create
+if [ "$#" -ne "1" ];
+then
+    echo "Run \"createuser userid\"" 1>&2
+    exit 1
+fi 
+
 # Work out where we are
 if /usr/bin/hostname -A | grep -q grace
 then
