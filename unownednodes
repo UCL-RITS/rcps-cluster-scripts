@@ -50,9 +50,9 @@ for key in "${!nodes[@]}"; do
     #echo "Nodes ($key): ${nodes[$key]}"
     #echo "Owned nodes ($key): ${owned_nodes[$key]}"
     unowned_nodes[$key]=$(( ${nodes[$key]} - ${owned_nodes[$key]:-0} ))
-    output+="$key: ${unowned_nodes[$key]}/${online_nodes[$key]}/${nodes[$key]}"$'\n'
+    output+="$key: ${unowned_nodes[$key]}/${online_nodes[$key]:-0}/${nodes[$key]}"$'\n'
     total_unowned=$(( total_unowned + ${unowned_nodes[$key]} ))
-    total_online=$(( total_online + ${online_nodes[$key]} ))
+    total_online=$(( total_online + ${online_nodes[$key]:-0} ))
     total_all=$(( total_all + ${nodes[$key]} ))
 done
 
