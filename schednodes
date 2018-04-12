@@ -1,0 +1,116 @@
+#!/bin/bash
+
+set -o pipefail \
+    -o errexit  \
+    -o nounset
+
+schedule_dir="$SGE_ROOT/default/common"
+
+# 5038786:120:STARTING:1523502129:44100:H:node-u05a-014:slots:4.000000
+# job id:task_id:reason:start time:end time:level:object:resource:utilization
+
+function usage() {
+    echo "Usage: ${0##./} [--all|--schedule-file=FILE] [job id [task id]]
+
+    Parses schedule files and prints the nodes jobs were scheduled to start on.
+
+    By default, parses only the current schedule file: if this is rotated,
+      it will only show a limited selection of entries.
+
+    Note that the file arguments will automatically use the appropriate gzip
+      tool to decompress files ending with .gz.
+
+    Options:
+      -h,--help             Print this message.
+      --schedule-file=FILE  Parse FILE instead of the current schedule file.
+      --all                 Parse current schedule file and all files named
+                              \$SGE_ROOT/default/common/schedule-????????.gz
+    "
+}
+
+
+function get_sched_lines () {
+    if [[ "${schedule_file##*\.}" == "gz" ]] && [[ ! "$schedule_file" == "gz" ]]; then
+        CAT="zcat"
+        GREP="zgrep"
+    else
+        CAT="cat"
+        GREP="grep"
+    fi
+    if [[ -z "${1:-}" ]]; then
+        "$CAT" "$schedule_file"
+    elif [[ -n "${1:-}" ]] && [[ -z "${2:-}" ]]; then
+        if [[ ! "$1" =~ ^[0-9]*$ ]]; then
+            echo "Error: invalid job id: must be numeric only" >&2
+            exit 2
+        fi
+        "$GREP" -e "^$1:" -e :::::::: "$schedule_file"
+    else
+        if [[ ! "$1" =~ ^[0-9]*$ ]]; then
+            echo "Error: invalid job id: must be numeric only" >&2
+            exit 2
+        elif [[ ! "$2" =~ ^[0-9]*$ ]]; then
+            echo "Error: invalid task id: must be numeric only" >&2
+            exit 3
+        fi
+        "$GREP" -e "^$1:$2:" -e :::::::: "$schedule_file"
+    fi
+}
+
+function concat_nodes() {
+    awk -F: '
+        (($3 == "STARTING") && ($6 == "H") && ($8 == "slots")) {
+            jobs[$4 " " $1 "." $2]=jobs[$4 " " $1 "." $2] " " $7
+        }
+        ($0 == "::::::::") {
+            # Indicates the beginning of a new scheduling cycle
+            #  so dump info from last cycle
+            for (job in jobs) {
+                split(job, job_label_parts, " ")
+                time_stamp = job_label_parts[1]
+                job_id_and_task_id = job_label_parts[2]
+                print "[" strftime("%a %b %e %H:%M:%S %Z %Y", time_stamp) "] " job_id_and_task_id ":" jobs[job]
+                delete jobs[job]
+            }
+            delete jobs
+        }
+        END {
+            # Final dump
+            for (job in jobs) {
+                split(job, job_label_parts, " ")
+                time_stamp = job_label_parts[1]
+                job_id_and_task_id = job_label_parts[2]
+                print "[" strftime(time_stamp) "] " job_id_and_task_id ":" jobs[job]
+                delete jobs[job]
+            }
+        }
+    '
+}
+
+function main() {
+    first_arg="${1:-}"
+    if [[ "${first_arg:0:16}" == "--schedule-file=" ]]; then
+        schedule_files=("${first_arg#--schedule-file=}")
+        shift
+    elif [[ "${first_arg}" == "--all" ]]; then
+        schedule_files=($(/bin/ls "$schedule_dir"/schedule "$schedule_dir"/schedule-????????.gz))
+        shift
+    elif [[ "${first_arg}" == "-h" ]] || [[ "${first_arg}" == "--help" ]]; then
+        usage
+        exit
+    else
+        schedule_files=("$schedule_dir/schedule")
+    fi
+
+    for schedule_file in "${schedule_files[@]}"; do
+        if [[ ! -r "$schedule_file" ]]; then
+            echo "Error: could not read schedule file: $schedule_file" >&2
+            exit 4
+        fi
+
+        get_sched_lines "${1:-}" "${2:-}" | concat_nodes
+    done 
+}
+
+main "$@"
+
