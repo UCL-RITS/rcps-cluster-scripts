@@ -64,4 +64,39 @@ def addprojectuser(args, args_dict, cursor):
     cursor.execute(thomas_queries.addprojectuser(), args_dict)
     debugcursor(cursor, args.debug)
 
+##############
+#            #
+# User input #
+#            #
+##############
+
+# Interactive confirmation - asks for yes/no input.
+# default_ans can be True, False, None
+def are_you_sure(question, default_ans=False):
+    yes_list = ["yes", "y"]
+    no_list = ["no", "n"]
+
+    # Input hint shows whether there is a default
+    defaults = { None:"[y/n]", True:"[Y]", False:"[N]" }
+    # assemble prompt string
+    prompt = "%s %s: " %(question, defaults[default_ans])
+
+    # get answer in lower case. If no default, loops until valid input received.
+    while True:
+        try:
+            confirm = input(prompt).lower()
+        except KeyboardInterrupt:
+            return False
+        if not confirm and default_ans is not None:
+            return default
+        if confirm in yes_list:
+            return True
+        if confirm in no_list:
+            return False
+
+        # invalid input received
+        reprompt = "Please respond with y or n"
+        print(reprompt)
+# end of are_you_sure
+
 

@@ -7,6 +7,7 @@ import subprocess
 import validate
 import mysql.connector
 from mysql.connector import errorcode
+import socket
 import thomas_queries
 import thomas_utils
 
@@ -118,6 +119,16 @@ def approverequest(args, args_dict, cursor):
 # end approverequest    
 
 if __name__ == "__main__":
+
+    # check we are on thomas so we don't try to create the account elsewhere
+    nodename = socket.getfqdn()
+    # if fqdn does not contain 'thomas' prompt whether you really want to do this
+    # (in case you *are* somewhere on thomas and fqdn is not useful)
+    if "thomas" not in nodename:
+        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas ("+nodename+")\n Do you want to continue?", False)    
+        # they said no, exit
+        if not answer:
+            exit(1)
 
     # get all the parsed args
     try:
