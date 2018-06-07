@@ -21,6 +21,10 @@ elif /usr/bin/hostname -A | grep -q legion
 then
    PLATFORM="legion"
    ACL="AY201617"
+elif /usr/bin/hostname -A | grep -q myriad
+then
+   PLATFORM="myriad"
+   ACL="AY201819"
 else
    echo -e "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
    exit 1 
