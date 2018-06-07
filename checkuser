@@ -14,6 +14,7 @@ RESET="$(tput sgr0)"
 echo -n "Can id user: "
 id "$username" >/dev/null 2>/dev/null && echo "${GREEN}yes${RESET}" || echo "${RED}no${RESET}"
 
+
 echo -n "User is in groups: "
 user_groups="$(groups "$username" 2>&1)"
 if [ $? == 0 ]; then
@@ -22,16 +23,34 @@ else
     echo "${RED}${user_groups#groups: *:}${RESET}"
 fi
 
-echo
+echo "" # Blank line for section separation
 
-echo -n "Checking whether user is in access group for 2016-2017: "
-qconf -su AY201617 | grep -q "$username"
-if [ $? == 0 ]
-then
-  echo "${GREEN}yes${RESET}"
-else
-  echo "${RED}no${RESET}"
-fi
+declare -a sge_access_groups sge_access_group_labels
+sge_access_groups+=(AY201617)
+sge_access_group_labels+=("access group for 2016-2017")
+sge_access_groups+=(AY201718)
+sge_access_group_labels+=("access group for 2017-2018")
+sge_access_groups+=(AY201819)
+sge_access_group_labels+=("access group for 2018-2019")
+
+for (( access_group_index=0; access_group_index < "${#sge_access_groups[@]}"; access_group_index++ )); do
+    access_group="${sge_access_groups[$access_group_index]}"
+    access_group_label="${sge_access_group_labels[$access_group_index]}"
+
+    echo -n "Checking whether user is in $access_group_label: "
+    if qconf -su "$access_group" 2>/dev/null >/dev/null; then
+        qconf -su "$access_group" | grep -q "$username"
+        if [ $? == 0 ]
+        then
+          echo "${GREEN}yes${RESET}"
+        else
+          echo "${RED}no${RESET}"
+        fi
+    else
+        echo "${BLUE}no such group${RESET}"
+    fi
+done
+
 
 echo -n "Checking whether user has been blocked from submitting jobs: "
 # check NoSubmission for blocked users
