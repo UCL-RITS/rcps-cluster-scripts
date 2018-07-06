@@ -46,6 +46,10 @@ get_pid_children () {
   #          ^- this is a tab, not spaces
 }
 
+get_mail_address () {
+  echo "$1@ucl.ac.uk"
+}
+
 while getopts ":fhnb" opt; do
   case $opt in
     h)
@@ -79,12 +83,6 @@ done
 
 shift $((OPTIND-1));
 
-if which realname >/dev/null; then
-  :
-else
-  echo "Error: this script requires realname" >&2
-  exit 2
-fi
 
 if [ $# -lt 1 ]; then
   echo "Error: no pids provided. Use '$0 -h' to see options and usage." >&2
@@ -205,7 +203,7 @@ for owner in "${!mail_inserts[@]}"; do
     fi
   fi
 
-  owner_address=$(realname -m "$owner")
+  owner_address=$(get_mail_address "$owner")
   if [ -z "$owner_address" ]; then
     echo "Error: could not get mail address for user $owner" >&2
     exit 3
