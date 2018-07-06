@@ -47,7 +47,17 @@ get_pid_children () {
 }
 
 get_mail_address () {
-  echo "$1@ucl.ac.uk"
+  username="$1"
+  if [[ "${username:0:5}" == "cours" ]]; then
+      echo "Warning: this is a course account, and does not have a valid mail address.">&2
+      echo "nobody@ucl.ac.uk"
+  elif [[ "${username:0:3}" == "mmm" ]]; then
+      # If it becomes necessary we could put a database lookup here but it hasn't really been so far
+      echo "Warning: this is an external account, and does not have a valid mail address.">&2
+      echo "nobody@ucl.ac.uk"
+  else
+    echo "$1@ucl.ac.uk"
+  fi
 }
 
 while getopts ":fhnb" opt; do
