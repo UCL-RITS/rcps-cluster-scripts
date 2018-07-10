@@ -41,6 +41,8 @@ fi
 if [[ -n "$1" ]]; then
   if [[ "$1" == "-f" ]]; then
     force_update="y"
+  elif [[ "$1" == "-i" ]]; then
+    idempotent="y"
   fi
 fi
 
@@ -97,8 +99,12 @@ target_dir=.mf_${short_sha}
 
 if [[ -d "$target_dir" || -d "$target_dir.*" ]]; then
   if [[ "${force_update}" != "y" ]]; then
-    echo "Module files are already up-to-date: use \"-f\" to force the creation of a new copy and relinking." >&2
-    exit 2
+    if [[ "$idempotent" == "y" ]]; then
+      exit
+    else
+      echo "Module files are already up-to-date: use \"-f\" to force the creation of a new copy and relinking." >&2
+      exit 2
+    fi
   else
     suffix_number=0
    
