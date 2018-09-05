@@ -120,12 +120,13 @@ def approverequest(args, args_dict, cursor):
 
 if __name__ == "__main__":
 
-    # check we are on thomas so we don't try to create the account elsewhere
+    # check we are on Thomas or Michael before continuing.
+    # Later we also need to check if we are on the correct cluster for this project.
     nodename = socket.getfqdn()
-    # if fqdn does not contain 'thomas' prompt whether you really want to do this
-    # (in case you *are* somewhere on thomas and fqdn is not useful)
-    if "thomas" not in nodename:
-        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas ("+nodename+")\n Do you want to continue?", False)    
+    # if fqdn does not contain a suitable hostname prompt whether you really want to do this
+    # (in case you *are* somewhere on those clusters and fqdn is not useful)
+    if not ("thomas" in nodename or "michael" in nodename):
+        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michael ("+nodename+")\n Do you want to continue?", False)    
         # they said no, exit
         if not answer:
             exit(1)
