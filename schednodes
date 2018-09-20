@@ -25,6 +25,8 @@ function usage() {
       --schedule-file=FILE  Parse FILE instead of the current schedule file.
       --all                 Parse current schedule file and all files named
                               \$SGE_ROOT/default/common/schedule-????????.gz
+      --daysback=NUM        Parse schedule files named as being from NUM+1 days
+                              or more recent.
     "
 }
 
@@ -94,6 +96,18 @@ function main() {
         shift
     elif [[ "${first_arg}" == "--all" ]]; then
         schedule_files=($(/bin/ls "$schedule_dir"/schedule "$schedule_dir"/schedule-????????.gz))
+        shift
+    elif [[ "${first_arg:0:11}" == "--daysback=" ]]; then
+        num_days="${first_arg:11}"
+        declare -a schedule_files
+        days=0
+        while [[ $days -le $num_days ]]; do
+            this_file="$schedule_dir/schedule-$(date --date="$days days ago" +%Y%m%d).gz"
+            if [[ -f "$this_file" ]]; then
+                schedule_files+=($this_file)
+            fi
+            let days=$days+1
+        done
         shift
     elif [[ "${first_arg}" == "-h" ]] || [[ "${first_arg}" == "--help" ]]; then
         usage
