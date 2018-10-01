@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 
-# Make sure we are on Thomas
+# Make sure we are on a cluster with Gold
 
 if hostname -A | grep -q thomas
 then
   ssh util04 gtransfer -h "$@"
+elif hostname -A | grep -q michael
+then
+  ssh util11 gtransfer -h "$@"
 else 
   echo "There is no resource management on this cluster."
 fi
