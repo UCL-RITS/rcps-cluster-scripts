@@ -88,7 +88,7 @@ def are_you_sure(question, default_ans=False):
         except KeyboardInterrupt:
             return False
         if not confirm and default_ans is not None:
-            return default
+            return default_ans
         if confirm in yes_list:
             return True
         if confirm in no_list:
