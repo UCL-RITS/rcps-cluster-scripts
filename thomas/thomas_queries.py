@@ -144,7 +144,7 @@ def whoisuser():
 def pendingrequests():
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, requests.creation_date, requests.modification_date 
+                  approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
                 WHERE isdone IS NOT TRUE""")
@@ -154,7 +154,7 @@ def pendingrequests():
 def allrequests():
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, requests.creation_date, requests.modification_date 
+                  approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username""")
     return query
@@ -163,7 +163,7 @@ def allrequests():
 def recentrequests():
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, requests.creation_date, requests.modification_date 
+                  approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
                 ORDER BY creation_date DESC LIMIT %(n)s""")
@@ -173,7 +173,7 @@ def recentrequests():
 # The format string adds the correct number of %s for the number of ids
 def getrequestbyid(num_ids):
     format_strings = ','.join(['%s'] * num_ids)
-    query = ("""SELECT id, username, email, ssh_key, poc_cc_email, isdone, approver 
+    query = ("""SELECT id, username, email, ssh_key, poc_cc_email, isdone, approver, cluster 
                 FROM requests 
                 WHERE id IN (%s)""" % format_strings)
     return query

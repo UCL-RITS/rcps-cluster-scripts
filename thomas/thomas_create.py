@@ -54,9 +54,16 @@ def getargs():
     return parser.parse_args()
 # end getargs
 
-# Activate account on Thomas and add user's key
-def createaccount(args):
-    create_args = ['createThomasuser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
+# Activate account on cluster and add user's key
+def createaccount(args, nodename):
+    if ("thomas" in nodename):
+        create_args = ['createThomasuser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
+    elif ("michael" in nodename):
+        create_args = ['createMichaeluser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
+    else:
+        print("You do not appear to be on a supported cluster: nodename is "+nodename)
+        exit(1)
+
     if (args.cc_email != None):
         create_args.extend(['-c', args.cc_email])
     if (args.noemail):
@@ -67,8 +74,11 @@ def createaccount(args):
     else:
         return subprocess.check_call(create_args)
 
-def create_and_add_user(args, args_dict, cursor):
-# if nosshverify is not set, verify the ssh key
+def create_and_add_user(args, args_dict, cursor, nodename):
+
+        # check the cluster matches the project
+        thomas_utils.checkprojectoncluster(args.project, nodename)
+        # if nosshverify is not set, verify the ssh key
         if (args.nosshverify == False):
             validate.ssh_key(args.ssh_key)
 
@@ -90,7 +100,7 @@ def updaterequest(args, cursor):
     cursor.execute(thomas_queries.updaterequest(), (args.approver, args.id))
     thomas_utils.debugcursor(cursor, args.debug)
 
-def approverequest(args, args_dict, cursor):
+def approverequest(args, args_dict, cursor, nodename):
 
         # args.request is a list of ids - we use the length of it to add enough
         # parameter placeholders to the querystring
@@ -109,10 +119,15 @@ def approverequest(args, args_dict, cursor):
                 args.cc_email = row['poc_cc_email']
                 args.id = row['id']
                 args.approver = os.environ['USER']
-                # create the account
-                createaccount(args)
-                # update the request status
-                updaterequest(args, cursor)               
+                args.cluster = row['cluster']
+                # check the cluster matches where we are running from
+                if (args.cluster in nodename):
+                    # create the account
+                    createaccount(args)
+                    # update the request status
+                    updaterequest(args, cursor)               
+                else:
+                    print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename)
             else:
                 print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
 
@@ -151,9 +166,9 @@ if __name__ == "__main__":
             # UCL user validation - if this is a UCL email, make sure username was given 
             # and that it wasn't an mmm one.
             validate.ucl_user(args.email, args.username)
-            create_and_add_user(args, args_dict, cursor)
+            create_and_add_user(args, args_dict, cursor, nodename)
         elif (args.subcommand == "request"):
-            approverequest(args, args_dict, cursor)
+            approverequest(args, args_dict, cursor, nodename)
         
         # commit the change to the database unless we are debugging
         if (not args.debug):

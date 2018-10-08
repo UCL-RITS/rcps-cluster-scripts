@@ -8,8 +8,10 @@ import subprocess
 from subprocess import Popen, PIPE
 import mysql.connector
 from mysql.connector import errorcode
+import socket
 import validate
 import thomas_show
+import thomas_utils
 
 ###############################################################
 # Subcommands:
@@ -136,7 +138,7 @@ def run_institute():
 
 def run_addrequest():
     query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
-             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, creation_date=now() """)
+             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, creation_date=now() """)
     return query
 
 # send an email to RC-Support with the command to run to create this account,
@@ -202,9 +204,14 @@ def debug_cursor(cursor, args):
 # Put main in a function so it is importable.
 def main(argv):
 
+    # get the name of this cluster
+    nodename = socket.getfqdn()
+
     # get all the parsed args
     try:
         args = getargs(argv)
+        # add cluster name to args
+        args.cluster = thomas_utils.getcluster(nodename)
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
     except ValueError as err:
