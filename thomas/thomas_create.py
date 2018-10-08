@@ -77,7 +77,7 @@ def createaccount(args, nodename):
 def create_and_add_user(args, args_dict, cursor, nodename):
 
         # check the cluster matches the project
-        thomas_utils.checkprojectoncluster(args.project, nodename)
+        thomas_utils.checkprojectoncluster(args.project_ID, nodename)
         # if nosshverify is not set, verify the ssh key
         if (args.nosshverify == False):
             validate.ssh_key(args.ssh_key)
