@@ -91,7 +91,7 @@ def create_and_add_user(args, args_dict, cursor, nodename):
         thomas_utils.addprojectuser(args, args_dict, cursor)
 
         # Now create the account.
-        createaccount(args)
+        createaccount(args, nodename)
 # end createuser
 
 def updaterequest(args, cursor):
