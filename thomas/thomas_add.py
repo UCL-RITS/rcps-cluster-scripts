@@ -145,18 +145,17 @@ def run_addrequest():
 # unless debugging in which case just print it.
 def contact_rc_support(args, request_id):
 
-    body = ("""
-Thomas user account request id """ + str(request_id) + """ has been received.
+    body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.
 
-Please run 'thomas-show requests' on a Thomas login node to see pending requests.
-Requests can then be approved by running 'thomas-create request id1 [id2 id3 ...]'
+Please run '""" + args.cluster + """-show requests' on a """ + args.cluster.capitalize() + """ login node to see pending requests.
+Requests can then be approved by running '""" + args.cluster + """-create request id1 [id2 id3 ...]'
 
 """)
 
     msg = MIMEText(body)
     msg["From"] = "rc-support@ucl.ac.uk"
     msg["To"] = "rc-support@ucl.ac.uk"
-    msg["Subject"] = "Thomas account request"
+    msg["Subject"] = args.cluster.capitalize() + " account request"
     if (args.debug):
         print("")
         print("Email that would be sent:")
