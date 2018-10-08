@@ -1,0 +1,16 @@
+#!/bin/bash 
+# wrapper for python3 thomas script as run from michael
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+
+module load gcc-libs
+module load python3/3.5
+module load mysql-connector-python/2.0.4/python-3.5.2
+
+# get script location
+DIR=$(dirname "$(readlink -f "$0")")
+$DIR/thomas/thomas_show.py "$@"
+
