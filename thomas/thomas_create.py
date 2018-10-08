@@ -123,7 +123,7 @@ def approverequest(args, args_dict, cursor, nodename):
                 # check the cluster matches where we are running from
                 if (args.cluster in nodename):
                     # create the account
-                    createaccount(args)
+                    createaccount(args, nodename)
                     # update the request status
                     updaterequest(args, cursor)               
                 else:
