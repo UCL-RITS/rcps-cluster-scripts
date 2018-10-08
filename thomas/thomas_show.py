@@ -169,7 +169,7 @@ def pendingrequests(cursor):
     #            WHERE isdone IS NOT TRUE """)
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, requests.creation_date, requests.modification_date 
+                  approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
                 WHERE isdone IS NOT TRUE""")
@@ -181,7 +181,7 @@ def allrequests(cursor):
     #query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests""")
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, requests.creation_date, requests.modification_date 
+                  approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username""")
     cursor.execute(query)
@@ -193,7 +193,7 @@ def recentrequests(cursor, args_dict):
     #            ORDER BY creation_date DESC LIMIT %(n)s""")
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, requests.creation_date, requests.modification_date 
+                  approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
                 ORDER BY creation_date DESC LIMIT %(n)s""")
