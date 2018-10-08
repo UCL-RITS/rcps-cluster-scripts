@@ -109,13 +109,13 @@ def checkprojectoncluster(project, nodename):
     # If this is a Faraday project and this isn't Michael, ask for confirmation.
     if (project.startswith("Faraday")):
         if not ("michael" in nodename):
-            answer = thomas_utils.are_you_sure("You are trying to create project "+project+" on "+nodename+" which is not Michael.\n Do you want to continue?", False)
+            answer = are_you_sure("You are trying to create project "+project+" on "+nodename+" which is not Michael.\n Do you want to continue?", False)
             # they said no, exit
             if not answer:
                 exit(1)
     # If this isn't a Faraday project and this is Michael, ask for confirmation.
     elif ("michael" in nodename):
-        answer = thomas_utils.are_you_sure("You are trying to create project "+project+" which does not begin with Faraday on "+nodename+".\n Do you want to continue?", False)
+        answer = are_you_sure("You are trying to create project "+project+" which does not begin with Faraday on "+nodename+".\n Do you want to continue?", False)
         # they said no, exit
         if not answer:
             exit(1)
