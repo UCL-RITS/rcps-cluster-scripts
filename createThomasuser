@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -e
-
 ACL="AY201617"
 thomas_users="thomas-users-request@ucl.ac.uk"
 # Email address that subscribe command notification goes to.
@@ -73,6 +71,7 @@ EOF
 become_exit_status=$?
 if [ "${become_output:0:6}" != "Beacon" ]; then
   echo "Error: could not become user ${username}" >&2
+  exit 1
 fi
 
 # add user to ACL so they can log in and submit jobs
