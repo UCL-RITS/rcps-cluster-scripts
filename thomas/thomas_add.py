@@ -224,7 +224,8 @@ def new_user(cursor, args, args_dict):
         # said no to using existing user
         if response == "n":
             if thomas_utils.are_you_sure("Do you want to create a second account with that email address?"):
-                # create new user
+                # create new duplicate user
+                create_new_user(cursor, args, args_dict)
             # said no to everything
             else:
                 print("Doing nothing and exiting.")
