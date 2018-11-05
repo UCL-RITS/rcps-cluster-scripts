@@ -178,4 +178,11 @@ def getrequestbyid(num_ids):
                 WHERE id IN (%s)""" % format_strings)
     return query
 
+# Find duplicates by email addresse
+def findduplicate():
+    query = ("""SELECT username, givenname, surname, email, creation_date, modification_date 
+                FROM users 
+                WHERE email=%(email)s""")
+    return query
+
 

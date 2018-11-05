@@ -30,6 +30,15 @@ def lastmmm(cursor):
 def getunusedmmm(cursor):
     return nextmmm(lastmmm(cursor))
 
+#####################################
+#                                   #
+# Check for duplicate user by email #
+#                                   #
+#####################################
+
+def findduplicate(cursor, email_address):
+    return cursor.execute(thomas_queries.findduplicate(), dict(email=email_address))
+
 #################################
 #                               #
 # Print functions and debugging #
@@ -98,6 +107,32 @@ def are_you_sure(question, default_ans=False):
         reprompt = "Please respond with y or n"
         print(reprompt)
 # end of are_you_sure
+
+# Interactive confirmation, choose from list.
+# Note: answers_list should be a list of strings or the input
+# comparison won't work. 
+def select_from_list(question, answers_list, default_ans="n"):
+    # assemble prompt string
+    prompt = "%s [Default=%s]: " %(question, default_ans) 
+    print(answers_list)
+
+    # get answer in lower case. If no default, loops until valid input received.
+    while True:
+        try:
+            answer = input(prompt).lower()
+        except KeyboardInterrupt:
+            return False
+        # they just pressed return, use the default
+        if not answer and default_ans is not None:
+            return default_ans
+        # they picked a valid answer
+        if answer == default_ans or answer in answers_list:
+            return answer
+
+        # invalid input received
+        reprompt = "Please respond with an option in the list or the default."
+        print(reprompt)
+# end of select_from_list
 
 #########################################
 #                                       #
