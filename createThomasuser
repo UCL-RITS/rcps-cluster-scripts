@@ -63,7 +63,7 @@ fi
 echo "Becoming ${username}, creating ssh dir and adding key"
 become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
 echo "Beacon"
-mkdir .ssh
+mkdir -p .ssh
 chmod go-rwx .ssh
 echo "${ssh_key}" >> ~/.ssh/authorized_keys
 EOF
