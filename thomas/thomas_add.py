@@ -203,7 +203,7 @@ def create_new_user(cursor, args, args_dict):
 def new_user(cursor, args, args_dict):
 
     # check this is really a new user by looking for duplicate email addresses
-    cursor.execute(thomas_queries.findduplicate(), args)
+    cursor.execute(thomas_queries.findduplicate(), args_dict)
     results = cursor.fetchall()
     rows_count = cursor.rowcount
     if rows_count > 0:
