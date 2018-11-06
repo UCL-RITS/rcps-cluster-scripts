@@ -36,3 +36,15 @@ echo ""
 echo "------ Test add institute"
 thomas-add institute -i Testinst -n "Institute of Testing" --debug
 
+echo ""
+echo "------ Test add duplicate user: pick existing one"
+thomas-add user -n Heather -s Kelly -e h.kelly@ucl.ac.uk -k "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCZlSG6BcqIZyyg7ldpSRjPCeW/p66szIAhygRnMzuX936iUVO0b8QGBywUij51mCtitn4R3XQL6/xDebis9tjn3cB7uAZqTR+/7FkrEofYFRcJxGNRYD2RveWFHvVEssCtQu4mqFkQlTZgIqELfczJWxGtxQd6BSsFQ+QQ73wXPi6AjEdD7Y8FTgcV5GNQp9VlGMcl15NxXIQv/KA8WuIh8JsLYdRucMQcPfgCfaIta4U71Fvcbp5amfYfRKReSPRqNQQITNMExLmpc5AxqdzLx/WGu4Z2cTzVIJrFzAJN+D2y/REjnIzlqM+dwwACcpDQxG9MOs73dBE+3/fxTK2F tester@TestMac" -p Test_subproject -c PMaccallum_UCL --debug -u cceahke
+
+echo ""
+echo "------ Test add duplicate user: say n and y to create a dup"
+thomas-add user -n Heather -s Kelly -e h.kelly@ucl.ac.uk -k "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCZlSG6BcqIZyyg7ldpSRjPCeW/p66szIAhygRnMzuX936iUVO0b8QGBywUij51mCtitn4R3XQL6/xDebis9tjn3cB7uAZqTR+/7FkrEofYFRcJxGNRYD2RveWFHvVEssCtQu4mqFkQlTZgIqELfczJWxGtxQd6BSsFQ+QQ73wXPi6AjEdD7Y8FTgcV5GNQp9VlGMcl15NxXIQv/KA8WuIh8JsLYdRucMQcPfgCfaIta4U71Fvcbp5amfYfRKReSPRqNQQITNMExLmpc5AxqdzLx/WGu4Z2cTzVIJrFzAJN+D2y/REjnIzlqM+dwwACcpDQxG9MOs73dBE+3/fxTK2F tester@TestMac" -p Test_subproject -c PMaccallum_UCL --debug -u cceahke
+
+echo ""
+echo "------ Test add duplicate user: say n all the way to exit"
+thomas-add user -n Heather -s Kelly -e h.kelly@ucl.ac.uk -k "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCZlSG6BcqIZyyg7ldpSRjPCeW/p66szIAhygRnMzuX936iUVO0b8QGBywUij51mCtitn4R3XQL6/xDebis9tjn3cB7uAZqTR+/7FkrEofYFRcJxGNRYD2RveWFHvVEssCtQu4mqFkQlTZgIqELfczJWxGtxQd6BSsFQ+QQ73wXPi6AjEdD7Y8FTgcV5GNQp9VlGMcl15NxXIQv/KA8WuIh8JsLYdRucMQcPfgCfaIta4U71Fvcbp5amfYfRKReSPRqNQQITNMExLmpc5AxqdzLx/WGu4Z2cTzVIJrFzAJN+D2y/REjnIzlqM+dwwACcpDQxG9MOs73dBE+3/fxTK2F tester@TestMac" -p Test_subproject -c PMaccallum_UCL --debug -u cceahke
+

@@ -209,7 +209,7 @@ def new_user(cursor, args, args_dict):
     if rows_count > 0:
         # We have duplicate(s). Show results and ask in turn if they want to add each 
         # returned user to the provided project instead.
-        print(rows_count + " user(s) with this email address already exist:\n")
+        print(str(rows_count) + " user(s) with this email address already exist:\n")
         data = []
         # put the results into a list of dictionaries, keys being db column names.
         for i in range(rows_count):
