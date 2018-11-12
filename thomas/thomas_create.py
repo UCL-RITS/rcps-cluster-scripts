@@ -82,6 +82,8 @@ def create_and_add_user(args, args_dict, cursor, nodename):
         if (args.nosshverify == False):
             validate.ssh_key(args.ssh_key)
 
+        # check for duplicates and ask
+
         # if no username was specified, get the next available mmm username
         if (args.username == None):
             args.username = thomas_utils.getunusedmmm(cursor)

@@ -114,7 +114,7 @@ def are_you_sure(question, default_ans=False):
 def select_from_list(question, answers_list, default_ans="n"):
     # assemble prompt string
     prompt = "%s [Default=%s]: " %(question, default_ans) 
-    print(answers_list)
+    #print(answers_list)
 
     # get answer in lower case. If no default, loops until valid input received.
     while True:
