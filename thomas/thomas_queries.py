@@ -12,7 +12,7 @@
 # add a new user
 def adduser(surname):
     query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, 
-                 email=%(email)s, ssh_key=%(ssh_key)s, creation_date=now()""")
+                 email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
     if (surname != None):
         query += ", surname=%(surname)s"
     return query
@@ -20,7 +20,7 @@ def adduser(surname):
 # add a new project-user relationship
 def addprojectuser():
     query = ("""INSERT INTO projectusers SET username=%(username)s, 
-                 project=%(project_ID)s, poc_id=%(poc_id)s, creation_date=now()""")
+                 project=%(project_ID)s, poc_id=%(poc_id)s, status=%(status)s, creation_date=now()""")
     return query
 
 # add a new project
@@ -62,6 +62,35 @@ def addrequest():
 def updaterequest():
     query = ("""UPDATE requests SET isdone='1', approver=%s 
                 WHERE id=%s""")
+    return query
+
+# activate a user
+def activateuser():
+    query = ("""UPDATE users SET status='active'
+                WHERE username=%(username)s""")
+    return query
+
+# activate a projectuser
+def activateprojectuser():
+    query = ("""UPDATE projectusers SET status='active'
+                WHERE username=%(username)s AND project=%(project)s""")
+    return query
+
+def activatependingprojectuser():
+    query = ("""UPDATE projectusers SET status='active'
+                WHERE username=%(username)s AND status='pending'""")
+    return query
+
+# deactivate a user
+def deactivateuser():
+    query = ("""UPDATE users SET status='deactivated'
+                WHERE username=%(username)s""")
+    return query
+
+# deactivate a projectuser
+def deactivateprojectuser():
+    query = ("""UPDATE projectusers SET status='deactivated'
+                WHERE username=%(username)s AND project=%(project)s""")
     return query
 
 ###################################################

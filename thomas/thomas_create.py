@@ -102,6 +102,14 @@ def updaterequest(args, cursor):
     cursor.execute(thomas_queries.updaterequest(), (args.approver, args.id))
     thomas_utils.debugcursor(cursor, args.debug)
 
+def updateuserstatus(args, cursor):
+    cursor.execute(thomas_queries.activateuser(), (args.username))
+    thomas_utils.debugcursor(cursor, args.debug)
+
+def updateprojectuserstatus(args, cursor):
+    cursor.execute(thomas_queries.activatependingprojectuser(), (args.username))
+    thomas_utils.debugcursor(cursor, args.debug)
+
 def approverequest(args, args_dict, cursor, nodename):
 
         # args.request is a list of ids - we use the length of it to add enough
@@ -127,7 +135,10 @@ def approverequest(args, args_dict, cursor, nodename):
                     # create the account
                     createaccount(args, nodename)
                     # update the request status
-                    updaterequest(args, cursor)               
+                    updaterequest(args, cursor)
+                    # update the user and projectuser status from pending to active
+                    updateuserstatus(args, cursor)
+                    updateprojectuserstatus(args, cursor)               
                 else:
                     print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename)
             else:
