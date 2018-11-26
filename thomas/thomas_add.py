@@ -103,7 +103,7 @@ def nextmmm():
 # the values are inserted by cursor.execute from args.dict
 def run_user(surname):
     query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, reation_date=now()""")
+             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
     if (surname != None):
         query += ", surname=%(surname)s"
     return query
