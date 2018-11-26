@@ -229,9 +229,13 @@ def check_dups(key_string, cursor, args, args_dict):
                     # create new duplicate user
                     create_new_user(cursor, args, args_dict)
                     return True
-            # Was a username duplicate or said no to everything
+                # said no to everything
+                else: 
+                    print("No second account requested, doing nothing and exiting.")
+                    exit(0)
+            # Was a username duplicate
             else:
-                print("Doing nothing and exiting.")
+                print("Username in use, doing nothing and exiting.")
                 exit(0) 
         # picked an existing user
         else:
