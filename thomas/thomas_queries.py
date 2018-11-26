@@ -211,7 +211,7 @@ def getrequestbyid(num_ids):
 def findduplicate(key_string):
     query = ("""SELECT username, givenname, surname, email, creation_date, modification_date 
                 FROM users 
-                WHERE """ + key_string +"""=%("""key_string""")s""")
+                WHERE """ + key_string +"""=%(""" + key_string + """)s""")
     return query
 
 
