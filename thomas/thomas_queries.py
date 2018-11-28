@@ -67,7 +67,7 @@ def updaterequest():
 # activate a user
 def activateuser():
     query = ("""UPDATE users SET status='active'
-                WHERE username=%(username)s""")
+                WHERE username=%s""")
     return query
 
 # activate a projectuser
@@ -78,13 +78,13 @@ def activateprojectuser():
 
 def activatependingprojectuser():
     query = ("""UPDATE projectusers SET status='active'
-                WHERE username=%(username)s AND status='pending'""")
+                WHERE username=%s AND status='pending'""")
     return query
 
 # deactivate a user
 def deactivateuser():
     query = ("""UPDATE users SET status='deactivated'
-                WHERE username=%(username)s""")
+                WHERE username=%s""")
     return query
 
 # deactivate a projectuser
