@@ -102,12 +102,12 @@ def updaterequest(args, cursor):
     cursor.execute(thomas_queries.updaterequest(), (args.approver, args.id))
     thomas_utils.debugcursor(cursor, args.debug)
 
-def updateuserstatus(args, cursor):
-    cursor.execute(thomas_queries.activateuser(), (args.username))
+def updateuserstatus(args, args_dict, cursor):
+    cursor.execute(thomas_queries.activateuser(), args_dict)
     thomas_utils.debugcursor(cursor, args.debug)
 
-def updateprojectuserstatus(args, cursor):
-    cursor.execute(thomas_queries.activatependingprojectuser(), (args.username))
+def updateprojectuserstatus(args, args_dict, cursor):
+    cursor.execute(thomas_queries.activatependingprojectuser(), args_dict)
     thomas_utils.debugcursor(cursor, args.debug)
 
 def approverequest(args, args_dict, cursor, nodename):
@@ -137,8 +137,8 @@ def approverequest(args, args_dict, cursor, nodename):
                     # update the request status
                     updaterequest(args, cursor)
                     # update the user and projectuser status from pending to active
-                    updateuserstatus(args, cursor)
-                    updateprojectuserstatus(args, cursor)               
+                    updateuserstatus(args, args_dict, cursor)
+                    updateprojectuserstatus(args, args_dict, cursor)               
                 else:
                     print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename)
             else:
