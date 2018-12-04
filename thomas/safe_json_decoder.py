@@ -173,17 +173,22 @@ class AccountRequest:
         self.Ticket=SysAdmin(SystemTicketDict["SysAdmin"])
 
 # Convert String to objects.
-def JSONtoAccountRequest(JSONData):
+def JSONtoTickets(JSONData):
     import json
     from io import StringIO
-    Tickets = []
+
     jsdata = json.load(StringIO(JSONData))
-    if type(jsdata) == list:
-        for a in jsdata:
+
+    return JSONDataToTickets(jsdata)
+
+# Convert JSON data structure to a list of objects
+def JSONDataToTickets(JSONData):
+    Tickets = []
+    if type(JSONData) == list:
+        for a in JSONData:
             Tickets.append(AccountRequest(a))
     else:
-        Tickets.append(AccountRequest(jsdata))
-
+        Tickets.append(AccountRequest(JSONData))
     return Tickets
 
 # If this is run directly, process test.json in the current working directory and print the output as a string.
@@ -198,7 +203,7 @@ if __name__=="__main__":
 
     f = open(filename, 'r')
     jdata=f.read()
-    ar=JSONtoAccountRequest(jdata)
+    ar=JSONtoTickets(jdata)
     f.close()
     for a in ar:
         print(str(a.Ticket))
