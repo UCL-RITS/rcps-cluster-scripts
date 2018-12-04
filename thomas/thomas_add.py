@@ -103,7 +103,7 @@ def nextmmm():
 # the values are inserted by cursor.execute from args.dict
 def run_user(surname):
     query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-             """email=%(email)s, ssh_key=%(ssh_key)s, creation_date=now()""")
+             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
     if (surname != None):
         query += ", surname=%(surname)s"
     return query
@@ -111,7 +111,7 @@ def run_user(surname):
 # query to run for 'user' and 'projectuser' subcommands
 def run_projectuser():
     query = ("""INSERT INTO projectusers SET username=%(username)s, """
-             """project=%(project_ID)s, poc_id=%(poc_id)s, creation_date=now()""")
+             """project=%(project_ID)s, poc_id=%(poc_id)s, status=%(status)s, creation_date=now()""")
     return query
 
 # query to run for 'project' subcommand
@@ -174,6 +174,8 @@ def run_poc_email():
 
 # everything needed to create a new account creation request
 def create_user_request(cursor, args, args_dict):
+    # projectusers status is pending until the request is approved
+    args_dict['status'] = "pending"
     # add a project-user entry for the user
     cursor.execute(run_projectuser(), args_dict)
     debug_cursor(cursor, args)
@@ -191,6 +193,8 @@ def create_new_user(cursor, args, args_dict):
     # if no username was specified, get the next available mmm username
     if (args.username == None):
         args.username = nextmmm()
+    # users status is pending until the request is approved
+    args_dict['status'] = "pending"
     # insert new user into users table
     cursor.execute(run_user(args.surname), args_dict)
     debug_cursor(cursor, args)
@@ -225,9 +229,13 @@ def check_dups(key_string, cursor, args, args_dict):
                     # create new duplicate user
                     create_new_user(cursor, args, args_dict)
                     return True
-            # Was a username duplicate or said no to everything
+                # said no to everything
+                else: 
+                    print("No second account requested, doing nothing and exiting.")
+                    exit(0)
+            # Was a username duplicate
             else:
-                print("Doing nothing and exiting.")
+                print("Username in use, doing nothing and exiting.")
                 exit(0) 
         # picked an existing user
         else:
@@ -250,46 +258,6 @@ def new_user(cursor, args, args_dict):
         if not check_dups("email", cursor, args, args_dict):
             # no duplicates at all, create new user
             create_new_user(cursor, args, args_dict)
-
-    # check this is really a new user by looking for duplicate email addresses
-    #cursor.execute(thomas_queries.findduplicate("email"), args_dict)
-    #results = cursor.fetchall()
-    #rows_count = cursor.rowcount
-    #if rows_count > 0:
-        # We have duplicate(s). Show results and ask in turn if they want to add each 
-        # returned user to the provided project instead.
-    #    print(str(rows_count) + " user(s) with this email address already exist:\n")
-    #    data = []
-        # put the results into a list of dictionaries, keys being db column names.
-    #    for i in range(rows_count):
-    #        data.append(dict(list(zip(cursor.column_names, results[i]))))
-            # while we do this, print out the results, numbered.
-    #        print(str(i+1) + ") "+ data[i]['username'] +", "+ data[i]['givenname'] +" "+ data[i]['surname'] +", "+ data[i]['email'] + ", created " + str(data[i]['creation_date']))
-
-        # make a string list of options, counting from 1 and ask the user to pick one
-     #   options_list = [str(x) for x in range(1, rows_count+1)]
-     #   response = thomas_utils.select_from_list("\nDo you want to add a new project to one of the existing accounts instead? \n(You should do this if it is the same individual). \n Please respond with a number in the list or n for none.", options_list)
-
-        # said no to using existing user
-      #  if response == "n":
-      #      if thomas_utils.are_you_sure("Do you want to create a second account with that email address?"):
-                # create new duplicate user
-      #          create_new_user(cursor, args, args_dict)
-            # said no to everything
-       #     else:
-       #         print("Doing nothing and exiting.")
-       #         exit(0) 
-        # picked an existing user
-        #else:
-            # go back to zero-index, get chosen username
-        #    args.username = data[int(response)-1]['username']
-        #    print("Using existing user " + args.username)
-        #    create_user_request(cursor, args, args_dict) 
-
-    # no duplicate users exist
-    #else:
-        # create new user
-        #create_new_user(cursor, args, args_dict)
 
 # end new_user
 
@@ -342,6 +310,8 @@ def main(argv):
             new_user(cursor, args, args_dict)
 
         elif (args.subcommand == "projectuser"):
+            # This is an existing user, status for the new project-user pairing is active by default
+            args_dict['status'] = "active"
             cursor.execute(run_projectuser(), args_dict)
             debug_cursor(cursor, args)
         elif (args.subcommand == "project"):
