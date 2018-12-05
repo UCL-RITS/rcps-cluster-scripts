@@ -14,13 +14,13 @@ import safe_json_decoder as decoder
 #import thomas_queries
 #import thomas_utils
 
-def getopentickets(config)
+def getopentickets(config):
     request = requests.get(config['safe']['host'] + "?mode=json", auth = (config['safe']['user'], config['safe']['password']))
     data = request.json()
     return data
 # end getopentickets
 
-def updateticket()
+def updateticket():
 
 # end updateticket
 
