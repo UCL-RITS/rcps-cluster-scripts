@@ -17,11 +17,28 @@ import safe_json_decoder as decoder
 
 def getopentickets(config):
     request = requests.get(config['safe']['host'] + "?mode=json", auth = (config['safe']['user'], config['safe']['password']))
-    data = request.json()
-    return data
+    if request.status_code == 200:
+        try:
+            data = request.json()
+            return data
+        except json.decoder.JSONDecodeError as err:
+            print("Received invalid json, contents: " + str(request.content))
+            exit(1)
+    else:
+        print("Request not successful, code " + str(request.status_code))
+
 # end getopentickets
 
-#def updateticket():
+def updatebudget(ticket_id, projectname):
+    parameters = {'qtid':ticket_id, 'new_username':projectname, 'mode':'completed'}
+
+
+# Update and close a ticket.
+# parameters is a dictionary of values: {'qtid':id,'new_username':'Test', 'mode':'completed'}
+def updateticket(config, parameters):
+    request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
+    if "<title>SysAdminServlet Success</title>" in request.text:
+        print("Ticket " + parameters['qtid'] + " closed.")
 
 # end updateticket
 
