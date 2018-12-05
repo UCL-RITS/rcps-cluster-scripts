@@ -20,7 +20,7 @@ def getopentickets(config):
     return data
 # end getopentickets
 
-def updateticket():
+#def updateticket():
 
 # end updateticket
 
