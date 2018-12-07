@@ -292,7 +292,7 @@ def main(argv, printoutput):
             return lastresult[0][0]
 
         # Get all users in this project/inst/PoC combo
-        if (args.subcommand == "getusers"):
+        if (args.subcommand == "getusers") or (args.subcommand == "users"):
             comboresults = projectcombo(cursor, args_dict).fetchall()
             if (printoutput):
                 tableprint(cursor, comboresults)
