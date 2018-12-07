@@ -103,7 +103,7 @@ def main(argv):
         # print SAFE tickets
         for t in ticketlist:
             #print(str(t.Ticket))
-            values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.StartDate, t.Ticket.EndDate, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey]
+            values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.Account.Name, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey, t.Ticket.StartDate, t.Ticket.EndDate]
             print(values)
         print("Number of tickets included: " + str(len(ticketlist)))
 
