@@ -45,7 +45,7 @@ def getargs(argv):
 
     # the arguments for subcommand getusers
     # uses default='%' so all results are kept if that constraint is not used
-    getusers = subparsers.add_parser("getusers", help="Show all users with this project, institute, contact")
+    getusers = subparsers.add_parser("getusers", help="Show all users with this project, institute, contact", aliases=["users"])
     getusers.add_argument("-p", "--project", dest="project", default='%', help="Project name")
     getusers.add_argument("-i", "--institute", dest="inst_ID", default='%', help="Institute ID")
     getusers.add_argument("-c", "--contact", dest="poc_ID", default='%', help="Point of Contact ID")    
