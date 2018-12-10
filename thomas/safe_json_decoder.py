@@ -25,6 +25,10 @@ class SysAdmin:
         self.Machine=SysAdminDict["Machine"]
         self.HandlerName=SysAdminDict["Handler"]["Name"]
         self.HandlerEmail=SysAdminDict["Handler"]["Email"]
+        self.Approver=""
+        # Approver is an instance of Person
+        if "Approver" in SysAdminDict.keys():
+            self.Approver=Person(SysAdminDict["Approver"])
         self.Person=""
         if "Person" in SysAdminDict.keys():
             self.Person=Person(SysAdminDict["Person"])
@@ -45,6 +49,7 @@ class SysAdmin:
                                         self.EndDate,
                                         self.HandlerName,
                                         self.HandlerEmail,
+                                        str(self.Approver),
                                         str(self.Person),
                                         str(self.Project),
                                         str(self.ProjectGroup),
