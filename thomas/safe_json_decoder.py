@@ -11,7 +11,7 @@
 # For reasons the request is enclosed in a Sysadmin object.
 class SysAdmin:
 
-    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Person", "ProjectGroup", "Project", "Account", "ExtraText"]
+    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Approver", "Person", "ProjectGroup", "Project", "Account", "ExtraText"]
 
     def __init__(self, SysAdminDict):
         for a in SysAdminDict.keys():
