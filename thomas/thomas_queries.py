@@ -93,6 +93,20 @@ def deactivateprojectuser():
                 WHERE username=%(username)s AND project=%(project)s""")
     return query
 
+######################################################
+#                                                    #
+# Queries that insert/update entries in the database #
+#                                                    #
+######################################################
+
+# Insert an open SAFE ticket or update it if it already exists.
+# id is unique.
+def refreshsafetickets():
+    fields = ("""type=%(type)s, status=%(status)s, startdate=%(startdate)s, enddate=%(enddate)s, machine=%(machine)s, project=%(project)s, account_name=%(account_name)s, firstname=%(firstname)s, lastname=%(lastname)s, email=%(email)s, publickey=%(publickey)s, poc_firstname=%(poc_firstname)s, poc_lastname=%(poc_lastname)s, poc_email=%(poc_email)s,  """)
+    query = ("""INSERT INTO safetickets SET id=%(id)s,""" + fields + """ creation_date=now()
+                ON DUPLICATE KEY UPDATE """ + fields)
+    return query
+
 ###################################################
 #                                                 #
 # Queries that read information from the database #

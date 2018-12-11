@@ -69,6 +69,30 @@ def updateticket(config, parameters):
 # end updateticket
 
 
+# Turn a list of tickets into a list of dicts for use in SQL queries
+def ticketstodicts(ticketlist):
+    ticket_dicts = []
+    for t in ticketlist:
+        t_dict = {
+                       "id": t.Ticket.Id,
+                       "type": t.Ticket.Type,
+                       "status": t.Ticket.Status,
+                       "account_name": t.Ticket.Account.Name,
+                       "machine": t.Ticket.Machine,
+                       "project": t.Ticket.ProjectGroup.Code,
+                       "firstname": t.Ticket.Account.Person.FirstName,
+                       "lastname": t.Ticket.Account.Person.LastName,
+                       "email": t.Ticket.Account.Person.Email,
+                       "publickey": t.Ticket.Account.Person.NormalisedPublicKey,
+                       "poc_firstname": t.Ticket.Approver.FirstName,
+                       "poc_lastname": t.Ticket.Approver.LastName,
+                       "poc_email": t.Ticket.Approver.Email,
+                       "startdate": t.Ticket.StartDate,
+                       "enddate": t.Ticket.EndDate
+                      }
+        ticket_dicts.append(t_dict)
+    return ticket_dicts
+
 
 # Put main in a function so it is importable.
 def main(argv):
@@ -103,7 +127,7 @@ def main(argv):
         # print SAFE tickets
         for t in ticketlist:
             #print(str(t.Ticket))
-            values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.Account.Name, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey, t.Ticket.StartDate, t.Ticket.EndDate]
+            values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.Account.Name, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey, t.Ticket.Approver.FirstName, t.Ticket.Approver.LastName, t.Ticket.Approver.Email,  t.Ticket.StartDate, t.Ticket.EndDate]
             print(values)
         print("Number of tickets included: " + str(len(ticketlist)))
 
