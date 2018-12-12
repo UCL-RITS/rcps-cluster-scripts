@@ -2,6 +2,7 @@
 
 import mysql.connector
 from tabulate import tabulate
+from ldap3 import Server, Connection, ALL
 import thomas_queries
 
 ##########################
@@ -167,3 +168,24 @@ def getcluster(nodename):
         exit(1)
 # end getcluster
 
+#########################
+#                       #
+# Get user info from AD #
+#                       #
+#########################
+
+def AD_username_from_email(config, email):
+    # using ldaps:// in the host gets it to use SSL
+    server = Server(config['ad']['host'], get_info=ALL)
+    conn = Connection(server, user=config['ad']['user'], password=config['ad']['password'], auto_bind=True)
+    # the filter string has to include the brackets: (mail=email)
+    filter='(mail=' + email + ')'
+    conn.search('DC=ad,DC=ucl,DC=ac,DC=uk', filter, attributes=['cn'])
+    # check if we got more than one result (bad!)
+    if len(conn.entries[0].cn.values) > 1 or len(conn.entries) > 1:
+        print("More than one username found for " + email)
+        print(conn.entries)
+        exit(1)
+    return conn.entries[0].cn.values[0]
+
+    

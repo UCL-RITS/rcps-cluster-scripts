@@ -22,7 +22,9 @@ def getargs(argv):
     parser.add_argument("-s", "--show", dest="show", help="Show all current open tickets", action='store_true')
     parser.add_argument("-f", "--file", dest="jsonfile", default=None, help="Parse json tickets from a file")
     parser.add_argument("-r", "--refresh", dest="refresh", help="Refresh open tickets in DB", action='store_true')
-    parser.add_argument("-c", "--complete", dest="complete", default=None, help="Complete this ticket ID")
+    parser.add_argument("-c", "--close", dest="close", default=None, help="Carry out and close this ticket ID")
+    parser.add_argument("--reject", dest="reject", default=None, help="Reject this ticket ID")
+    parser.add_argument("--debug", help="Show what would be submitted without committing the change", action='store_true')
 
     # Show the usage if no arguments are supplied
     if len(argv) < 1:
@@ -65,9 +67,20 @@ def gettickets(config):
         return ticketlist
 # end gettickets
 
+# Update and complete a budget (project) ticket
 def updatebudget(ticket_id, projectname):
     parameters = {'qtid':ticket_id, 'new_username':projectname, 'mode':'completed'}
+    return parameters
 
+# Reject the ticket because it would cause an error
+def rejecterror(ticket_id):
+    parameters = {'qtid':ticket_id, 'mode':'error'}
+    return parameters
+
+# Reject the ticket for any other reason
+def rejectother(ticket_id):
+    parameters = {'qtid':ticket_id, 'mode':'refused'}
+    return parameters
 
 # Update and close a ticket.
 # parameters is a dictionary of values: {'qtid':id,'new_username':'Test', 'mode':'completed'}
@@ -75,9 +88,24 @@ def updateticket(config, parameters):
     request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
     if "<title>SysAdminServlet Success</title>" in request.text:
         print("Ticket " + parameters['qtid'] + " closed.")
-
 # end updateticket
 
+# Deal with a New User ticket
+def newuser(cursor, config, ticketid):
+    # get the ticket (the ID is unique so there is only one)
+    result = cursor.execute(thomas_queries.getsafeticket(), (ticketid)).fetchall()
+    # check that we don't already have a username for them
+    if "to_be_allocated_" in result[0]['username']:
+        # check if they are a UCL user: UCL email
+        if "ucl.ac.uk" in result[0]['email']:
+            # UCL: get username from ADi
+    # we have a non-placeholder username
+    else:
+        username = result[0]['username']    
+
+    # not UCL, add new external user
+    
+# end newuser
 
 # Turn a list of tickets into a list of dicts for use in SQL queries
 def ticketstodicts(ticketlist):
@@ -99,7 +127,7 @@ def ticketstodicts(ticketlist):
                        "poc_email": t.Ticket.Approver.Email,
                        "startdate": t.Ticket.StartDate,
                        "enddate": t.Ticket.EndDate
-                      }
+                 }
         ticket_dicts.append(t_dict)
     return ticket_dicts
 
@@ -140,7 +168,7 @@ def main(argv):
 
 
     # these options require a database connection
-    if args.refresh or args.update != None:
+    if args.refresh or args.close != None or args.reject != None:
             try:
                 conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
                 cursor = conn.cursor()
@@ -152,17 +180,41 @@ def main(argv):
                     # refresh tickets in database
                     for t in ticketdicts:
                         cursor.execute(thomas_queries.refreshsafetickets(), t)
+                        thomas_utils.debugcursor(cursor, args.debug)
                     # show database tickets
     
-                # act on SAFE tickets
+                # Update and close SAFE tickets
+                if args.close != None:
+                    # get the type of ticket - ticket id is unique so there is only one
+                    result = cursor.execute(thomas_queries.safetickettype(), (args.close)).fetchall()
+                    tickettype = result[0][0]
 
+                    # new user
+                    if tickettype == "New User":
+                        newuser(cursor, config, args.close)
+
+                    # new budget
+                    else if tickettype == "New Budget":
+                        newbudget(cursor, config, args.close)
+
+                    # add to budget
+                    else if tickettype == "Add to budget":
+                        addtobudget(cursor, config, args.close)
+
+                    else:
+                        print("Ticket " + args.close + " type unrecognised: " + tickettype)
+                        exit(1)
+                 
+                # Reject SAFE tickets - there are two types of rejection so ask
+                if args.reject != None:
+                    answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("refuse", "error"), default_ans="refuse")
+                    if answer == "error":
+                        updateticket(config, rejecterror(ticket_id))
+                    else:
+                        updateticket(config, rejectother(ticket_id))
 
                 # commit the change to the database unless we are debugging
                 if not args.debug:
-                    #if args.verbose:
-                    #    print("")
-                    #    print("Committing database change")
-                    #    print("")
                     conn.commit()
 
         except mysql.connector.Error as err:
