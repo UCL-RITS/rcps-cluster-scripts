@@ -175,6 +175,7 @@ def getcluster(nodename):
 #########################
 
 def AD_username_from_email(config, email):
+# TODO: add some exception-handling here
     # using ldaps:// in the host gets it to use SSL
     server = Server(config['ad']['host'], get_info=ALL)
     conn = Connection(server, user=config['ad']['user'], password=config['ad']['password'], auto_bind=True)

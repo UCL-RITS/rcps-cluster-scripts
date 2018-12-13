@@ -15,7 +15,7 @@ import safe_json_decoder as decoder
 #from ldap3 import Server, Connection, ALL
 #import socket
 import thomas_queries
-#import thomas_utils
+import thomas_utils
 
 def getargs(argv):
     parser = argparse.ArgumentParser(description="Show or update and close tickets from SAFE. Use [positional argument -h] for more help.")
@@ -94,16 +94,31 @@ def updateticket(config, parameters):
 def newuser(cursor, config, ticketid):
     # get the ticket (the ID is unique so there is only one)
     result = cursor.execute(thomas_queries.getsafeticket(), (ticketid)).fetchall()
+    # this will be needed when we create the user
+    user_dict = {'username': username, 
+                 'givenname': result[0]['firstname'],
+                 'email': result[0]['email'],
+                 'ssh_key': result[0]['publickey'],
+                 'status': "active"}
     # check that we don't already have a username for them
-    if "to_be_allocated_" in result[0]['username']:
+    if "to_be_allocated_" in user_dict['username']:
         # check if they are a UCL user: UCL email
-        if "ucl.ac.uk" in result[0]['email']:
-            # UCL: get username from ADi
+        if "ucl.ac.uk" in user_dict['email']:
+            # UCL: get username from AD
+            username = thomas_utils.AD_username_from_email(config, user_dict['email'])
+        else:
+            # not UCL, get next mmm username
+            username = thomas_utils.getunusedmmm(cursor)
     # we have a non-placeholder username
     else:
-        username = result[0]['username']    
+        username = user_dict['username']    
+    # add new user to database: need a dictionary with keys 
+    # username, givenname, (surname), email, ssh_key, status
+    args.surname = result[0]['lastname']
+    thomas_utils.addusertodb(args, user_dict, cursor)
+    thomas_create.createaccount(args, result[0]['machine'].lower())
 
-    # not UCL, add new external user
+    # create account
     
 # end newuser
 
