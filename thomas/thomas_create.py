@@ -7,7 +7,6 @@ import subprocess
 import validate
 import mysql.connector
 from mysql.connector import errorcode
-import socket
 import thomas_queries
 import thomas_utils
 
@@ -150,7 +149,7 @@ if __name__ == "__main__":
 
     # check we are on Thomas or Michael before continuing.
     # Later we also need to check if we are on the correct cluster for this project.
-    nodename = socket.getfqdn()
+    nodename = thomas_utils.getnodename()
     # if fqdn does not contain a suitable hostname prompt whether you really want to do this
     # (in case you *are* somewhere on those clusters and fqdn is not useful)
     if not ("thomas" in nodename or "michael" in nodename):
