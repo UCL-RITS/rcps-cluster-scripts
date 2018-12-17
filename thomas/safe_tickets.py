@@ -12,10 +12,9 @@ from tabulate import tabulate
 import json
 import requests
 import safe_json_decoder as decoder
-#from ldap3 import Server, Connection, ALL
-#import socket
 import thomas_queries
 import thomas_utils
+import thomas_create
 
 def getargs(argv):
     parser = argparse.ArgumentParser(description="Show or update and close tickets from SAFE. Use [positional argument -h] for more help.")
@@ -45,6 +44,7 @@ def parsejsonfile(filename):
         print(str(t.Ticket))
     print("Number of tickets included: " + str(len(ticketlist)))
 
+# Connect to SAFE, get open tickets as JSON
 def getopentickets(config):
     request = requests.get(config['safe']['host'] + "?mode=json", auth = (config['safe']['user'], config['safe']['password']))
     if request.status_code == 200:
@@ -94,7 +94,7 @@ def updateticket(config, parameters):
 def newuser(cursor, config, ticketid):
     # get the ticket (the ID is unique so there is only one)
     result = cursor.execute(thomas_queries.getsafeticket(), (ticketid)).fetchall()
-    # this will be needed when we create the user
+    # this dict will be needed when we create the user
     user_dict = {'username': username, 
                  'givenname': result[0]['firstname'],
                  'email': result[0]['email'],
@@ -106,20 +106,27 @@ def newuser(cursor, config, ticketid):
         if "ucl.ac.uk" in user_dict['email']:
             # UCL: get username from AD
             username = thomas_utils.AD_username_from_email(config, user_dict['email'])
+            print("UCL username found from AD: " + username)
         else:
             # not UCL, get next mmm username
             username = thomas_utils.getunusedmmm(cursor)
+            print("Not UCL email, username is " + username)
     # we have a non-placeholder username
     else:
         username = user_dict['username']    
-    # add new user to database: need a dictionary with keys 
-    # username, givenname, (surname), email, ssh_key, status
+    # Add new user to database: need the user_dict dictionary we created.
+    # Surname may be empty.
     args.surname = result[0]['lastname']
     thomas_utils.addusertodb(args, user_dict, cursor)
-    thomas_create.createaccount(args, result[0]['machine'].lower())
-
-    # create account
-    
+    # create this account, checking we are on that machine
+    cluster = thomas_utils.getnodename()
+    if result[0]['machine'].casefold() in cluster:
+        # make sure the point of contact gets copied in on account creation
+        args.cc_email = result[0]['poc_email']
+        thomas_create.createaccount(args, cluster)
+    else:
+        print("SAFE ticket was for " + result[0]['machine'].casefold() + "and you are on " + cluster + ", exiting.")
+        exit(1)    
 # end newuser
 
 # Turn a list of tickets into a list of dicts for use in SQL queries
@@ -222,7 +229,7 @@ def main(argv):
                  
                 # Reject SAFE tickets - there are two types of rejection so ask
                 if args.reject != None:
-                    answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("refuse", "error"), default_ans="refuse")
+                    answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("other", "error"), default_ans="other")
                     if answer == "error":
                         updateticket(config, rejecterror(ticket_id))
                     else:

@@ -3,6 +3,7 @@
 import mysql.connector
 from tabulate import tabulate
 from ldap3 import Server, Connection, ALL
+import socket
 import thomas_queries
 
 ##########################
@@ -158,6 +159,10 @@ def checkprojectoncluster(project, nodename):
 
 # end checkprojectoncluster
 
+def getnodename():
+    nodename = socket.getfqdn().casefold()
+    return nodename
+
 def getcluster(nodename):
     if "thomas" in nodename:
         return "thomas"
@@ -183,8 +188,9 @@ def AD_username_from_email(config, email):
     filter='(mail=' + email + ')'
     conn.search('DC=ad,DC=ucl,DC=ac,DC=uk', filter, attributes=['cn'])
     # check if we got more than one result (bad!)
+    # TODO: ask if we want to pick one
     if len(conn.entries[0].cn.values) > 1 or len(conn.entries) > 1:
-        print("More than one username found for " + email)
+        print("More than one username found for " + email + ", exiting.")
         print(conn.entries)
         exit(1)
     return conn.entries[0].cn.values[0]
