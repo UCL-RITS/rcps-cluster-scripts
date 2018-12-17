@@ -246,9 +246,9 @@ def main(argv):
                 print("Database does not exist")
             else:
                 print(err)
-    else:
-        cursor.close()
-        conn.close()
+        else:
+            cursor.close()
+            conn.close()
 # end main
 
 # When not imported, use the normal global arguments
