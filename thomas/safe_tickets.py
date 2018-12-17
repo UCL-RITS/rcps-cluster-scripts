@@ -216,11 +216,11 @@ def main(argv):
                         newuser(cursor, config, args.close)
 
                     # new budget
-                    else if tickettype == "New Budget":
+                    elif tickettype == "New Budget":
                         newbudget(cursor, config, args.close)
 
                     # add to budget
-                    else if tickettype == "Add to budget":
+                    elif tickettype == "Add to budget":
                         addtobudget(cursor, config, args.close)
 
                     else:
