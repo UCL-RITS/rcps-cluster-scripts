@@ -191,53 +191,53 @@ def main(argv):
 
     # these options require a database connection
     if args.refresh or args.close != None or args.reject != None:
-            try:
-                conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
-                cursor = conn.cursor()
+        try:
+            conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
+            cursor = conn.cursor()
 
-                # Refresh the database tickets
-                if args.refresh:
-                    # get SAFE tickets as list of dicts
-                    ticketdicts = ticketstodicts(gettickets(config))
-                    # refresh tickets in database
-                    for t in ticketdicts:
-                        cursor.execute(thomas_queries.refreshsafetickets(), t)
-                        thomas_utils.debugcursor(cursor, args.debug)
-                    # show database tickets
+            # Refresh the database tickets
+            if args.refresh:
+                # get SAFE tickets as list of dicts
+                ticketdicts = ticketstodicts(gettickets(config))
+                # refresh tickets in database
+                for t in ticketdicts:
+                    cursor.execute(thomas_queries.refreshsafetickets(), t)
+                    thomas_utils.debugcursor(cursor, args.debug)
+                # show database tickets
     
-                # Update and close SAFE tickets
-                if args.close != None:
-                    # get the type of ticket - ticket id is unique so there is only one
-                    result = cursor.execute(thomas_queries.safetickettype(), (args.close)).fetchall()
-                    tickettype = result[0][0]
+            # Update and close SAFE tickets
+            if args.close != None:
+                # get the type of ticket - ticket id is unique so there is only one
+                result = cursor.execute(thomas_queries.safetickettype(), (args.close)).fetchall()
+                tickettype = result[0][0]
 
-                    # new user
-                    if tickettype == "New User":
-                        newuser(cursor, config, args.close)
+                # new user
+                if tickettype == "New User":
+                    newuser(cursor, config, args.close)
 
-                    # new budget
-                    elif tickettype == "New Budget":
-                        newbudget(cursor, config, args.close)
+                # new budget
+                elif tickettype == "New Budget":
+                    newbudget(cursor, config, args.close)
 
-                    # add to budget
-                    elif tickettype == "Add to budget":
-                        addtobudget(cursor, config, args.close)
+                # add to budget
+                elif tickettype == "Add to budget":
+                    addtobudget(cursor, config, args.close)
 
-                    else:
-                        print("Ticket " + args.close + " type unrecognised: " + tickettype)
-                        exit(1)
+                else:
+                    print("Ticket " + args.close + " type unrecognised: " + tickettype)
+                    exit(1)
                  
-                # Reject SAFE tickets - there are two types of rejection so ask
-                if args.reject != None:
-                    answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("other", "error"), default_ans="other")
-                    if answer == "error":
-                        updateticket(config, rejecterror(ticket_id))
-                    else:
-                        updateticket(config, rejectother(ticket_id))
+            # Reject SAFE tickets - there are two types of rejection so ask
+            if args.reject != None:
+                answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("other", "error"), default_ans="other")
+                if answer == "error":
+                    updateticket(config, rejecterror(ticket_id))
+                else:
+                    updateticket(config, rejectother(ticket_id))
 
-                # commit the change to the database unless we are debugging
-                if not args.debug:
-                    conn.commit()
+            # commit the change to the database unless we are debugging
+            if not args.debug:
+                conn.commit()
 
         except mysql.connector.Error as err:
             if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
@@ -246,9 +246,9 @@ def main(argv):
                 print("Database does not exist")
             else:
                 print(err)
-        else:
-            cursor.close()
-            conn.close()
+    else:
+        cursor.close()
+        conn.close()
 # end main
 
 # When not imported, use the normal global arguments
