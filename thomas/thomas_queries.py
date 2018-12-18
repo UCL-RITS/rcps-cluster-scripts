@@ -232,7 +232,7 @@ def findduplicate(key_string):
 def safetickettype():
     query = ("""SELECT type 
                 FROM safetickets 
-                WHERE id=%s""")
+                WHERE id=%(id)s""")
     return query
 
 # Get a SAFE ticket by ID
@@ -240,5 +240,6 @@ def getsafeticket():
     query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
                   email, publickey, poc_firstname, poc_lastname, poc_email, startdate, enddate
                 FROM safetickets 
-                WHERE id=%s""")
+                WHERE id=%(id)s""")
+    return query
 

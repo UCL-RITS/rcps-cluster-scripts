@@ -208,21 +208,25 @@ def main(argv):
             # Update and close SAFE tickets
             if args.close != None:
                 # get the type of ticket - ticket id is unique so there is only one
-                result = cursor.execute(thomas_queries.safetickettype(), (args.close)).fetchall()
+                # (Either make a temporary dict or pass in (args.close,) with the comma which is ugly).
+                cursor.execute(thomas_queries.safetickettype(), {'id':args.close})
+                result = cursor.fetchall()
+                # make sure we got a result, or exit
+                if cursor.rowcount < 1:
+                    print("No tickets with id " + args.close + " found, exiting.")
+                    exit(1)
+
                 tickettype = result[0][0]
 
                 # new user
                 if tickettype == "New User":
                     newuser(cursor, config, args.close)
-
                 # new budget
                 elif tickettype == "New Budget":
                     newbudget(cursor, config, args.close)
-
                 # add to budget
                 elif tickettype == "Add to budget":
                     addtobudget(cursor, config, args.close)
-
                 else:
                     print("Ticket " + args.close + " type unrecognised: " + tickettype)
                     exit(1)
