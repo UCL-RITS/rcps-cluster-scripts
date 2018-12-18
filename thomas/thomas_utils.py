@@ -41,6 +41,41 @@ def getunusedmmm(cursor):
 def findduplicate(cursor, email_address):
     return cursor.execute(thomas_queries.findduplicate(), dict(email=email_address))
 
+###############################
+#                             #
+# Find a point of contact ID  #
+#                             #
+###############################
+
+# poc_dict needs to contain 'poc_firstname', 'poc_lastname', 'poc_email'.
+def findpocID(cursor, poc_dict):
+    # TODO: look for project match first
+
+    # then check email match
+    findpocIDbyemail(cursor, poc_dict['poc_email'])
+    result = cursor.fetchall()
+    rowcount = cursor.rowcount
+    if rowcount == 1:
+        print("Exact match for PoC email found: " + result[0]['poc_givenname'] + " " + result[0]['poc_surname'] + ", " + result[0]['poc_id'])
+        return result[0]['poc_id']
+    # found two exact matches, ask
+    elif rowcount > 1:
+        for item in result:
+            print()
+        select_from_list("Multiple PoC matches found, please choose one or n for none.", answers_list)
+    else:
+        # find contact where only lastname or email match - ask
+        #findpocIDinexact(cursor, poc_dict['poc_email'])
+        #result = cursor.fetchall()
+        # TODO: pick from PoC list
+
+
+def findpocIDbyemail(cursor, email):
+    cursor.execute(thomas_queries.findpocbyemail(), {'email': email})
+
+def findpocIDinexact(cursor, lastname, email):
+    cursor.execute(thomas_queries.findpocinexact(), {'lastname':lastname, 'email':email})
+
 #################################
 #                               #
 # Print functions and debugging #
@@ -73,6 +108,10 @@ def addusertodb(args, args_dict, cursor):
 # Add a new project-user relationship to the database
 def addprojectuser(args, args_dict, cursor):
     cursor.execute(thomas_queries.addprojectuser(), args_dict)
+    debugcursor(cursor, args.debug)
+
+def addproject(args, args_dict, cursor):
+    cursor.execute(thomas_queries.addproject(), args_dict)
     debugcursor(cursor, args.debug)
 
 ##############

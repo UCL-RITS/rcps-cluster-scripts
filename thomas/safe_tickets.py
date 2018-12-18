@@ -72,6 +72,15 @@ def updatebudget(ticket_id, projectname):
     parameters = {'qtid':ticket_id, 'new_username':projectname, 'mode':'completed'}
     return parameters
 
+def updateaddtobudget(ticket_id):
+    parameters = {'qtid':ticket_id, 'mode':'completed'}
+    return parameters
+
+# Update and complete a New User ticket
+def updatenewuser(ticket_id, username):
+    parameters = {'qtid':ticket_id, 'new_username':username, 'mode':'completed'}
+    return parameters
+
 # Reject the ticket because it would cause an error
 def rejecterror(ticket_id):
     parameters = {'qtid':ticket_id, 'mode':'error'}
@@ -93,9 +102,10 @@ def updateticket(config, parameters):
 # Deal with a New User ticket
 def newuser(cursor, config, ticketid):
     # get the ticket (the ID is unique so there is only one)
-    result = cursor.execute(thomas_queries.getsafeticket(), (ticketid)).fetchall()
+    cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
+    result = cursor.fetchall()
     # this dict will be needed when we create the user
-    user_dict = {'username': username, 
+    user_dict = {'username': result[0]['username'], 
                  'givenname': result[0]['firstname'],
                  'email': result[0]['email'],
                  'ssh_key': result[0]['publickey'],
@@ -105,15 +115,15 @@ def newuser(cursor, config, ticketid):
         # check if they are a UCL user: UCL email
         if "ucl.ac.uk" in user_dict['email']:
             # UCL: get username from AD
-            username = thomas_utils.AD_username_from_email(config, user_dict['email'])
-            print("UCL username found from AD: " + username)
+            user_dict['username'] = thomas_utils.AD_username_from_email(config, user_dict['email'])
+            print("UCL username found from AD: " + user_dict['username'])
         else:
             # not UCL, get next mmm username
-            username = thomas_utils.getunusedmmm(cursor)
-            print("Not UCL email, username is " + username)
+            user_dict['username'] = thomas_utils.getunusedmmm(cursor)
+            print("Not UCL email, username is " + user_dict['username'])
     # we have a non-placeholder username
     else:
-        username = user_dict['username']    
+        print("Using ticket-provided username: " + user_dict['username'])
     # Add new user to database: need the user_dict dictionary we created.
     # Surname may be empty.
     args.surname = result[0]['lastname']
@@ -127,7 +137,51 @@ def newuser(cursor, config, ticketid):
     else:
         print("SAFE ticket was for " + result[0]['machine'].casefold() + "and you are on " + cluster + ", exiting.")
         exit(1)    
+    
+    # update SAFE and close the ticket
+    updateticket(config, updatenewuser(ticketid, user_dict['username']))
 # end newuser
+
+# Deal with a New Budget ticket
+def newbudget(cursor, config, ticketid):
+    # get the ticket (the ID is unique so there is only one)
+    cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
+    result = cursor.fetchall()
+
+    # TODO: need to work out what institute it is for 
+
+    # this dict will be needed when we create the budget
+    budget_dict = {'project_ID': username,
+                   'inst_ID': ''}
+    # add new project to database
+    thomas_utils.addproject(args, budget_dict, cursor)
+
+    # update SAFE and close the ticket
+    updateticket(config, updatebudget(ticketid, projectname))
+# end newbudget
+
+# Deal with an Add to budget ticket
+def addtobudget(cursor, config, ticketid):
+    # get the ticket (the ID is unique so there is only one)
+    cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
+    result = cursor.fetchall()
+
+    # this dict will be needed when we create the projectuser
+    projectuser_dict = {'username': result[0]['username'],
+                        'project_ID': result[0]['project'],
+                        'poc_id': '',
+                        'poc_firstname': result[0]['poc_firstname'],
+                        'poc_lastname': result[0]['poc_lastname'], 
+                        'poc_email': result[0]['poc_email'],
+                        'status': 'active'}
+    # TODO: budget exists: get the point of contact
+    projectuser_dict['poc_id'] = thomas_utils.findpocID(cursor, projectuser_dict)
+
+    thomas_utils.addprojectuser(args, projectuser_dict, cursor)
+
+    # update SAFE and close the ticket
+    updateticket(config, updateaddtobudget(ticketid))
+# end addtobudget
 
 # Turn a list of tickets into a list of dicts for use in SQL queries
 def ticketstodicts(ticketlist):
@@ -203,7 +257,10 @@ def main(argv):
                 for t in ticketdicts:
                     cursor.execute(thomas_queries.refreshsafetickets(), t)
                     thomas_utils.debugcursor(cursor, args.debug)
-                # show database tickets
+                # show database tickets (not ssh key)
+                print("Refreshed tickets:")
+                cursor.execute(thomas_queries.showpendingtickets())
+                thomas_utils.tableprint(cursor.fetchall())
     
             # Update and close SAFE tickets
             if args.close != None:
