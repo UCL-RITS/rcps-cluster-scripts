@@ -228,6 +228,14 @@ def findduplicate(key_string):
                 WHERE """ + key_string +"""=%(""" + key_string + """)s""")
     return query
 
+# Get all open tickets for printing (not including the ssh keys)
+def showpendingtickets():
+    query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
+                  email, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                FROM safetickets 
+                WHERE status='Pending'""")
+    return query
+
 # Get the type of a SAFE ticket
 def safetickettype():
     query = ("""SELECT type 
@@ -242,4 +250,15 @@ def getsafeticket():
                 FROM safetickets 
                 WHERE id=%(id)s""")
     return query
+
+# Get all open 'Add to budget' tickets belonging to this user
+def getusersbudgettickets():
+    query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
+                  email, publickey, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                FROM safetickets 
+                WHERE status='Pending'
+                  AND type='Add to budget'
+                  AND account_name=%(account_name)s""")
+    return query
+
 

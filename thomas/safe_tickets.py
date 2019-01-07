@@ -183,6 +183,18 @@ def addtobudget(cursor, config, ticketid):
     updateticket(config, updateaddtobudget(ticketid))
 # end addtobudget
 
+# Match a New User ticket with an Add to budget ticket for the same user
+def matchbudgetticket(cursor, config, ticketid):
+    cursor.execute(thomas_queries.getusersbudgettickets(), {'account_name':username})
+    result = cursor.fetchall()
+
+    # There were no matches! Something is wrong (or we need to refresh).
+
+    # May be multiple matches - we just want the first one as they can be done in any order.
+    # Return ticket id so we know which one we are completing.         
+    return {'project_ID': result[0]['project'], 'ticket_ID': result[0]['id']}
+# end matchbudgetticket
+
 # Turn a list of tickets into a list of dicts for use in SQL queries
 def ticketstodicts(ticketlist):
     ticket_dicts = []
@@ -257,44 +269,55 @@ def main(argv):
                 for t in ticketdicts:
                     cursor.execute(thomas_queries.refreshsafetickets(), t)
                     thomas_utils.debugcursor(cursor, args.debug)
-                # show database tickets (not ssh key)
+                # show database tickets (not inc ssh key)
                 print("Refreshed tickets:")
                 cursor.execute(thomas_queries.showpendingtickets())
                 thomas_utils.tableprint(cursor.fetchall())
     
             # Update and close SAFE tickets
             if args.close != None:
+                # for readability below
+                ticket = args.close
                 # get the type of ticket - ticket id is unique so there is only one
-                # (Either make a temporary dict or pass in (args.close,) with the comma which is ugly).
-                cursor.execute(thomas_queries.safetickettype(), {'id':args.close})
+                # (Either make a temporary dict or pass in (ticket,) with the comma which is ugly).
+                cursor.execute(thomas_queries.safetickettype(), {'id':ticket})
                 result = cursor.fetchall()
                 # make sure we got a result, or exit
                 if cursor.rowcount < 1:
-                    print("No tickets with id " + args.close + " found, exiting.")
+                    print("No tickets with id " + ticket + " found, exiting.")
                     exit(1)
 
                 tickettype = result[0][0]
+                # store all the ticket info
 
                 # new user
                 if tickettype == "New User":
-                    newuser(cursor, config, args.close)
+                    #TODO Each new user ticket should have a matching Add to budget ticket.
+                    # Find it and get the project from it.
+                    match = matchbudgetticket(cursor, config, ticket)                    
+ 
+                    newuser(cursor, config, ticket)
+                    # also complete the matching add to budget ticket
+                    addtobudget(cursor, config, match['ticket_ID'])
+
                 # new budget
                 elif tickettype == "New Budget":
-                    newbudget(cursor, config, args.close)
+                    newbudget(cursor, config, ticket)
                 # add to budget
                 elif tickettype == "Add to budget":
-                    addtobudget(cursor, config, args.close)
+                    addtobudget(cursor, config, ticket)
                 else:
-                    print("Ticket " + args.close + " type unrecognised: " + tickettype)
+                    print("Ticket " + ticket + " type unrecognised: " + tickettype)
                     exit(1)
                  
             # Reject SAFE tickets - there are two types of rejection so ask
             if args.reject != None:
+                ticket = args.reject
                 answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("other", "error"), default_ans="other")
                 if answer == "error":
-                    updateticket(config, rejecterror(ticket_id))
+                    updateticket(config, rejecterror(ticket))
                 else:
-                    updateticket(config, rejectother(ticket_id))
+                    updateticket(config, rejectother(ticket))
 
             # commit the change to the database unless we are debugging
             if not args.debug:
