@@ -30,6 +30,15 @@ else
    exit 1 
 fi
 
+if [[ "$PLATFORM" == "legion" ]]; then
+    echo "Reminder: new accounts unassociated with existing paid projects 
+          are no longer to be created on Legion (as of 2019-01-01). "
+    read -r -p "Are you sure you want to create this account? Please type 'yes' if so: " response
+    if [[ "$response" != "yes" ]]; then
+        echo "Okay, stopping."
+        exit
+    fi
+fi
 
 echo "creating account for $1"
 qconf -au "$1" "$ACL"
