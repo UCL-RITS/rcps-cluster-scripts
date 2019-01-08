@@ -228,6 +228,19 @@ def findduplicate(key_string):
                 WHERE """ + key_string +"""=%(""" + key_string + """)s""")
     return query
 
+# Get all points of contact with matching email
+def findpocbyemail():
+    query = ("""SELECT poc_givenname, poc_surname, poc_email
+                FROM pointofcontact 
+                WHERE poc_email=%(poc_email)s""")
+    return query
+
+def findpocbylastname():
+    query = ("""SELECT poc_givenname, poc_surname, poc_email
+                FROM pointofcontact 
+                WHERE poc_surname=%(poc_surname)s""")
+    return query
+
 # Get all open tickets for printing (not including the ssh keys)
 def showpendingtickets():
     query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 

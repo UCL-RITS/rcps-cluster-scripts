@@ -174,7 +174,7 @@ def addtobudget(cursor, config, ticketid):
                         'poc_lastname': result[0]['poc_lastname'], 
                         'poc_email': result[0]['poc_email'],
                         'status': 'active'}
-    # TODO: budget exists: get the point of contact
+    # budget exists: get the point of contact
     projectuser_dict['poc_id'] = thomas_utils.findpocID(cursor, projectuser_dict)
 
     thomas_utils.addprojectuser(args, projectuser_dict, cursor)
@@ -184,11 +184,20 @@ def addtobudget(cursor, config, ticketid):
 # end addtobudget
 
 # Match a New User ticket with an Add to budget ticket for the same user
-def matchbudgetticket(cursor, config, ticketid):
+def matchbudgetticket(cursor, ticketid):
+    # TODO: get the username from the existing ticket
+    cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
+    result = cursor.fetchall()
+    user = result[0]['id']
+
+    # get the matching add to budget tickets
     cursor.execute(thomas_queries.getusersbudgettickets(), {'account_name':username})
     result = cursor.fetchall()
+    rowcount = cursor.rowcount
 
     # There were no matches! Something is wrong (or we need to refresh).
+    if rowcount == 0:
+        print("No pending Add to budget tickets for " + username)
 
     # May be multiple matches - we just want the first one as they can be done in any order.
     # Return ticket id so we know which one we are completing.         

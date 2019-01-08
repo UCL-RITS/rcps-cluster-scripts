@@ -47,34 +47,63 @@ def findduplicate(cursor, email_address):
 #                             #
 ###############################
 
-# poc_dict needs to contain 'poc_firstname', 'poc_lastname', 'poc_email'.
+# poc_dict needs to contain ['poc_firstname'], 'poc_lastname', 'poc_email'.
 def findpocID(cursor, poc_dict):
-    # TODO: look for project match first
-
-    # then check email match
+    # check for email match
     findpocIDbyemail(cursor, poc_dict['poc_email'])
     result = cursor.fetchall()
     rowcount = cursor.rowcount
+    # no result, check surname match
+    if rowcount == 0:
+        findpocIDbysurname(cursor, poc_dict['poc_lastname'])
+        result = cursor.fetchall()
+        rowcount = cursor.rowcount
+    # still no result, get whole PoC list
+    if rowcount == 0:
+        cursor.execute(thomas_queries.contactsinfo())
+        result = cursor.fetchall()
+        rowcount = cursor.rowcount
+    # now we have some results, check if one or many and return the user's choice
+    return searchpocresults(result, rowcount)
+# end findpocID
+
+
+# Either return the single matching poc_id or ask the user to pick from several
+def searchpocresults(result, rowcount):
     if rowcount == 1:
-        print("Exact match for PoC email found: " + result[0]['poc_givenname'] + " " + result[0]['poc_surname'] + ", " + result[0]['poc_id'])
+        print("Match for point of contact found: " + result[0]['poc_givenname'] + " " + result[0]['poc_surname'] + ", " + result[0]['poc_id'])
         return result[0]['poc_id']
-    # found two exact matches, ask
+    # found multiple matches, ask
     elif rowcount > 1:
-        for item in result:
-            print()
-        select_from_list("Multiple PoC matches found, please choose one or n for none.", answers_list)
+        # make a list of strings 1, 2, etc to choose from
+        options_list = [str(x) for x in range(1, rows_count+1)] 
+        for i in range(rows_count):
+            # print the results, labeled from 1
+            print(options_list[i] + ") "+ result[i]['poc_givenname'] +" "+ result[i]['poc_surname'] + ", " + result[0]['poc_id'] ))
+        response = select_from_list("Please choose the correct point of contact or n for none.", options_list)
+        # user said no to all options
+        if response == "n":
+            print("No point of contact chosen, doing nothing and exiting.")
+            exit(0)
+        # picked an option
+        else:
+            # go back to zero-index, return chosen poc_id
+            poc_id = result[int(response)-1]['poc_id']
+            print(poc_id + " chosen.")
+            return poc_id
+    # no results were passed in
     else:
-        # find contact where only lastname or email match - ask
-        #findpocIDinexact(cursor, poc_dict['poc_email'])
-        #result = cursor.fetchall()
-        # TODO: pick from PoC list
+        print("Zero rows of points of contact found.")
+        exit(0)
+# end searchpocresults
 
 
 def findpocIDbyemail(cursor, email):
-    cursor.execute(thomas_queries.findpocbyemail(), {'email': email})
+    cursor.execute(thomas_queries.findpocbyemail(), {'poc_email':email})
 
-def findpocIDinexact(cursor, lastname, email):
-    cursor.execute(thomas_queries.findpocinexact(), {'lastname':lastname, 'email':email})
+def findpocIDbysurname(cursor, surname):
+    cursor.execute(thomas_queries.findpocbylastname(), {'poc_surname':surname})
+
 
 #################################
 #                               #
@@ -195,7 +224,6 @@ def checkprojectoncluster(project, nodename):
         # they said no, exit
         if not answer:
             exit(1)
-
 # end checkprojectoncluster
 
 def getnodename():
