@@ -55,7 +55,7 @@ get_mail_address () {
       echo "nobody@ucl.ac.uk"
   elif [[ "${username:0:3}" == "mmm" ]]; then
       # Do a database lookup and if this fails send to nobody.
-      email_search=$(mmm-to-email)
+      email_search=$(mmm-to-email $username)
       search_success=$?
       if [[ "${search_success}" == "0" ]]; then
         echo $email_search
