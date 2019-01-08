@@ -52,9 +52,15 @@ get_mail_address () {
       echo "Warning: this is a course account, and does not have a valid mail address.">&2
       echo "nobody@ucl.ac.uk"
   elif [[ "${username:0:3}" == "mmm" ]]; then
-      # If it becomes necessary we could put a database lookup here but it hasn't really been so far
-      echo "Warning: this is an external account, and does not have a valid mail address.">&2
-      echo "nobody@ucl.ac.uk"
+      # Do a database lookup and if this fails send to nobody.
+      email_search=$(mmm-to-email)
+      search_success=$?
+      if [[ "${search_success}" == "0" ]]; then
+        echo $email_search
+      else
+        echo "Warning: this is an external account, and does not have a valid mail address.">&2
+        echo "nobody@ucl.ac.uk"        
+      fi
   else
     echo "$1@ucl.ac.uk"
   fi
