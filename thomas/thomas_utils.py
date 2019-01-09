@@ -94,7 +94,7 @@ def searchpocresults(result, rowcount):
     # no results were passed in
     else:
         print("Zero rows of points of contact found.")
-        exit(0)
+        exit(1)
 # end searchpocresults
 
 

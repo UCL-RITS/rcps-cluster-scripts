@@ -99,6 +99,7 @@ def updateticket(config, parameters):
         print("Ticket " + parameters['qtid'] + " closed.")
 # end updateticket
 
+
 # Deal with a New User ticket
 def newuser(cursor, config, ticketid):
     # get the ticket (the ID is unique so there is only one)
@@ -142,6 +143,7 @@ def newuser(cursor, config, ticketid):
     updateticket(config, updatenewuser(ticketid, user_dict['username']))
 # end newuser
 
+
 # Deal with a New Budget ticket
 def newbudget(cursor, config, ticketid):
     # get the ticket (the ID is unique so there is only one)
@@ -159,6 +161,7 @@ def newbudget(cursor, config, ticketid):
     # update SAFE and close the ticket
     updateticket(config, updatebudget(ticketid, projectname))
 # end newbudget
+
 
 # Deal with an Add to budget ticket
 def addtobudget(cursor, config, ticketid):
@@ -183,26 +186,30 @@ def addtobudget(cursor, config, ticketid):
     updateticket(config, updateaddtobudget(ticketid))
 # end addtobudget
 
+
 # Match a New User ticket with an Add to budget ticket for the same user
 def matchbudgetticket(cursor, ticketid):
-    # TODO: get the username from the existing ticket
+    # get the username from the New User ticket
     cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
     result = cursor.fetchall()
     user = result[0]['id']
 
     # get the matching add to budget tickets
-    cursor.execute(thomas_queries.getusersbudgettickets(), {'account_name':username})
+    cursor.execute(thomas_queries.getusersbudgettickets(), {'account_name':user})
     result = cursor.fetchall()
     rowcount = cursor.rowcount
 
     # There were no matches! Something is wrong (or we need to refresh).
     if rowcount == 0:
-        print("No pending Add to budget tickets for " + username)
+        print("No pending Add to budget tickets for " + user)
+        print("You may wish to use --refresh to refresh tickets.")
+        exit(1)
 
     # May be multiple matches - we just want the first one as they can be done in any order.
     # Return ticket id so we know which one we are completing.         
-    return {'project_ID': result[0]['project'], 'ticket_ID': result[0]['id']}
+    return {'project': result[0]['project'], 'ticket_ID': result[0]['id']}
 # end matchbudgetticket
+
 
 # Turn a list of tickets into a list of dicts for use in SQL queries
 def ticketstodicts(ticketlist):
@@ -263,7 +270,6 @@ def main(argv):
             print(values)
         print("Number of tickets included: " + str(len(ticketlist)))
 
-
     # these options require a database connection
     if args.refresh or args.close != None or args.reject != None:
         try:
@@ -301,7 +307,7 @@ def main(argv):
 
                 # new user
                 if tickettype == "New User":
-                    #TODO Each new user ticket should have a matching Add to budget ticket.
+                    # Each new user ticket should have a matching Add to budget ticket.
                     # Find it and get the project from it.
                     match = matchbudgetticket(cursor, config, ticket)                    
  
