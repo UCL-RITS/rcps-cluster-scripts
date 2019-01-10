@@ -150,11 +150,14 @@ def newbudget(cursor, config, ticketid):
     cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
     result = cursor.fetchall()
 
-    # TODO: need to work out what institute it is for 
-
     # this dict will be needed when we create the budget
-    budget_dict = {'project_ID': username,
+    budget_dict = {'project_ID': result[0]['project'],
                    'inst_ID': ''}
+
+    # need to work out what institute it is for
+    # use the first part of the project_ID up to any underscore as institute
+    budget_dict['inst_ID'] = budget_dict['project_ID'].partition("_")[0] 
+
     # add new project to database
     thomas_utils.addproject(args, budget_dict, cursor)
 
@@ -307,13 +310,11 @@ def main(argv):
 
                 # new user
                 if tickettype == "New User":
-                    # Each new user ticket should have a matching Add to budget ticket.
-                    # Find it and get the project from it.
-                    match = matchbudgetticket(cursor, config, ticket)                    
- 
                     newuser(cursor, config, ticket)
-                    # also complete the matching add to budget ticket
-                    addtobudget(cursor, config, match['ticket_ID'])
+                    # TODO (maybe) Each new user ticket should have a matching Add to budget ticket.
+                    # Find it if it exists and complete it too.
+                    #match = matchbudgetticket(cursor, config, ticket)                    
+                    #addtobudget(cursor, config, match['ticket_ID'])
 
                 # new budget
                 elif tickettype == "New Budget":

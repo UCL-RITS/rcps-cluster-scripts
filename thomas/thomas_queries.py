@@ -235,6 +235,13 @@ def findpocbyemail():
                 WHERE poc_email=%(poc_email)s""")
     return query
 
+def findpocbyemailandinst():
+    query = ("""SELECT poc_givenname, poc_surname, poc_email
+                FROM pointofcontact 
+                WHERE poc_email=%(poc_email)s
+                  AND institute=%(institute)""")
+    return query
+
 def findpocbylastname():
     query = ("""SELECT poc_givenname, poc_surname, poc_email
                 FROM pointofcontact 

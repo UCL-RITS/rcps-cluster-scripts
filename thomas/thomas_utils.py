@@ -47,15 +47,21 @@ def findduplicate(cursor, email_address):
 #                             #
 ###############################
 
-# poc_dict needs to contain ['poc_firstname'], 'poc_lastname', 'poc_email'.
+# poc_dict needs to contain 'poc_lastname', 'poc_email' and may contain 'project_ID'.
 def findpocID(cursor, poc_dict):
-    # check for email match
-    findpocIDbyemail(cursor, poc_dict['poc_email'])
+    # check for email match, filtered by project_ID as long as it
+    # was in the dictionary and not None, empty or blank string.
+    project = poc_dict.get('project_ID')
+    if project and project.strip():
+        # use the first part of the project_ID up to any underscore as institute
+        findpocIDbyemail(cursor, poc_dict['poc_email'], inst=project.partition("_")[0])
+    else:
+        findpocIDbyemail(cursor, poc_dict['poc_email'])
     result = cursor.fetchall()
     rowcount = cursor.rowcount
     # no result, check surname match
     if rowcount == 0:
-        findpocIDbysurname(cursor, poc_dict['poc_lastname'])
+        findpocIDbysurname(cursor, poc_dict)
         result = cursor.fetchall()
         rowcount = cursor.rowcount
     # still no result, get whole PoC list
@@ -97,9 +103,12 @@ def searchpocresults(result, rowcount):
         exit(1)
 # end searchpocresults
 
-
-def findpocIDbyemail(cursor, email):
-    cursor.execute(thomas_queries.findpocbyemail(), {'poc_email':email})
+# project is optional filter
+def findpocIDbyemail(cursor, email, inst=None):
+    if inst not None:
+        cursor.execute(thomas_queries.findpocbyemailandinst(), {'poc_email':email, 'institute':inst})
+    else:
+        cursor.execute(thomas_queries.findpocbyemail(), {'poc_email':email})
 
 def findpocIDbysurname(cursor, surname):
     cursor.execute(thomas_queries.findpocbylastname(), {'poc_surname':surname})
