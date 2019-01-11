@@ -290,7 +290,7 @@ def main(argv):
                 # show database tickets (not inc ssh key)
                 print("Refreshed tickets:")
                 cursor.execute(thomas_queries.showpendingtickets())
-                thomas_utils.tableprint(cursor.fetchall())
+                thomas_utils.tableprint_dict(cursor.fetchall())
     
             # Update and close SAFE tickets
             if args.close is not None:
