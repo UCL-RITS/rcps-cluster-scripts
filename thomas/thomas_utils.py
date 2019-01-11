@@ -105,7 +105,7 @@ def searchpocresults(result, rowcount):
 
 # inst is an optional filter
 def findpocIDbyemail(cursor, email, inst=None):
-    if inst not None:
+    if inst is not None:
         cursor.execute(thomas_queries.findpocbyemailandinst(), {'poc_email':email, 'institute':inst})
     else:
         cursor.execute(thomas_queries.findpocbyemail(), {'poc_email':email})

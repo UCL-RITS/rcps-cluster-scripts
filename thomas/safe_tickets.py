@@ -258,7 +258,7 @@ def main(argv):
         print(err)
 
     # Read tickets from a file
-    if args.jsonfile != None:
+    if args.jsonfile is not None:
         parsejsonfile(args.jsonfile)
 
     # Show tickets live from SAFE
@@ -274,7 +274,7 @@ def main(argv):
         print("Number of pending tickets: " + str(len(ticketlist)))
 
     # these options require a database connection
-    if args.refresh or args.close != None or args.reject != None:
+    if args.refresh or args.close is not None or args.reject is not None:
         try:
             conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
             cursor = conn.cursor()
@@ -293,7 +293,7 @@ def main(argv):
                 thomas_utils.tableprint(cursor.fetchall())
     
             # Update and close SAFE tickets
-            if args.close != None:
+            if args.close is not None:
                 # for readability below
                 ticket = args.close
                 # get the type of ticket - ticket id is unique so there is only one
@@ -329,7 +329,7 @@ def main(argv):
                     exit(1)
                  
             # Reject SAFE tickets - there are two types of rejection so ask
-            if args.reject != None:
+            if args.reject is not None:
                 ticket = args.reject
                 answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("other", "error"), default_ans="other")
                 if answer == "error":
