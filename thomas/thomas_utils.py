@@ -85,7 +85,7 @@ def searchpocresults(result, rowcount):
         options_list = [str(x) for x in range(1, rows_count+1)] 
         for i in range(rows_count):
             # print the results, labeled from 1
-            print(options_list[i] + ") "+ result[i]['poc_givenname'] +" "+ result[i]['poc_surname'] + ", " + result[0]['poc_id'] ))
+            print(options_list[i] + ") "+ result[i]['poc_givenname'] +" "+ result[i]['poc_surname'] + ", " + result[0]['poc_id'])
         response = select_from_list("Please choose the correct point of contact or n for none.", options_list)
         # user said no to all options
         if response == "n":
