@@ -103,7 +103,7 @@ def searchpocresults(result, rowcount):
         exit(1)
 # end searchpocresults
 
-# project is optional filter
+# inst is an optional filter
 def findpocIDbyemail(cursor, email, inst=None):
     if inst not None:
         cursor.execute(thomas_queries.findpocbyemailandinst(), {'poc_email':email, 'institute':inst})

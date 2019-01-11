@@ -202,11 +202,11 @@ def matchbudgetticket(cursor, ticketid):
     result = cursor.fetchall()
     rowcount = cursor.rowcount
 
-    # There were no matches! Something is wrong (or we need to refresh).
+    # There were no matches! We did that ticket already (or we need to refresh).
     if rowcount == 0:
         print("No pending Add to budget tickets for " + user)
         print("You may wish to use --refresh to refresh tickets.")
-        exit(1)
+        return None
 
     # May be multiple matches - we just want the first one as they can be done in any order.
     # Return ticket id so we know which one we are completing.         
@@ -271,7 +271,7 @@ def main(argv):
             #print(str(t.Ticket))
             values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.Account.Name, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey, t.Ticket.Approver.FirstName, t.Ticket.Approver.LastName, t.Ticket.Approver.Email,  t.Ticket.StartDate, t.Ticket.EndDate]
             print(values)
-        print("Number of tickets included: " + str(len(ticketlist)))
+        print("Number of pending tickets: " + str(len(ticketlist)))
 
     # these options require a database connection
     if args.refresh or args.close != None or args.reject != None:
@@ -311,10 +311,12 @@ def main(argv):
                 # new user
                 if tickettype == "New User":
                     newuser(cursor, config, ticket)
-                    # TODO (maybe) Each new user ticket should have a matching Add to budget ticket.
+                    # Each new user ticket should have a matching Add to budget ticket.
                     # Find it if it exists and complete it too.
-                    #match = matchbudgetticket(cursor, config, ticket)                    
-                    #addtobudget(cursor, config, match['ticket_ID'])
+                    match = matchbudgetticket(cursor, config, ticket)
+                    if match is not None:
+                        print("Matching 'Add to budget' ticket " + match['ticket_ID']  +  " found for this new user, carrying out.")
+                        addtobudget(cursor, config, match['ticket_ID'])
 
                 # new budget
                 elif tickettype == "New Budget":
