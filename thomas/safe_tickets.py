@@ -277,7 +277,7 @@ def main(argv):
     if args.refresh or args.close is not None or args.reject is not None:
         try:
             conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
 
             # Refresh the database tickets
             if args.refresh:

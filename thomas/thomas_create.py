@@ -117,7 +117,7 @@ def approverequest(args, args_dict, cursor, nodename):
         results = cursor.fetchall()
         if (args.debug):
             print("Requests found:")
-            thomas_utils.tableprint(results)
+            thomas_utils.tableprint_dict(results)
         # carry out the request unless it is already done
         for row in results:
             if (row['isdone'] == 0):

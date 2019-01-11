@@ -120,11 +120,24 @@ def findpocIDbysurname(cursor, surname):
 #                               #
 #################################
 
+# Simplest possible outputting of query result without brackets
+# (Just printing the fetchall results shows structure like ('a','b','c'))
+def simpleprint(results):
+    for row in results:
+        print (row[0])
+    print("")
+
 # Write out results from cursor.fetchall() as a table with
 # headers and separators. 
 # Assumes a dictionary cursor: conn.cursor(dictionary=True)
-def tableprint(results):
+def tableprint_dict(results):
     print(tabulate(results, headers="keys", tablefmt="psql"))
+    print("")
+
+# Write out results as a table with header and separators
+def tableprint(cursor, results):
+    columns = (d[0] for d in cursor.description)
+    print(tabulate(results, headers=columns, tablefmt="psql"))
     print("")
 
 # Print out the cursor statement for debugging purposes
