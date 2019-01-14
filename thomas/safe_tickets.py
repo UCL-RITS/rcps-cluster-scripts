@@ -111,7 +111,7 @@ def newuser(cursor, config, args, ticketid):
     result = cursor.fetchall()
     # this dict will be needed when we create the user
     user_dict = {'username': result[0]['account_name'], 
-                 'givenname': result[0]['firstname'],
+                 'given_name': result[0]['firstname'],
                  'email': result[0]['email'],
                  'ssh_key': result[0]['publickey'],
                  'status': "active"}
