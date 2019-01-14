@@ -110,7 +110,7 @@ def newuser(cursor, config, args, ticketid):
     cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
     result = cursor.fetchall()
     # this dict will be needed when we create the user
-    user_dict = {'username': result[0]['username'], 
+    user_dict = {'username': result[0]['account_name'], 
                  'givenname': result[0]['firstname'],
                  'email': result[0]['email'],
                  'ssh_key': result[0]['publickey'],
