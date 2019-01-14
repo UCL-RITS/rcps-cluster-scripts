@@ -93,15 +93,19 @@ def rejectother(ticket_id):
 
 # Update and close a ticket.
 # parameters is a dictionary of values: {'qtid':id,'new_username':'Test', 'mode':'completed'}
-def updateticket(config, parameters):
-    request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
-    if "<title>SysAdminServlet Success</title>" in request.text:
-        print("Ticket " + parameters['qtid'] + " closed.")
+def updateticket(config, args, parameters):
+    if args.debug:
+        print("Post request would be to " + config['safe']['host'] + " with params = " + parameters)
+    else:
+        request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
+        if "<title>SysAdminServlet Success</title>" in request.text:
+            print("Ticket " + parameters['qtid'] + " closed.")
 # end updateticket
 
 
 # Deal with a New User ticket
-def newuser(cursor, config, ticketid):
+# (thomas_utils and thomas_create commands that add and create users contain debugging).
+def newuser(cursor, config, args, ticketid):
     # get the ticket (the ID is unique so there is only one)
     cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
     result = cursor.fetchall()
@@ -140,12 +144,13 @@ def newuser(cursor, config, ticketid):
         exit(1)    
     
     # update SAFE and close the ticket
-    updateticket(config, updatenewuser(ticketid, user_dict['username']))
+    updateticket(config, args, updatenewuser(ticketid, user_dict['username']))
 # end newuser
 
 
 # Deal with a New Budget ticket
-def newbudget(cursor, config, ticketid):
+# (thomas_utils.addproject contains debugging)
+def newbudget(cursor, config, args, ticketid):
     # get the ticket (the ID is unique so there is only one)
     cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
     result = cursor.fetchall()
@@ -162,12 +167,13 @@ def newbudget(cursor, config, ticketid):
     thomas_utils.addproject(args, budget_dict, cursor)
 
     # update SAFE and close the ticket
-    updateticket(config, updatebudget(ticketid, projectname))
+    updateticket(config, args, updatebudget(ticketid, projectname))
 # end newbudget
 
 
 # Deal with an Add to budget ticket
-def addtobudget(cursor, config, ticketid):
+# (thomas_utils.addprojectuser contains debugging)
+def addtobudget(cursor, config, args, ticketid):
     # get the ticket (the ID is unique so there is only one)
     cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
     result = cursor.fetchall()
@@ -186,7 +192,7 @@ def addtobudget(cursor, config, ticketid):
     thomas_utils.addprojectuser(args, projectuser_dict, cursor)
 
     # update SAFE and close the ticket
-    updateticket(config, updateaddtobudget(ticketid))
+    updateticket(config, args, updateaddtobudget(ticketid))
 # end addtobudget
 
 
@@ -310,20 +316,20 @@ def main(argv):
 
                 # new user
                 if tickettype == "New User":
-                    newuser(cursor, config, ticket)
+                    newuser(cursor, config, args, ticket)
                     # Each new user ticket should have a matching Add to budget ticket.
                     # Find it if it exists and complete it too.
                     match = matchbudgetticket(cursor, config, ticket)
                     if match is not None:
                         print("Matching 'Add to budget' ticket " + match['ticket_ID']  +  " found for this new user, carrying out.")
-                        addtobudget(cursor, config, match['ticket_ID'])
+                        addtobudget(cursor, config, args, match['ticket_ID'])
 
                 # new budget
                 elif tickettype == "New Budget":
-                    newbudget(cursor, config, ticket)
+                    newbudget(cursor, config, args, ticket)
                 # add to budget
                 elif tickettype == "Add to budget":
-                    addtobudget(cursor, config, ticket)
+                    addtobudget(cursor, config, args, ticket)
                 else:
                     print("Ticket " + ticket + " type unrecognised: " + tickettype)
                     exit(1)
@@ -333,9 +339,9 @@ def main(argv):
                 ticket = args.reject
                 answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("other", "error"), default_ans="other")
                 if answer == "error":
-                    updateticket(config, rejecterror(ticket))
+                    updateticket(config, args, rejecterror(ticket))
                 else:
-                    updateticket(config, rejectother(ticket))
+                    updateticket(config, args, rejectother(ticket))
 
             # commit the change to the database unless we are debugging
             if not args.debug:
