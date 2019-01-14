@@ -139,6 +139,7 @@ def newuser(cursor, config, args, ticketid):
     if result[0]['machine'].casefold() in cluster:
         # make sure the point of contact gets copied in on account creation
         args.cc_email = result[0]['poc_email']
+        args.username = user_dict['username']
         thomas_create.createaccount(args, cluster)
     else:
         print("SAFE ticket was for " + result[0]['machine'].casefold() + "and you are on " + cluster + ", exiting.")
