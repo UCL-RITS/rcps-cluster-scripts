@@ -311,7 +311,7 @@ def main(argv):
                     print("No tickets with id " + ticket + " found, exiting.")
                     exit(1)
 
-                tickettype = result[0][0]
+                tickettype = result[0]['type']
                 # store all the ticket info
 
                 # new user
