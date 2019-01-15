@@ -61,7 +61,7 @@ def findpocID(cursor, poc_dict):
     rowcount = cursor.rowcount
     # no result, check surname match
     if rowcount == 0:
-        findpocIDbysurname(cursor, poc_dict)
+        findpocIDbysurname(cursor, poc_dict['poc_lastname'])
         result = cursor.fetchall()
         rowcount = cursor.rowcount
     # still no result, get whole PoC list
@@ -82,10 +82,10 @@ def searchpocresults(result, rowcount):
     # found multiple matches, ask
     elif rowcount > 1:
         # make a list of strings 1, 2, etc to choose from
-        options_list = [str(x) for x in range(1, rows_count+1)] 
-        for i in range(rows_count):
+        options_list = [str(x) for x in range(1, rowcount+1)] 
+        for i in range(rowcount):
             # print the results, labeled from 1
-            print(options_list[i] + ") "+ result[i]['poc_givenname'] +" "+ result[i]['poc_surname'] + ", " + result[0]['poc_id'])
+            print(options_list[i] + ") "+ result[i]['poc_givenname'] +" "+ result[i]['poc_surname'] + ", " + result[i]['poc_id'])
         response = select_from_list("Please choose the correct point of contact or n for none.", options_list)
         # user said no to all options
         if response == "n":
