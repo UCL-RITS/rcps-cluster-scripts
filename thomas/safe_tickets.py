@@ -326,7 +326,7 @@ def main(argv):
                     newuser(cursor, config, args, ticket)
                     # Each new user ticket should have a matching Add to budget ticket.
                     # Find it if it exists and complete it too.
-                    match = matchbudgetticket(cursor, config, ticket)
+                    match = matchbudgetticket(cursor, ticket)
                     if match is not None:
                         print("Matching 'Add to budget' ticket " + match['ticket_ID']  +  " found for this new user, carrying out.")
                         addtobudget(cursor, config, args, match['ticket_ID'])
