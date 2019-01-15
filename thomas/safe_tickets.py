@@ -186,7 +186,7 @@ def addtobudget(cursor, config, args, ticketid):
     result = cursor.fetchall()
 
     # this dict will be needed when we create the projectuser
-    projectuser_dict = {'username': result[0]['username'],
+    projectuser_dict = {'username': result[0]['account_name'],
                         'project_ID': result[0]['project'],
                         'poc_id': '',
                         'poc_firstname': result[0]['poc_firstname'],
@@ -208,7 +208,7 @@ def matchbudgetticket(cursor, ticketid):
     # get the username from the New User ticket
     cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
     result = cursor.fetchall()
-    user = result[0]['id']
+    user = result[0]['account_name']
 
     # get the matching add to budget tickets
     cursor.execute(thomas_queries.getusersbudgettickets(), {'account_name':user})
