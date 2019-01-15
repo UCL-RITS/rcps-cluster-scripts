@@ -328,7 +328,7 @@ def main(argv):
                     # Find it if it exists and complete it too.
                     match = matchbudgetticket(cursor, ticket)
                     if match is not None:
-                        print("Matching 'Add to budget' ticket " + match['ticket_ID']  +  " found for this new user, carrying out.")
+                        print("Matching 'Add to budget' ticket " + str(match['ticket_ID'])  +  " found for this new user, carrying out.")
                         addtobudget(cursor, config, args, match['ticket_ID'])
 
                 # new budget
