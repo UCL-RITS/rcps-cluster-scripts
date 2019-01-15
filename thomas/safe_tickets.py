@@ -262,7 +262,6 @@ def main(argv):
     except ValueError as err:
         print(err)
         exit(1)
-    print(args)
     try:
         config = configparser.ConfigParser()
         config.read_file(open(os.path.expanduser('~/.thomas.cnf')))
