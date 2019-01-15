@@ -95,7 +95,7 @@ def rejectother(ticket_id):
 # parameters is a dictionary of values: {'qtid':id,'new_username':'Test', 'mode':'completed'}
 def updateticket(config, args, parameters):
     if args.debug:
-        print("Post request would be to " + config['safe']['host'] + " with params = " + parameters)
+        print("Post request would be to " + config['safe']['host'] + " with params = " + str(parameters))
     else:
         request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
         if "<title>SysAdminServlet Success</title>" in request.text:
@@ -140,6 +140,11 @@ def newuser(cursor, config, args, ticketid):
         # make sure the point of contact gets copied in on account creation
         args.cc_email = result[0]['poc_email']
         args.username = user_dict['username']
+        args.ssh_key = user_dict['ssh_key']
+        args.email = user_dict['email']
+        args.noemail = ''
+        # thomas_create.createaccount takes a Namespace rather than a dict
+        #user_namespace = argparse.Namespace(cc_email = result[0]['poc_email'], username = user_dict['username'], ssh_key = user_dict['ssh_key'], email = user_dict['email'], noemail = '', debug = args.debug)
         thomas_create.createaccount(args, cluster)
     else:
         print("SAFE ticket was for " + result[0]['machine'].casefold() + "and you are on " + cluster + ", exiting.")
