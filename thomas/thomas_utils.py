@@ -2,6 +2,8 @@
 
 import mysql.connector
 from tabulate import tabulate
+from ldap3 import Server, Connection, ALL
+import socket
 import thomas_queries
 
 ##########################
@@ -39,17 +41,103 @@ def getunusedmmm(cursor):
 def findduplicate(cursor, email_address):
     return cursor.execute(thomas_queries.findduplicate(), dict(email=email_address))
 
+###############################
+#                             #
+# Find a point of contact ID  #
+#                             #
+###############################
+
+# poc_dict needs to contain 'poc_lastname', 'poc_email' and may contain 'project_ID'.
+def findpocID(cursor, poc_dict):
+    # check for email match, filtered by project_ID as long as it
+    # was in the dictionary and not None, empty or blank string.
+    project = poc_dict.get('project_ID')
+    if project and project.strip():
+        # use the first part of the project_ID up to any underscore as institute
+        findpocIDbyemail(cursor, poc_dict['poc_email'], inst=project.partition("_")[0])
+    else:
+        findpocIDbyemail(cursor, poc_dict['poc_email'])
+    result = cursor.fetchall()
+    rowcount = cursor.rowcount
+    # no result, check surname match
+    if rowcount == 0:
+        findpocIDbysurname(cursor, poc_dict['poc_lastname'])
+        result = cursor.fetchall()
+        rowcount = cursor.rowcount
+    # still no result, get whole PoC list
+    if rowcount == 0:
+        cursor.execute(thomas_queries.contactsinfo())
+        result = cursor.fetchall()
+        rowcount = cursor.rowcount
+    # now we have some results, check if one or many and return the user's choice
+    return searchpocresults(result, rowcount)
+# end findpocID
+
+
+# Either return the single matching poc_id or ask the user to pick from several
+def searchpocresults(result, rowcount):
+    if rowcount == 1:
+        print("Match for point of contact found: " + result[0]['poc_givenname'] + " " + result[0]['poc_surname'] + ", " + result[0]['poc_id'])
+        return result[0]['poc_id']
+    # found multiple matches, ask
+    elif rowcount > 1:
+        # make a list of strings 1, 2, etc to choose from
+        options_list = [str(x) for x in range(1, rowcount+1)] 
+        for i in range(rowcount):
+            # print the results, labeled from 1
+            print(options_list[i] + ") "+ result[i]['poc_givenname'] +" "+ result[i]['poc_surname'] + ", " + result[i]['poc_id'])
+        response = select_from_list("Please choose the correct point of contact or n for none.", options_list)
+        # user said no to all options
+        if response == "n":
+            print("No point of contact chosen, doing nothing and exiting.")
+            exit(0)
+        # picked an option
+        else:
+            # go back to zero-index, return chosen poc_id
+            poc_id = result[int(response)-1]['poc_id']
+            print(poc_id + " chosen.")
+            return poc_id
+    # no results were passed in
+    else:
+        print("Zero rows of points of contact found.")
+        exit(1)
+# end searchpocresults
+
+# inst is an optional filter
+def findpocIDbyemail(cursor, email, inst=None):
+    if inst is not None:
+        cursor.execute(thomas_queries.findpocbyemailandinst(), {'poc_email':email, 'institute':inst})
+    else:
+        cursor.execute(thomas_queries.findpocbyemail(), {'poc_email':email})
+
+def findpocIDbysurname(cursor, surname):
+    cursor.execute(thomas_queries.findpocbylastname(), {'poc_surname':surname})
+
+
 #################################
 #                               #
 # Print functions and debugging #
 #                               #
 #################################
 
+# Simplest possible outputting of query result without brackets
+# (Just printing the fetchall results shows structure like ('a','b','c'))
+def simpleprint(results):
+    for row in results:
+        print (row[0])
+    print("")
+
 # Write out results from cursor.fetchall() as a table with
 # headers and separators. 
 # Assumes a dictionary cursor: conn.cursor(dictionary=True)
-def tableprint(results):
+def tableprint_dict(results):
     print(tabulate(results, headers="keys", tablefmt="psql"))
+    print("")
+
+# Write out results as a table with header and separators
+def tableprint(cursor, results):
+    columns = (d[0] for d in cursor.description)
+    print(tabulate(results, headers=columns, tablefmt="psql"))
     print("")
 
 # Print out the cursor statement for debugging purposes
@@ -71,6 +159,10 @@ def addusertodb(args, args_dict, cursor):
 # Add a new project-user relationship to the database
 def addprojectuser(args, args_dict, cursor):
     cursor.execute(thomas_queries.addprojectuser(), args_dict)
+    debugcursor(cursor, args.debug)
+
+def addproject(args, args_dict, cursor):
+    cursor.execute(thomas_queries.addproject(), args_dict)
     debugcursor(cursor, args.debug)
 
 ##############
@@ -154,8 +246,11 @@ def checkprojectoncluster(project, nodename):
         # they said no, exit
         if not answer:
             exit(1)
-
 # end checkprojectoncluster
+
+def getnodename():
+    nodename = socket.getfqdn().casefold()
+    return nodename
 
 def getcluster(nodename):
     if "thomas" in nodename:
@@ -167,3 +262,26 @@ def getcluster(nodename):
         exit(1)
 # end getcluster
 
+#########################
+#                       #
+# Get user info from AD #
+#                       #
+#########################
+
+def AD_username_from_email(config, email):
+# TODO: add some exception-handling here
+    # using ldaps:// in the host gets it to use SSL
+    server = Server(config['ad']['host'], get_info=ALL)
+    conn = Connection(server, user=config['ad']['user'], password=config['ad']['password'], auto_bind=True)
+    # the filter string has to include the brackets: (mail=email)
+    filter='(mail=' + email + ')'
+    conn.search('DC=ad,DC=ucl,DC=ac,DC=uk', filter, attributes=['cn'])
+    # check if we got more than one result (bad!)
+    # TODO: ask if we want to pick one
+    if len(conn.entries[0].cn.values) > 1 or len(conn.entries) > 1:
+        print("More than one username found for " + email + ", exiting.")
+        print(conn.entries)
+        exit(1)
+    return conn.entries[0].cn.values[0]
+
+    

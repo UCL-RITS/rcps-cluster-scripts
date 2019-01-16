@@ -93,6 +93,20 @@ def deactivateprojectuser():
                 WHERE username=%(username)s AND project=%(project)s""")
     return query
 
+######################################################
+#                                                    #
+# Queries that insert/update entries in the database #
+#                                                    #
+######################################################
+
+# Insert an open SAFE ticket or update it if it already exists.
+# id is unique.
+def refreshsafetickets():
+    fields = ("""type=%(type)s, status=%(status)s, startdate=%(startdate)s, enddate=%(enddate)s, machine=%(machine)s, project=%(project)s, account_name=%(account_name)s, firstname=%(firstname)s, lastname=%(lastname)s, email=%(email)s, publickey=%(publickey)s, poc_firstname=%(poc_firstname)s, poc_lastname=%(poc_lastname)s, poc_email=%(poc_email)s""")
+    query = ("""INSERT INTO safetickets SET id=%(id)s, """ + fields + """, creation_date=now()
+                ON DUPLICATE KEY UPDATE """ + fields)
+    return query
+
 ###################################################
 #                                                 #
 # Queries that read information from the database #
@@ -212,6 +226,59 @@ def findduplicate(key_string):
     query = ("""SELECT username, givenname, surname, email, creation_date, modification_date 
                 FROM users 
                 WHERE """ + key_string +"""=%(""" + key_string + """)s""")
+    return query
+
+# Get all points of contact with matching email
+def findpocbyemail():
+    query = ("""SELECT poc_givenname, poc_surname, poc_email
+                FROM pointofcontact 
+                WHERE poc_email=%(poc_email)s""")
+    return query
+
+def findpocbyemailandinst():
+    query = ("""SELECT poc_givenname, poc_surname, poc_email
+                FROM pointofcontact 
+                WHERE poc_email=%(poc_email)s
+                  AND institute=%(institute)s""")
+    return query
+
+def findpocbylastname():
+    query = ("""SELECT poc_givenname, poc_surname, poc_email
+                FROM pointofcontact 
+                WHERE poc_surname=%(poc_surname)s""")
+    return query
+
+# Get all open tickets for printing (not including the ssh keys)
+def showpendingtickets():
+    query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
+                  email, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                FROM safetickets 
+                WHERE status='Pending'""")
+    return query
+
+# Get the type of a SAFE ticket
+def safetickettype():
+    query = ("""SELECT type 
+                FROM safetickets 
+                WHERE id=%(id)s""")
+    return query
+
+# Get a SAFE ticket by ID
+def getsafeticket():
+    query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
+                  email, publickey, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                FROM safetickets 
+                WHERE id=%(id)s""")
+    return query
+
+# Get all open 'Add to budget' tickets belonging to this user
+def getusersbudgettickets():
+    query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
+                  email, publickey, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                FROM safetickets 
+                WHERE status='Pending'
+                  AND type='Add to budget'
+                  AND account_name=%(account_name)s""")
     return query
 
 
