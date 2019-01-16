@@ -130,13 +130,13 @@ def newuser(cursor, config, args, ticketid):
     # we have a non-placeholder username
     else:
         print("Using ticket-provided username: " + user_dict['username'])
-    # Add new user to database: need the user_dict dictionary we created.
-    # Surname may be empty.
-    args.surname = result[0]['lastname']
-    thomas_utils.addusertodb(args, user_dict, cursor)
-    # create this account, checking we are on that machine
+    # check we are on the correct machine
     cluster = thomas_utils.getnodename()
     if result[0]['machine'].casefold() in cluster:
+        # Add new user to database: need the user_dict dictionary we created.
+        # Surname may be empty.
+        args.surname = result[0]['lastname']
+        thomas_utils.addusertodb(args, user_dict, cursor)
         # make sure the point of contact gets copied in on account creation
         args.cc_email = result[0]['poc_email']
         args.username = user_dict['username']
