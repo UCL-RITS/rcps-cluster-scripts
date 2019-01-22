@@ -11,7 +11,7 @@
 # For reasons the request is enclosed in a Sysadmin object.
 class SysAdmin:
 
-    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Person", "ProjectGroup", "Project", "Account", "ExtraText"]
+    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Approver", "Person", "ProjectGroup", "Project", "Account", "ExtraText"]
 
     def __init__(self, SysAdminDict):
         for a in SysAdminDict.keys():
@@ -25,6 +25,10 @@ class SysAdmin:
         self.Machine=SysAdminDict["Machine"]
         self.HandlerName=SysAdminDict["Handler"]["Name"]
         self.HandlerEmail=SysAdminDict["Handler"]["Email"]
+        self.Approver=""
+        # Approver is an instance of Person
+        if "Approver" in SysAdminDict.keys():
+            self.Approver=Person(SysAdminDict["Approver"])
         self.Person=""
         if "Person" in SysAdminDict.keys():
             self.Person=Person(SysAdminDict["Person"])
@@ -45,6 +49,7 @@ class SysAdmin:
                                         self.EndDate,
                                         self.HandlerName,
                                         self.HandlerEmail,
+                                        str(self.Approver),
                                         str(self.Person),
                                         str(self.Project),
                                         str(self.ProjectGroup),
@@ -173,17 +178,22 @@ class AccountRequest:
         self.Ticket=SysAdmin(SystemTicketDict["SysAdmin"])
 
 # Convert String to objects.
-def JSONtoAccountRequest(JSONData):
+def JSONtoTickets(JSONData):
     import json
     from io import StringIO
-    Tickets = []
+
     jsdata = json.load(StringIO(JSONData))
-    if type(jsdata) == list:
-        for a in jsdata:
+
+    return JSONDataToTickets(jsdata)
+
+# Convert JSON data structure to a list of objects
+def JSONDataToTickets(JSONData):
+    Tickets = []
+    if type(JSONData) == list:
+        for a in JSONData:
             Tickets.append(AccountRequest(a))
     else:
-        Tickets.append(AccountRequest(jsdata))
-
+        Tickets.append(AccountRequest(JSONData))
     return Tickets
 
 # If this is run directly, process test.json in the current working directory and print the output as a string.
@@ -198,7 +208,7 @@ if __name__=="__main__":
 
     f = open(filename, 'r')
     jdata=f.read()
-    ar=JSONtoAccountRequest(jdata)
+    ar=JSONtoTickets(jdata)
     f.close()
     for a in ar:
         print(str(a.Ticket))
