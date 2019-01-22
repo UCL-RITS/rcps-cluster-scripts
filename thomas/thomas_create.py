@@ -88,6 +88,7 @@ def create_and_add_user(args, args_dict, cursor, nodename):
             args.username = thomas_utils.getunusedmmm(cursor)
     
         # First add the information to the database, as it enforces unique usernames etc.
+        args_dict['status'] = "active"
         thomas_utils.addusertodb(args, args_dict, cursor)
         thomas_utils.addprojectuser(args, args_dict, cursor)
 
