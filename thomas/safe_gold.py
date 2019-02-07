@@ -61,7 +61,7 @@ def main(argv):
     if args.goldstdin:
         # read in chunks of 1000 lines, send
         data = []
-        for line in sys.stdin
+        for line in sys.stdin:
             # filter out Faraday allocations
             if "|Faraday" not in line:
                 data.append(line)
