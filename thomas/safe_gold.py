@@ -32,7 +32,7 @@ def senddata(config, args, data):
         request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
         if "<title>SysAdminServlet Success</title>" in request.text:
             print("Gold allocations successfully posted: \n" + parameters['data'])
-        else
+        else:
             print("Posting to SAFE failed: \n" + request.text)
             exit(1)
 # end senddata
