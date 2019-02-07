@@ -24,17 +24,18 @@ def getargs(argv):
 
 
 # Post the data to SAFE using our credentials
-def senddata(data):
+def senddata(config, args, data):
+    parameters = {'table':'GoldAllocations', 'mode':'upload', 'machine_name':'Thomas', 'update':data}
     if args.debug:
         print("Post request would be to " + config['safe']['host'] + " with params = " + str(parameters))
     else:
         request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
-        #if "<title>SysAdminServlet Success</title>" in request.text:
-        #    print("Ticket " + parameters['qtid'] + " closed.")
+        if "<title>SysAdminServlet Success</title>" in request.text:
+            print("Gold allocations successfully posted: \n" + parameters['data'])
+        else
+            print("Posting to SAFE failed: \n" + request.text)
+            exit(1)
 # end senddata
-
-
-
 
 
 # Put main in a function so it is importable.
@@ -61,11 +62,13 @@ def main(argv):
         # read in chunks of 1000 lines, send
         data = []
         for line in sys.stdin
-            data.append(line)
+            # filter out Faraday allocations
+            if "|Faraday" not in line:
+                data.append(line)
             if len(data) == MAX_DATA:
-                senddata(data)
+                senddata(config, args, data)
                 data = []
-        senddata(data)
+        senddata(config, args, data)
 
 
 # end main
