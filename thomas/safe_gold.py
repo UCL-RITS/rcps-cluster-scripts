@@ -41,7 +41,7 @@ def senddata(config, args, data):
 # Put main in a function so it is importable.
 def main(argv):
 
-    MAX_DATA = 1000
+    MAX_DATA = 100
 
     try:
         args = getargs(argv)
