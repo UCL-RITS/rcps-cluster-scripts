@@ -30,7 +30,7 @@ def senddata(config, args, data):
         print("Post request would be to " + config['safe']['gold'] + " with params = " + str(parameters))
     else:
         request = requests.post(config['safe']['gold'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
-        if "Total Lines:" in request.text:
+        if "Total lines:" in request.text:
             print("Gold allocations successfully posted: \n" + request.text)
         else:
             print("Posting to SAFE failed: \n" + request.text)
