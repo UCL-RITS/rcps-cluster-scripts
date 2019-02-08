@@ -66,9 +66,13 @@ def main(argv):
             if "|Faraday" not in line:
                 data.append(line)
             if len(data) == MAX_DATA:
-                senddata(config, args, data)
+                # need the data as one string, not a list of strings
+                datastring = "".join(data)
+                senddata(config, args, datastring)
                 data = []
-        senddata(config, args, data)
+        # send the leftover chunk of lines
+        datastring = "".join(data)
+        senddata(config, args, datastring)
 
 
 # end main
