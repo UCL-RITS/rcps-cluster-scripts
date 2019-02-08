@@ -27,9 +27,9 @@ def getargs(argv):
 def senddata(config, args, data):
     parameters = {'table':'GoldAllocations', 'mode':'upload', 'machine_name':'Thomas', 'update':data}
     if args.debug:
-        print("Post request would be to " + config['safe']['host'] + " with params = " + str(parameters))
+        print("Post request would be to " + config['safe']['gold'] + " with params = " + str(parameters))
     else:
-        request = requests.post(config['safe']['host'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
+        request = requests.post(config['safe']['gold'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
         if "<title>SysAdminServlet Success</title>" in request.text:
             print("Gold allocations successfully posted: \n" + parameters['data'])
         else:
