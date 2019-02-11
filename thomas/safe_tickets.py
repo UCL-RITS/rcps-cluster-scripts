@@ -19,7 +19,7 @@ import thomas_create
 def getargs(argv):
     parser = argparse.ArgumentParser(description="Show, refresh or update and close tickets from SAFE.")
     parser.add_argument("-s", "--show", dest="show", help="Show all current open tickets in our DB", action='store_true')
-    parser.add_argument("-f", "--file", dest="jsonfile", default=None, help="Parse json tickets from a file")
+    parser.add_argument("-f", "--file", dest="jsonfile", default=None, help="Parse json tickets from a file (parser test)")
     parser.add_argument("-r", "--refresh", dest="refresh", help="Refresh open tickets in DB from SAFE and display them", action='store_true')
     parser.add_argument("-c", "--close", dest="close", default=None, help="Carry out and close this ticket ID")
     parser.add_argument("--reject", dest="reject", default=None, help="Reject this ticket ID")
