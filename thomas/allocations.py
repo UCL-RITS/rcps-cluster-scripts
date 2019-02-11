@@ -59,6 +59,9 @@ def main(argv):
         # filter by date
         if date is not None:
             dataframe = dataframe[dataframe.StartTime == date]
+        # filter out _allocation projects and everything else separately
+        allocs = dataframe[dataframe.Projects.str.contains("_allocation")]
+        projects = dataframe[~dataframe.Projects.str.contains("_allocation")]
 
 # end main
 
