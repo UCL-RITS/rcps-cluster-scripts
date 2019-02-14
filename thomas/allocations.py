@@ -45,16 +45,16 @@ def main(argv):
     if args.input:
         dataframe = pandas.read_csv(sys.stdin, sep='|')
         # filter by date
-        if date is not None:
-            dataframe = dataframe[dataframe.StartTime == date]
+        if args.date is not None:
+            dataframe = dataframe[dataframe.StartTime == args.date]
 
         # add an institute column. We only want the first item in the split
         dataframe['Institute'] = dataframe['Projects'].str.split('_', 1).str[0]
 
         # filter by institute
-        if institute is not None:
+        if args.institute is not None:
             # select all lines where institute matches
-            dataframe = dataframe[dataframe.Institute == institute]
+            dataframe = dataframe[dataframe.Institute == args.institute]
 
         # filter out _allocation projects and everything else separately
         allocs = dataframe[dataframe.Projects.str.contains("_allocation")]
