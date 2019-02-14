@@ -76,6 +76,9 @@ def main(argv):
         else:
             print(result)
 
+    else:
+        print("No input was specified.")
+
 # end main
 
 # When not imported, use the normal global arguments
