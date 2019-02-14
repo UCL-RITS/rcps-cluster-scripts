@@ -13,7 +13,7 @@ def getargs(argv):
     parser.add_argument("--input", help="Gold allocations from stdin, input formed from glsalloc --raw", action='store_true')
     parser.add_argument("-i", "--institute", dest="institute", help="Show Gold total usage for this institute")
     parser.add_argument("-d", "--date", dest="date", help="Filter by start date of allocation period, in format yyyy-mm-dd")
-    parser.add_argument("--csv", dest="csvfile" help="Write out CSV to this file in this location")
+    parser.add_argument("--csv", dest="csvfile", help="Write out CSV to this file in this location")
     parser.add_argument("--verbose", help="", action='store_true')
     parser.add_argument("--debug", help="", action='store_true')
 
