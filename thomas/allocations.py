@@ -74,7 +74,7 @@ def main(argv):
         result['Used'] = result['Deposited'] - result['Unallocated'] - result['Unused']
 
         # write out as csv, leave off the row indices
-        if args.csv is not None:
+        if args.csvfile is not None:
            result.to_csv(args.csv, index=False)
         else:
             print(result)
