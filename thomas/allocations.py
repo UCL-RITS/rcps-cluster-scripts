@@ -44,6 +44,9 @@ def main(argv):
 
     if args.input:
         dataframe = pandas.read_csv(sys.stdin, sep='|')
+        # filter out the lines where StartTime is infinite
+        dataframe = dataframe.query('StartTime != "-infinity"')
+
         # filter by date
         if args.date is not None:
             dataframe = dataframe[dataframe.StartTime == args.date]
