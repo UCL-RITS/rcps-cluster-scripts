@@ -50,6 +50,10 @@ def main(argv):
         # filter by date
         if args.date is not None:
             dataframe = dataframe[dataframe.StartTime == args.date]
+            # check we got any results for that date
+            if dataframe.empty:
+                print("No results found for start date " + args.date)
+                exit(0)
 
         # add an institute column. We only want the first item in the split
         dataframe['Institute'] = dataframe['Projects'].str.split('_', 1).str[0]
@@ -58,6 +62,10 @@ def main(argv):
         if args.institute is not None:
             # select all lines where institute matches
             dataframe = dataframe[dataframe.Institute == args.institute]
+            # check we got any results for that institute
+            if dataframe.empty:
+                print("No results found for institute " + args.institute)
+                exit(0)
 
         # filter out _allocation projects and everything else separately
         allocs = dataframe[dataframe.Projects.str.contains("_allocation")]
