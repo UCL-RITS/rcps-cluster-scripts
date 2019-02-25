@@ -64,19 +64,23 @@ def main(argv):
         projects = dataframe[~dataframe.Projects.str.contains("_allocation")]
 
         # We want this output:
-        # StartTime  Institute  Deposited  Unallocated  Unused  % Unused
-        projects = projects.rename(columns={'Amount':'Unused'})
+        # StartTime  EndTime  Institute  Deposited  Unallocated  Allocated & Unused  Used  % Used
+        projects = projects.rename(columns={'Amount':'Allocated & Unused'})
         allocs = allocs.rename(columns={'Amount':'Unallocated'})
         # sum the unused time for each institute in this period
-        unused = projects.groupby(['StartTime','Institute'])['Unused'].sum().reset_index()
+        unused = projects.groupby(['StartTime','Institute'])['Allocated & Unused'].sum().reset_index()
         # merge the columns we want from allocs and unused
         result = allocs[['StartTime', 'EndTime', 'Institute', 'Deposited', 'Unallocated']].merge(unused, on=['StartTime', 'Institute'])
-        result['Used'] = result['Deposited'] - result['Unallocated'] - result['Unused']
+        result['Used'] = result['Deposited'] - result['Unallocated'] - result['Allocated & Unused']
+        result['% Used'] = result['Used']/result['Deposited']*100
 
         # write out as csv, leave off the row indices
         if args.csvfile is not None:
-           result.to_csv(args.csv, index=False)
+           result.to_csv(args.csvfile, index=False)
         else:
+            # set display format of floats to 2dp and output all rows
+            pandas.options.display.float_format = '{:.2f}'.format
+            pandas.options.display.max_rows = None
             print(result)
 
     else:
