@@ -33,7 +33,7 @@ sge_access_group_labels+=("access group for 2017-2018")
 sge_access_groups+=(AY201819)
 sge_access_group_labels+=("access group for 2018-2019")
 sge_access_groups+=(Open)
-sge_access_group_labels+=("current access group if no named year group in use")
+sge_access_group_labels+=("Open access group")
 
 for (( access_group_index=0; access_group_index < "${#sge_access_groups[@]}"; access_group_index++ )); do
     access_group="${sge_access_groups[$access_group_index]}"
