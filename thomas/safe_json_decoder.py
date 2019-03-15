@@ -32,8 +32,12 @@ class SysAdmin:
         self.Person=""
         if "Person" in SysAdminDict.keys():
             self.Person=Person(SysAdminDict["Person"])
-        self.ProjectGroup=ProjectGroup(SysAdminDict["ProjectGroup"])
-        self.Project=Project(SysAdminDict["Project"])
+        self.ProjectGroup=""
+        if "ProjectGroup" in SysAdminDict.keys():
+            self.ProjectGroup=ProjectGroup(SysAdminDict["ProjectGroup"])
+        self.Project=""
+        if "Project" in SysAdminDict.keys():
+            self.Project=Project(SysAdminDict["Project"])
         self.Account=""
         if "Account" in SysAdminDict.keys():
             self.Account=Account(SysAdminDict["Account"])            
