@@ -78,7 +78,10 @@ def main(argv):
         # sum the unused time for each institute in this period
         unused = projects.groupby(['StartTime','Institute'])['Allocated & Unused'].sum().reset_index()
         # merge the columns we want from allocs and unused
-        result = allocs[['StartTime', 'EndTime', 'Institute', 'Deposited', 'Unallocated']].merge(unused, on=['StartTime', 'Institute'])
+        # need a left outer join to keep allocs with no subprojects
+        result = allocs[['StartTime', 'EndTime', 'Institute', 'Deposited', 'Unallocated']].merge(unused, on=['StartTime', 'Institute'], how='left')
+        # replace NaN with 0
+        result['Allocated & Unused'] = result['Allocated & Unused'].fillna(0)
         result['Used'] = result['Deposited'] - result['Unallocated'] - result['Allocated & Unused']
         result['% Used'] = result['Used']/result['Deposited']*100
 
