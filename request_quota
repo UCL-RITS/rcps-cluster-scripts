@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Tool to request a quota increase and email rc-support.
+
+set -e
+
+# Get the cluster name.
+cluster=$(whereami)
+
+echo "This will create a quota request on ${cluster^} for $USER."
+echo ""
+
+echo "What is the total quota you are requesting? (Eg. 500G, 1.5T)"
+read -r quota_amount 
+echo ""
+
+echo "What is the reason for your request? (The enter key submits your text)"
+read -r reason
+echo ""
+
+echo "Here is a summary of your quota request.
+      The request is for: $USER on ${cluster^}
+       for total quota amount of: $quota_amount
+      Reason for request: $reason
+
+      If these values are correct, press 'y' to proceed, or any other key to exit.
+      "
+read -r -n 1 prompt_result
+if [[ "$prompt_result" != "y" ]]; then exit; fi
+echo ""
+
+# request is being sent, email rc-support.
+echo "Emailing rc-support@ucl.ac.uk with this request."
+/usr/sbin/sendmail -t<<EOF
+From: rc-support@ucl.ac.uk
+To: rc-support@ucl.ac.uk
+Subject: Quota request for ${USER} on ${cluster^}
+
+${USER} on ${cluster}
+requests a total quota amount of
+${quota_amount}
+
+Reason:
+${reason}
+
+EOF
+
+
