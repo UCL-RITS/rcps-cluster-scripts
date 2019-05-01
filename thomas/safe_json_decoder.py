@@ -11,7 +11,7 @@
 # For reasons the request is enclosed in a Sysadmin object.
 class SysAdmin:
 
-    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Approver", "Person", "ProjectGroup", "Project", "Account", "ExtraText"]
+    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Approver", "Person", "ProjectGroup", "Project", "Account", "ExtraText", "GoldTransfer"]
 
     def __init__(self, SysAdminDict):
         for a in SysAdminDict.keys():
@@ -49,6 +49,10 @@ class SysAdmin:
         self.ExtraText=""
         if "ExtraText" in SysAdminDict.keys():
             self.ExtraText=SysAdminDict["ExtraText"]
+        if "GoldTransfer" in SysAdminDict.keys():
+            self.GoldTransfer=GoldTransfer(SysAdminDict["GoldTransfer"])
+        else:
+            self.GoldTransfer=GoldTransfer()
 
     def __str__(self):
         return "SysAdmin: " + ",\n".join([self.Id, 
@@ -117,6 +121,28 @@ class ProjectGroup:
     def __str__(self):
         return "ProjectGroup: " + ",\n".join([self.Code,
                                             self.GroupID])
+
+class GoldTransfer:
+    known_keys = ["Amount", "SourceAllocation", "SourceAccountID"]
+
+    def __init__(self, ProjectDict=None):
+        # Empty values are created if no dict is passed in.
+        if ProjectDict is None:
+            for a in self.known_keys:
+                setattr(self, a, "")
+        else:
+            for a in ProjectDict.keys():
+                if a not in self.known_keys:
+                    print("Warning [GoldTransfer]: Detected unknown key: " + a + ": " + str(ProjectDict[a]))
+            # ternary: if a key is missing, set it to empty
+            self.Amount=ProjectDict["Amount"] if "Amount" in ProjectDict.keys() else ""
+            self.SourceAllocation=ProjectDict["SourceAllocation"] if "SourceAllocation" in ProjectDict.keys() else ""
+            self.SourceAccountID=ProjectDict["SourceAccountID"] if "SourceAccountID" in ProjectDict.keys() else ""
+
+    def __str__(self):
+        return "GoldTransfer: " + ",\n".join([self.Amount,
+                                        self.SourceAllocation,
+                                        self.SourceAccountID])
 
 class Account:
 
