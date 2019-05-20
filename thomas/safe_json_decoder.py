@@ -125,19 +125,19 @@ class ProjectGroup:
 class GoldTransfer:
     known_keys = ["Amount", "SourceAllocation", "SourceAccountID"]
 
-    def __init__(self, ProjectDict=None):
+    def __init__(self, GoldDict=None):
         # Empty values are created if no dict is passed in.
-        if ProjectDict is None:
+        if GoldDict is None:
             for a in self.known_keys:
                 setattr(self, a, "")
         else:
-            for a in ProjectDict.keys():
+            for a in GoldDict.keys():
                 if a not in self.known_keys:
-                    print("Warning [GoldTransfer]: Detected unknown key: " + a + ": " + str(ProjectDict[a]))
+                    print("Warning [GoldTransfer]: Detected unknown key: " + a + ": " + str(GoldDict[a]))
             # ternary: if a key is missing, set it to empty
-            self.Amount=ProjectDict["Amount"] if "Amount" in ProjectDict.keys() else ""
-            self.SourceAllocation=ProjectDict["SourceAllocation"] if "SourceAllocation" in ProjectDict.keys() else ""
-            self.SourceAccountID=ProjectDict["SourceAccountID"] if "SourceAccountID" in ProjectDict.keys() else ""
+            self.Amount=GoldDict["Amount"] if "Amount" in GoldDict.keys() else ""
+            self.SourceAllocation=GoldDict["SourceAllocation"] if "SourceAllocation" in GoldDict.keys() else ""
+            self.SourceAccountID=GoldDict["SourceAccountID"] if "SourceAccountID" in GoldDict.keys() else ""
 
     def __str__(self):
         return "GoldTransfer: " + ",\n".join([self.Amount,
