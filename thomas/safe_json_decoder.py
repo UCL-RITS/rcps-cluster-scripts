@@ -68,7 +68,8 @@ class SysAdmin:
                                         str(self.ProjectGroup),
                                         str(self.Account),
                                         self.Machine,
-                                        self.ExtraText])
+                                        self.ExtraText,
+                                        str(self.GoldTransfer)])
 
 class Project:
 
