@@ -251,7 +251,8 @@ def findpocbylastname():
 # Get all open tickets for printing (not including the ssh keys)
 def showpendingtickets():
     query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
-                  email, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                  email, poc_firstname, poc_lastname, poc_email, source_account_id,
+                  source_allocation, gold_amount, extratext, startdate, enddate
                 FROM safetickets 
                 WHERE status='Pending'""")
     return query
@@ -266,7 +267,8 @@ def safetickettype():
 # Get a SAFE ticket by ID
 def getsafeticket():
     query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
-                  email, publickey, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                  email, publickey, poc_firstname, poc_lastname, poc_email, source_account_id, 
+                  source_allocation, gold_amount, extratext, startdate, enddate
                 FROM safetickets 
                 WHERE id=%(id)s""")
     return query
