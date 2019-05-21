@@ -5,6 +5,7 @@ from tabulate import tabulate
 from ldap3 import Server, Connection, ALL
 import socket
 import thomas_queries
+import validate
 
 ##########################
 #                        #
@@ -284,4 +285,41 @@ def AD_username_from_email(config, email):
         exit(1)
     return conn.entries[0].cn.values[0]
 
-    
+#################################
+#                               #
+# Add SSH key to user's account #
+#                               #
+#################################
+
+def addsshkey(username, key, args): 
+    # runs bash script (also in rcps-cluster-scripts) to become user and 
+    # add key to their ~/.ssh/authorized_keys 
+
+    # first verify ssh key
+    validate.ssh_key(key)
+
+    key_args = ['addsshkey', username, key]
+
+    if (args.debug):
+        print("Arguments that would be used:")
+        return print(key_args)
+    else:
+        return subprocess.check_call(key_args) 
+
+#################################
+#                               #
+# Transfer Gold                 #
+#                               #
+#################################
+
+def transfergold(source_id, source_alloc_id, project_code, description, amount):
+
+    transfer_args = ['transfergold', '-i', source_id, '-a', source_alloc_id, '-p', project_code, '-t', description, '-g', amount]
+
+    if (args.debug):
+        print("Arguments that would be used:")
+        return print(key_args)
+    else:
+        return subprocess.check_call(transfer_args)
+
+
