@@ -2,7 +2,7 @@
 
 set -e
 
-USAGE="transfergold [-h] [-i source_id | -s source_project_code] [-a source_allocation] [-d dest_id | -p dest_project_code] [-t description_text] 
+USAGE="transfergold [-h] [-i source_id | -s source_project_code] [-a source_allocation] [-d dest_id | -p dest_project_code] -g gold_amount [-t description_text] 
 -- transfer Gold from one budget to another, using the numeric id or name (if both are provided it will use the numeric id).
 Executes the transfer as ccspapp (RC Support account).
 
