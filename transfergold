@@ -11,7 +11,8 @@ Executes the transfer as ccspapp (RC Support account).
     -s source_project_code   name of the source account (instead of id)
     -a source_allocation     id of the source allocation to use (optional)
     -d dest_id               id of the destination account
-    -p dest_project_code     name of the destination account 
+    -p dest_project_code     name of the destination account
+    -g gold_amount           amount of Gold to move (core hours) 
     -t description_text      reason for the move (optional)
 "
 
@@ -38,6 +39,8 @@ while getopts 'hi:s:a:d:p:t:' option; do
     p) dest_project_code="$OPTARG" 
        ;;
     t) description_text="$OPTARG"
+       ;;
+    g) gold_amount="$OPTARG"
        ;;
     # any wrong option
     \?) echo "$USAGE"
@@ -84,6 +87,15 @@ fi
 if [! -z "$description_text"]
 then
     gtransfer_command+=" -d $description_text"
+fi
+
+# add amount of Gold to move
+if [! -z "$gold_amount"]
+then
+    gtransfer_command+=" $gold_amount"
+else
+    echo "No amount of Gold was specified, exiting"
+    exit 1
 fi
 
 echo "Gtransfer command is: $gtransfer_command"
