@@ -13,7 +13,7 @@ Executes the transfer as ccspapp (RC Support account).
     -d dest_id               id of the destination account
     -p dest_project_code     name of the destination account
     -g gold_amount           amount of Gold to move (core hours) 
-    -t description_text      reason for the move (optional)
+    -t description_text      reason for the move (optional, no spaces)
 "
 
 # No options, show usage
@@ -92,7 +92,7 @@ fi
 # add amount of Gold to move
 if [! -z "$gold_amount"]
 then
-    gtransfer_command+=" $gold_amount"
+    gtransfer_command+=" -z $gold_amount"
 else
     echo "No amount of Gold was specified, exiting"
     exit 1
