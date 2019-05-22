@@ -312,7 +312,7 @@ def addsshkey(username, key, args):
 #                               #
 #################################
 
-def transfergold(source_id, source_alloc_id, project_code, description, amount):
+def transfergold(source_id, source_alloc_id, project_code, description, amount, args):
 
     transfer_args = ['transfergold', '-i', source_id, '-a', source_alloc_id, '-p', project_code, '-t', description, '-g', amount]
 
