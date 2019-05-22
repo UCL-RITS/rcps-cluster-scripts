@@ -72,6 +72,11 @@ def updatebudget(ticket_id, projectname):
     parameters = {'qtid':ticket_id, 'new_username':projectname, 'mode':'completed'}
     return parameters
 
+# any type of ticket that just needs to be told it is complete
+def updategeneric(ticket_id):
+    parameters = {'qtid':ticket_id, 'mode':'completed'}
+    return parameters
+
 def updateaddtobudget(ticket_id):
     parameters = {'qtid':ticket_id, 'mode':'completed'}
     return parameters
@@ -199,7 +204,7 @@ def addtobudget(cursor, config, args, ticketid):
     thomas_utils.addprojectuser(args, projectuser_dict, cursor)
 
     # update SAFE and close the ticket
-    updateticket(config, args, updateaddtobudget(ticketid))
+    updateticket(config, args, updategeneric(ticketid))
 # end addtobudget
 
 
@@ -227,6 +232,44 @@ def matchbudgetticket(cursor, ticketid):
 # end matchbudgetticket
 
 
+# Deal with an Update account ticket. ExtraText should contain info about what to update.
+def updateaccount(cursor, config, args, ticketid):
+    # get the ticket (the ID is unique so there is only one)
+    cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
+    result = cursor.fetchall()
+
+    textinfo = result[0]['extratext']
+
+    # update ssh key
+    if "public key added" in textinfo:
+        thomas_utils.addsshkey(result[0]['account_name'], result[0]['publickey'], args)
+    # we don't know the other possible texts for this ticket yet
+    else
+        print("Update account ticket with this text cannot currently be handled: "+textinfo)
+        exit(1)
+    # update SAFE and close the ticket
+    updateticket(config, args, updategeneric(ticketid))
+# end updateaccount
+
+
+# Deal with a Move gold ticket
+def movegold(cursor, config, args, ticketid):
+    # get the ticket (the ID is unique so there is only one)
+    cursor.execute(thomas_queries.getsafeticket(), {'id':ticketid})
+    result = cursor.fetchall()
+
+    # this dict will be needed when we move the Gold.
+    #gold_dict = {"SourceAccountID": result[0]['source_account_id'],
+    #             "SourceAllocation": result[0]['source_allocation'],
+    #             "Amount": result[0]['gold_amount'], 
+    #             "Project": result[0]['project']}
+    description = "transfer_received_from_SAFE"
+
+    thomas_utils.transfergold(result[0]['source_account_id'], result[0]['source_allocation'], result[0]['project'], description, result[0]['gold_amount'], args)
+    # update SAFE and close the ticket
+    updateticket(config, args, updategeneric(ticketid))
+# end movegold
+
 # Turn a list of tickets into a list of dicts for use in SQL queries
 def ticketstodicts(ticketlist):
     ticket_dicts = []
@@ -245,6 +288,10 @@ def ticketstodicts(ticketlist):
                        "poc_firstname": t.Ticket.Approver.FirstName,
                        "poc_lastname": t.Ticket.Approver.LastName,
                        "poc_email": t.Ticket.Approver.Email,
+                       "source_account_id": t.Ticket.GoldTransfer.SourceAccountID,
+                       "source_allocation": t.Ticket.GoldTransfer.SourceAllocation,
+                       "gold_amount": t.Ticket.GoldTransfer.Amount,
+                       "extratext": t.Ticket.ExtraText,
                        "startdate": t.Ticket.StartDate,
                        "enddate": t.Ticket.EndDate
                  }
@@ -281,7 +328,7 @@ def main(argv):
         # print SAFE tickets
         for t in ticketlist:
             #print(str(t.Ticket))
-            values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.Account.Name, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey, t.Ticket.Approver.FirstName, t.Ticket.Approver.LastName, t.Ticket.Approver.Email,  t.Ticket.StartDate, t.Ticket.EndDate]
+            values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.Account.Name, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey, t.Ticket.Approver.FirstName, t.Ticket.Approver.LastName, t.Ticket.Approver.Email, t.Ticket.GoldTransfer.SourceAccountID, t.Ticket.GoldTransfer.SourceAllocation, t.Ticket.GoldTransfer.Amount, t.Ticket.ExtraText, t.Ticket.StartDate, t.Ticket.EndDate]
             print(values)
         print("Number of pending tickets: " + str(len(ticketlist)))
 
@@ -336,6 +383,12 @@ def main(argv):
                 # add to budget
                 elif tickettype == "Add to budget":
                     addtobudget(cursor, config, args, ticket)
+                # update account info
+                elif tickettype == "Update account":
+                    updateaccount(cursor, config, args, ticket)
+                # move Gold
+                elif tickettype == "Move gold":
+                    movegold(cursor, config, args, ticket)
                 else:
                     print("Ticket " + ticket + " type unrecognised: " + tickettype)
                     exit(1)
