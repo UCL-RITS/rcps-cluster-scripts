@@ -24,12 +24,12 @@ def getargs(argv):
 
 
 # Post the data to SAFE using our credentials
-def senddata(config, args, data):
-    parameters = {'table':'GoldAllocations', 'mode':'upload', 'machine_name':'Thomas', 'update':data}
+def senddata(config, args, golddata):
+    postdata = {'table':'GoldAllocations', 'mode':'upload', 'machine_name':'Thomas', 'update':golddata}
     if args.debug:
-        print("Post request would be to " + config['safe']['gold'] + " with params = " + str(parameters))
+        print("Post request would be to " + config['safe']['gold'] + " with data = " + str(postdata))
     else:
-        request = requests.post(config['safe']['gold'], auth = (config['safe']['user'], config['safe']['password']), params = parameters)
+        request = requests.post(config['safe']['gold'], auth = (config['safe']['user'], config['safe']['password']), data = postdata)
         if "Total lines:" in request.text:
             print("Gold allocations successfully posted: \n" + request.text)
         else:
@@ -41,7 +41,7 @@ def senddata(config, args, data):
 # Put main in a function so it is importable.
 def main(argv):
 
-    MAX_DATA = 100
+    MAX_DATA = 1000
 
     try:
         args = getargs(argv)

@@ -115,7 +115,7 @@ def refreshsafetickets():
 
 # Get user info (not ssh key as it is huge)
 def userinfo():
-    query = ("""SELECT username, givenname, surname, email, creation_date, modification_date 
+    query = ("""SELECT username, givenname, surname, email, status, creation_date, modification_date 
                 FROM users WHERE username=%(user)s""")
     return query
 
@@ -126,7 +126,7 @@ def sshinfo():
 
 # Get all of user's projects and related points of contact
 def projectinfo():
-    query = ("""SELECT project, poc_id, creation_date, modification_date 
+    query = ("""SELECT project, poc_id, status, creation_date, modification_date 
                 FROM projectusers WHERE username=%(user)s""")
     return query
 
@@ -143,13 +143,13 @@ def instituteinfo():
 
 # Get all existing users (username, names, email, dates but not ssh keys)
 def alluserinfo():
-    query = ("""SELECT username, givenname, surname, email, creation_date, modification_date 
+    query = ("""SELECT username, givenname, surname, email, status, creation_date, modification_date 
                 FROM users""")
     return query
 
 # Get the n latest users (not ssh keys). Default n provided by argparser.
 def recentinfo():
-    query = ("""SELECT username, givenname, surname, email, creation_date, modification_date 
+    query = ("""SELECT username, givenname, surname, email, status, creation_date, modification_date 
                 FROM users ORDER BY creation_date DESC LIMIT %(n)s""")
     return query
 
@@ -175,7 +175,7 @@ def projectcombo():
 # Allowing partial matches when %s is %username%.
 # The default in that case is a blank, so ends up as %% which matches all
 def whoisuser():
-    query = ("""SELECT username, givenname, surname, email, creation_date, modification_date 
+    query = ("""SELECT username, givenname, surname, email, status, creation_date, modification_date 
                 FROM users 
                 WHERE username LIKE %s AND email LIKE %s AND givenname LIKE %s 
                   AND surname LIKE %s""")
@@ -251,7 +251,8 @@ def findpocbylastname():
 # Get all open tickets for printing (not including the ssh keys)
 def showpendingtickets():
     query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
-                  email, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                  email, poc_firstname, poc_lastname, poc_email, source_account_id,
+                  source_allocation, gold_amount, extratext, startdate, enddate
                 FROM safetickets 
                 WHERE status='Pending'""")
     return query
@@ -266,7 +267,8 @@ def safetickettype():
 # Get a SAFE ticket by ID
 def getsafeticket():
     query = ("""SELECT id, type, status, account_name, machine, project, firstname, lastname, 
-                  email, publickey, poc_firstname, poc_lastname, poc_email, startdate, enddate
+                  email, publickey, poc_firstname, poc_lastname, poc_email, source_account_id, 
+                  source_allocation, gold_amount, extratext, startdate, enddate
                 FROM safetickets 
                 WHERE id=%(id)s""")
     return query
