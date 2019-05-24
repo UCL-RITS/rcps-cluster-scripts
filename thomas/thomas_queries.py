@@ -102,7 +102,7 @@ def deactivateprojectuser():
 # Insert an open SAFE ticket or update it if it already exists.
 # id is unique.
 def refreshsafetickets():
-    fields = ("""type=%(type)s, status=%(status)s, startdate=%(startdate)s, enddate=%(enddate)s, machine=%(machine)s, project=%(project)s, account_name=%(account_name)s, firstname=%(firstname)s, lastname=%(lastname)s, email=%(email)s, publickey=%(publickey)s, poc_firstname=%(poc_firstname)s, poc_lastname=%(poc_lastname)s, poc_email=%(poc_email)s""")
+    fields = ("""type=%(type)s, status=%(status)s, startdate=%(startdate)s, enddate=%(enddate)s, machine=%(machine)s, project=%(project)s, account_name=%(account_name)s, firstname=%(firstname)s, lastname=%(lastname)s, email=%(email)s, publickey=%(publickey)s, poc_firstname=%(poc_firstname)s, poc_lastname=%(poc_lastname)s, poc_email=%(poc_email)s, source_account_id=%(source_account_id)s, source_allocation=%(source_allocation)s, gold_amount=%(gold_amount)s, extratext=%(extratext)s""")
     query = ("""INSERT INTO safetickets SET id=%(id)s, """ + fields + """, creation_date=now()
                 ON DUPLICATE KEY UPDATE """ + fields)
     return query
