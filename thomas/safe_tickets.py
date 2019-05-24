@@ -244,7 +244,7 @@ def updateaccount(cursor, config, args, ticketid):
     if "public key added" in textinfo:
         thomas_utils.addsshkey(result[0]['account_name'], result[0]['publickey'], args)
     # we don't know the other possible texts for this ticket yet
-    else
+    else:
         print("Update account ticket with this text cannot currently be handled: "+textinfo)
         exit(1)
     # update SAFE and close the ticket
