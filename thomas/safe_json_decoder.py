@@ -159,7 +159,7 @@ class Account:
                 if (a not in self.known_keys) and (not a.startswith("Group")):
                     print("Warning [Account]: Detected unknown key: " + a + ": " + str(AccountDict[a]))
             # ternary: if a key is missing, set it to empty
-            self.Name=AccountDict["Name"] if "Code" in AccountDict.keys() else ""
+            self.Name=AccountDict["Name"] if "Name" in AccountDict.keys() else ""
             self.GroupID=AccountDict["GID"] if "GID" in AccountDict.keys() else ""
         
             # Need code for parsing group fmt
