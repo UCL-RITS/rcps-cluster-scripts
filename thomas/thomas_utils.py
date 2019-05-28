@@ -6,6 +6,7 @@ from ldap3 import Server, Connection, ALL
 import socket
 import thomas_queries
 import validate
+import subprocess
 
 ##########################
 #                        #
