@@ -157,6 +157,8 @@ def newuser(cursor, config, args, ticketid):
     
     # update SAFE and close the ticket
     updateticket(config, args, updatenewuser(ticketid, user_dict['username']))
+    # update ticket status in our DB
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
 # end newuser
 
 
@@ -180,6 +182,8 @@ def newbudget(cursor, config, args, ticketid):
 
     # update SAFE and close the ticket
     updateticket(config, args, updatebudget(ticketid, projectname))
+    # update ticket status in our DB
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
 # end newbudget
 
 
@@ -205,6 +209,8 @@ def addtobudget(cursor, config, args, ticketid):
 
     # update SAFE and close the ticket
     updateticket(config, args, updategeneric(ticketid))
+    # update ticket status in our DB
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
 # end addtobudget
 
 
@@ -249,6 +255,8 @@ def updateaccount(cursor, config, args, ticketid):
         exit(1)
     # update SAFE and close the ticket
     updateticket(config, args, updategeneric(ticketid))
+    # update ticket status in our DB
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
 # end updateaccount
 
 
@@ -268,6 +276,8 @@ def movegold(cursor, config, args, ticketid):
     thomas_utils.transfergold(result[0]['source_account_id'], result[0]['source_allocation'], result[0]['project'], description, result[0]['gold_amount'], args)
     # update SAFE and close the ticket
     updateticket(config, args, updategeneric(ticketid))
+    # update ticket status in our DB
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
 # end movegold
 
 # Turn a list of tickets into a list of dicts for use in SQL queries
@@ -399,8 +409,13 @@ def main(argv):
                 answer = thomas_utils.select_from_list("Reason to reject ticket: would it cause an error, or is it being rejected for any other reason?", ("other", "error"), default_ans="other")
                 if answer == "error":
                     updateticket(config, args, rejecterror(ticket))
+                    # update ticket status in our DB
+                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Error'}
+
                 else:
                     updateticket(config, args, rejectother(ticket))
+                    # update ticket status in our DB
+                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Refused'}
 
             # commit the change to the database unless we are debugging
             if not args.debug:
