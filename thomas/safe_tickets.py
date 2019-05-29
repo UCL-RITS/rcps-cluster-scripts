@@ -410,12 +410,12 @@ def main(argv):
                 if answer == "error":
                     updateticket(config, args, rejecterror(ticket))
                     # update ticket status in our DB
-                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Error'})
+                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticket, 'status':'Error'})
 
                 else:
                     updateticket(config, args, rejectother(ticket))
                     # update ticket status in our DB
-                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Refused'})
+                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticket, 'status':'Refused'})
 
             # commit the change to the database unless we are debugging
             if not args.debug:
