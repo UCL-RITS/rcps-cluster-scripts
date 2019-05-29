@@ -158,7 +158,7 @@ def newuser(cursor, config, args, ticketid):
     # update SAFE and close the ticket
     updateticket(config, args, updatenewuser(ticketid, user_dict['username']))
     # update ticket status in our DB
-    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'})
 # end newuser
 
 
@@ -183,7 +183,7 @@ def newbudget(cursor, config, args, ticketid):
     # update SAFE and close the ticket
     updateticket(config, args, updatebudget(ticketid, projectname))
     # update ticket status in our DB
-    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'})
 # end newbudget
 
 
@@ -210,7 +210,7 @@ def addtobudget(cursor, config, args, ticketid):
     # update SAFE and close the ticket
     updateticket(config, args, updategeneric(ticketid))
     # update ticket status in our DB
-    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'})
 # end addtobudget
 
 
@@ -256,7 +256,7 @@ def updateaccount(cursor, config, args, ticketid):
     # update SAFE and close the ticket
     updateticket(config, args, updategeneric(ticketid))
     # update ticket status in our DB
-    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'})
 # end updateaccount
 
 
@@ -277,7 +277,7 @@ def movegold(cursor, config, args, ticketid):
     # update SAFE and close the ticket
     updateticket(config, args, updategeneric(ticketid))
     # update ticket status in our DB
-    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'}
+    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'})
 # end movegold
 
 # Turn a list of tickets into a list of dicts for use in SQL queries
@@ -410,12 +410,12 @@ def main(argv):
                 if answer == "error":
                     updateticket(config, args, rejecterror(ticket))
                     # update ticket status in our DB
-                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Error'}
+                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Error'})
 
                 else:
                     updateticket(config, args, rejectother(ticket))
                     # update ticket status in our DB
-                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Refused'}
+                    cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Refused'})
 
             # commit the change to the database unless we are debugging
             if not args.debug:
