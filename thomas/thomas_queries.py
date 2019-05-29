@@ -93,6 +93,12 @@ def deactivateprojectuser():
                 WHERE username=%(username)s AND project=%(project)s""")
     return query
 
+# update SAFE ticket status in our DB
+def updatesafestatus():
+    query = ("""UPDATE safetickets SET status=%(status)s
+                WHERE id=%(id)s""")
+    return query
+
 ######################################################
 #                                                    #
 # Queries that insert/update entries in the database #
