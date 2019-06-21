@@ -192,28 +192,28 @@ def get_nodes(root):
   return node_list
 
 def find_nodes_for_job(node_list, jobid):
-  have_found_master = False
+  have_found_primary = False
   found_nodes = dict()
-  found_nodes["slaves"] = list()
+  found_nodes["secondaries"] = list()
   for node in node_list:
     for job in node.jobs:
       if job.id == jobid:
         if job.pe_master == "MASTER":
-          found_nodes["master"] = node
-          have_found_master = True
+          found_nodes["primary"] = node
+          have_found_primary = True
         else:
-          found_nodes["slaves"].append(node)
-  found_nodes["slaves"].sort(key=lambda x:x.hostname)
+          found_nodes["secondaries"].append(node)
+  found_nodes["secondaries"].sort(key=lambda x:x.hostname)
   
   prev_hostname=""
-  tmp_list = found_nodes["slaves"]
-  found_nodes["slaves"] = list()
+  tmp_list = found_nodes["secondaries"]
+  found_nodes["secondaries"] = list()
   for el in tmp_list:
     if el.hostname != prev_hostname:
-      found_nodes["slaves"].append(el)
+      found_nodes["secondaries"].append(el)
     prev_hostname = el.hostname
 
-  if have_found_master == True:
+  if have_found_primary == True:
     return found_nodes
   else:
     return None
@@ -268,12 +268,12 @@ def main(source="command", source_file=None):
     sys.exit(6)
 
   sys.stdout.write("Nodes for job %s:\n" % jobid)
-  sys.stdout.write("  Master:\n")
-  job_nodes["master"].print_props()
+  sys.stdout.write("  Primary:\n")
+  job_nodes["primary"].print_props()
 
-  if len(job_nodes["slaves"]) != 0:
-    sys.stdout.write("  Slaves:\n")
-  for node in job_nodes["slaves"]:
+  if len(job_nodes["secondaries"]) != 0:
+    sys.stdout.write("  Secondaries:\n")
+  for node in job_nodes["secondaries"]:
     node.print_props()
 
   #print(nodes)
