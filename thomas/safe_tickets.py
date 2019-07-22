@@ -273,7 +273,7 @@ def movegold(cursor, config, args, ticketid):
     #             "Project": result[0]['project']}
     description = "transfer_received_from_SAFE"
 
-    thomas_utils.transfergold(result[0]['source_account_id'], result[0]['source_allocation'], result[0]['project'], description, result[0]['gold_amount'], args)
+    thomas_utils.transfergold(str(result[0]['source_account_id']), str(result[0]['source_allocation']), result[0]['project'], description, str(result[0]['gold_amount']), args)
     # update SAFE and close the ticket
     updateticket(config, args, updategeneric(ticketid))
     # update ticket status in our DB
