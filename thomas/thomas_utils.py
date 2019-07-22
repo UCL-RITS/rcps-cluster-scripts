@@ -319,7 +319,7 @@ def transfergold(source_id, source_alloc_id, project_code, description, amount, 
 
     if (args.debug):
         print("Arguments that would be used:")
-        return print(key_args)
+        return print(transfer_args)
     else:
         return subprocess.check_call(transfer_args)
 
