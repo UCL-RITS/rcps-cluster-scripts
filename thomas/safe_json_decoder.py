@@ -193,6 +193,8 @@ class Person:
         if PersonDict is None:
             for a in self.known_keys:
                 setattr(self, a, "")
+            for a in ["Title", "FirstName", "LastName"]:
+                setattr(self, a, "")
         else:
             for a in PersonDict.keys():
                 if a not in self.known_keys:
