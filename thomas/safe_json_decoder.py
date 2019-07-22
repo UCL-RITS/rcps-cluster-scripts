@@ -152,8 +152,9 @@ class Account:
     def __init__(self, AccountDict=None):
         # Empty values are created if no dict is passed in.
         if AccountDict is None:
-            for a in self.known_keys:
+            for a in ["Name", "GroupID", "Groups", "UserID", "Machines"]:
                 setattr(self, a, "")
+            self.Person=Person()
         else:
             for a in AccountDict.keys():
                 if (a not in self.known_keys) and (not a.startswith("Group")):
@@ -191,9 +192,7 @@ class Person:
     def __init__(self, PersonDict=None):
         # Empty values are created if no dict is passed in.
         if PersonDict is None:
-            for a in self.known_keys:
-                setattr(self, a, "")
-            for a in ["Title", "FirstName", "LastName"]:
+            for a in ["Title", "FirstName", "LastName", "Email", "WebName", "PublicKey", "NormalisedPublicKey", "HartreeName"]:
                 setattr(self, a, "")
         else:
             for a in PersonDict.keys():
