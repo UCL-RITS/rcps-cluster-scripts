@@ -23,7 +23,7 @@ if [ $# == 0 ] ; then
 fi
 
 # options
-while getopts 'hi:s:a:d:p:t:' option; do
+while getopts 'hi:s:a:d:p:t:g:' option; do
   case "$option" in
     h) echo "$USAGE"
        exit 0
@@ -54,10 +54,10 @@ shift $((OPTIND -1))
 # Build gtransfer command, checking all necessary options are provided.
 gtransfer_command="gtransfer"
 # add only one source
-if [! -z "$source_id"]
+if [ ! -z "$source_id" ]
 then
     gtransfer_command+=" --fromAccount $source_id"
-elif [! -z "$source_project_code"]
+elif [ ! -z "$source_project_code" ]
 then
     gtransfer_command+=" --fromProject $source_project_code"
 else
@@ -66,16 +66,16 @@ else
 fi
 
 # optionally add allocation id: if none specified will use oldest active
-if [! -z "$source_allocation"]
+if [ ! -z "$source_allocation" ]
 then
     gtransfer_command+=" -i $source_allocation"
 fi
 
 # add only one destination
-if [! -z "$dest_id"]
+if [ ! -z "$dest_id" ]
 then
     gtransfer_command+=" --toAccount $dest_id"
-elif [! -z "$dest_project_code"]
+elif [ ! -z "$dest_project_code" ]
 then
     gtransfer_command+=" --toProject $dest_project_code"
 else
@@ -84,13 +84,13 @@ else
 fi
 
 # optionally add description
-if [! -z "$description_text"]
+if [ ! -z "$description_text" ]
 then
     gtransfer_command+=" -d $description_text"
 fi
 
 # add amount of Gold to move
-if [! -z "$gold_amount"]
+if [ ! -z "$gold_amount" ]
 then
     gtransfer_command+=" -z $gold_amount"
 else
