@@ -315,6 +315,14 @@ def addsshkey(username, key, args):
 
 def transfergold(source_id, source_alloc_id, project_code, description, amount, args):
 
+    # make sure source_id, source_alloc_id, amount are strings
+    if not isinstance(source_id, string):
+        source_id = str(source_id)
+    if not isinstance(source_alloc_id, string):
+        source_alloc_id = str(source_alloc_id)
+    if not isinstance(amount, string):
+        amount = str(amount)
+
     transfer_args = ['transfergold', '-i', source_id, '-a', source_alloc_id, '-p', project_code, '-t', description, '-g', amount]
 
     if (args.debug):
