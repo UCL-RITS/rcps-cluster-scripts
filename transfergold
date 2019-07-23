@@ -105,12 +105,7 @@ echo "Becoming ccspapp to run gtransfer"
 become_output=$(sudo /shared/ucl/sysops/libexec/become ccspapp <<EOF
 echo "Beacon"
 
-# need to load userscripts module
-if [ -f /etc/bashrc ]; then
-        . /etc/bashrc
-fi
-
-module purge
+source /etc/profile.d/modules.sh
 module load gcc-libs
 module load userscripts
 
