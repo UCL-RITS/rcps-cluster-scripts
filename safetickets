@@ -8,6 +8,7 @@ fi
 
 module purge
 module load gcc-libs
+module load userscripts
 module load python3/3.6
 module load mysql-connector-python/2.0.4/python-3.6.3
 
