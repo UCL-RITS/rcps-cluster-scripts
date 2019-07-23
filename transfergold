@@ -57,10 +57,10 @@ gtransfer_args=""
 # add only one source
 if [ ! -z "$source_id" ]
 then
-    gtransfer_args+=" --fromAccount $source_id"
+    gtransfer_args+="--fromAccount $source_id"
 elif [ ! -z "$source_project_code" ]
 then
-    gtransfer_args+=" --fromProject $source_project_code"
+    gtransfer_args+="--fromProject $source_project_code"
 else
     echo "No source budget specified with -i or -s, exiting"
     exit 1
