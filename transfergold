@@ -117,4 +117,6 @@ if [ "${become_output:0:6}" != "Beacon" ]; then
   echo "Error: could not become ccspapp" >&2
   exit 1
 fi
+echo "Output from become:"
+echo "$become_output"
 
