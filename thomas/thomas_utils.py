@@ -309,7 +309,7 @@ def addsshkey(username, key, args):
 
 #################################
 #                               #
-# Transfer Gold                 #
+# Run external Gold scripts     #
 #                               #
 #################################
 
@@ -330,5 +330,15 @@ def transfergold(source_id, source_alloc_id, project_code, description, amount, 
         return print(transfer_args)
     else:
         return subprocess.check_call(transfer_args)
+
+
+def refreshSAFEgold():
+
+    refresh_args = ['refreshsafegold']
+        if (args.debug):
+        print("Command that would be used:")
+        return print(refresh_args)
+    else:
+        return subprocess.check_call(refresh_args)
 
 

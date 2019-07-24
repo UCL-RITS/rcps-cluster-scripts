@@ -280,6 +280,7 @@ def movegold(cursor, config, args, ticketid):
     cursor.execute(thomas_queries.updatesafestatus(), {'id':ticketid, 'status':'Completed'})
 # end movegold
 
+
 # Turn a list of tickets into a list of dicts for use in SQL queries
 def ticketstodicts(ticketlist):
     ticket_dicts = []
@@ -396,9 +397,10 @@ def main(argv):
                 # update account info
                 elif tickettype == "Update account":
                     updateaccount(cursor, config, args, ticket)
-                # move Gold
+                # move Gold and refresh SAFE
                 elif tickettype == "Move gold":
                     movegold(cursor, config, args, ticket)
+                    thomas_utils.refreshSAFEgold()
                 else:
                     print("Ticket " + ticket + " type unrecognised: " + tickettype)
                     exit(1)
