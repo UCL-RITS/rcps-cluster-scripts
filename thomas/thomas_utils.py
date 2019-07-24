@@ -335,7 +335,7 @@ def transfergold(source_id, source_alloc_id, project_code, description, amount, 
 def refreshSAFEgold():
 
     refresh_args = ['refreshsafegold']
-        if (args.debug):
+    if (args.debug):
         print("Command that would be used:")
         return print(refresh_args)
     else:
