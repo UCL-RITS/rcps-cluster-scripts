@@ -104,7 +104,6 @@ echo "Gtransfer command is: $gtransfer_command $gtransfer_args"
 # get current script location - gtransfer wrapper should be in the same place
 DIR=$(dirname "$(readlink -f "$0")")
 
-# become user, create ssh directory and add key
 echo "Becoming ccspapp to run gtransfer"
 become_output=$(sudo /shared/ucl/sysops/libexec/become ccspapp <<EOF
 echo "Beacon"
