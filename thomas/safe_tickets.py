@@ -400,7 +400,7 @@ def main(argv):
                 # move Gold and refresh SAFE
                 elif tickettype == "Move gold":
                     movegold(cursor, config, args, ticket)
-                    thomas_utils.refreshSAFEgold()
+                    thomas_utils.refreshSAFEgold(args)
                 else:
                     print("Ticket " + ticket + " type unrecognised: " + tickettype)
                     exit(1)

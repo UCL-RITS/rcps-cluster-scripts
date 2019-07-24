@@ -332,7 +332,7 @@ def transfergold(source_id, source_alloc_id, project_code, description, amount, 
         return subprocess.check_call(transfer_args)
 
 
-def refreshSAFEgold():
+def refreshSAFEgold(args):
 
     refresh_args = ['refreshsafegold']
     if (args.debug):
