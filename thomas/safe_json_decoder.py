@@ -1,8 +1,10 @@
-# This module provides classes and procedures for converting the JSON example we have been provided with into 
-# Python classes.
+# This module provides classes and procedures for converting JSON SAFE tickets
+# into Python classes.
 
-# We only have an example of a create account request so far so to process that call JSONtoAccountRequest(JSONData)
-# where JSONData is a string with an account request.
+# Many fields are optional depending on the type of ticket, so they are 
+# initialised to empty when they do not exist.
+
+# JSONDataToTickets(yourjsondata) parses JSON into a list of Python objects.
 
 # Also includes fairly dodgy __str__ methods for testing purposes.
 
@@ -245,7 +247,8 @@ def JSONDataToTickets(JSONData):
         Tickets.append(AccountRequest(JSONData))
     return Tickets
 
-# If this is run directly, process test.json in the current working directory and print the output as a string.
+# If this is run directly, process test.json in the current working directory 
+# and print the output as a string.
 if __name__=="__main__":
     import json
     import sys
