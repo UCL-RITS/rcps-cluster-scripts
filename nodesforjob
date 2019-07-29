@@ -106,26 +106,40 @@ class Node:
     self.swap_total = 0
     self.swap_used  = 0
     self.jobs       = list()
+    self.unresponsive = False
+    self.offline    = False
 
   def fix_types(self):
     self.hostname   = str(self.hostname)
-    self.num_proc   = int(self.num_proc)
-    self.load_avg   = deSI(self.load_avg)
-    self.mem_total  = deSI(self.mem_total)
-    self.mem_used   = deSI(self.mem_used)
-    self.swap_total = deSI(self.swap_total)
-    self.swap_used  = deSI(self.swap_used)
+    if self.load_avg == "-" or self.mem_used == "-" or self.swap_used == "-":
+      self.unresponsive = True
+    else:
+      self.load_avg   = deSI(self.load_avg)
+      self.mem_used   = deSI(self.mem_used)
+      self.swap_used  = deSI(self.swap_used)
+
+    if self.mem_total == "-" or self.swap_total == "-" or self.num_proc == "-":
+      self.offline = True
+    else:
+      self.mem_total  = deSI(self.mem_total)
+      self.swap_total = deSI(self.swap_total)
+      self.num_proc   = int(self.num_proc)
 
   def __repr__(self):
     return repr(self.__dict__)
 
   def print_props(self):
-    sys.stdout.write("    %s:  %3.1f %% load, %3.1f %% memory used, %3.1f %% swap used\n" % 
-                     (self.hostname,
-                      100 * float(self.load_avg) / self.num_proc,
-                      100 * float(self.mem_used) / self.mem_total,
-                      100 * float(self.swap_used) / self.swap_total)
-                     )
+    if self.unresponsive == True and self.offline == False:
+      sys.stdout.write("    %s:  unresponsive, no data available -- jobs on this node may have failed\n")
+    elif self.offline == True:
+      sys.stdout.write("    %s:  offline -- no jobs should be assigned to this node\n")
+    else:
+      sys.stdout.write  ("    %s:  %3.1f %% load, %3.1f %% memory used, %3.1f %% swap used\n" %
+                       (self.hostname,
+                        100 * float(self.load_avg) / self.num_proc,
+                        100 * float(self.mem_used) / self.mem_total,
+                        100 * float(self.swap_used) / self.swap_total)
+                       )
 
 class Job:
   def __init__(self):
@@ -168,10 +182,6 @@ def get_nodes(root):
       
       for node_value in element.findall("hostvalue"):
         new_node.__dict__[node_value.get('name')] = node_value.text
-
-      # Skip if the new is offline
-      if '-' in new_node.__dict__.values():
-        continue
 
       for job_element in element.findall("job"):
         new_job = Job()
