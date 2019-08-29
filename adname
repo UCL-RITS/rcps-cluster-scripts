@@ -13,7 +13,7 @@ if [[ -z "${AD_PASS_FILE:-}" ]]; then
     elif [[ -f "/shared/ucl/etc/adpw" ]]; then
         ad_pass_file="/shared/ucl/etc/adpw"
     else
-        echo "No ~/.adname_ad_pass or /shared/ucl/etc/ad_pw file, quitting..." >&2
+        echo "No ~/.adname_ad_pass or /shared/ucl/etc/adpw file, quitting..." >&2
         exit 2
     fi
 else
