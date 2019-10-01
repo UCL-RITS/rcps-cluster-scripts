@@ -55,13 +55,18 @@ done
 
 
 echo -n "Checking whether user has been blocked from submitting jobs: "
-# check NoSubmission for blocked users
-qconf -su NoSubmission | grep -q "$username"
-if [ $? == 0 ]
+if qconf -su NoSubmission 2>/dev/null
 then
-  echo "${RED}yes${RESET}"
+    # check NoSubmission for blocked users
+    qconf -su NoSubmission | grep -q "$username"
+    if [ $? == 0 ]
+    then
+      echo "${RED}yes${RESET}"
+    else
+      echo "${GREEN}no${RESET}"
+    fi
 else
-  echo "${GREEN}no${RESET}"
+    echo "${GREEN}no (no blocked ACL here)${RESET}"
 fi
 
 echo "" # Blank line for section separation
