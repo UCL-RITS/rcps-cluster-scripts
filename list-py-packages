@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+module --silent purge
+module --silent load gcc-libs
+module --silent load python3/recommended
+
+python <<'EOF'
+
+import pkg_resources
+import re
+import json
+import sys
+
+re_name = re.compile("^Name: (.*)$", re.MULTILINE)
+re_version = re.compile("^Version: (.*)$", re.MULTILINE)
+re_summary = re.compile("^Summary: (.*)$", re.MULTILINE)
+
+packages = list()
+
+for pkg in pkg_resources.working_set:
+    metadata_text = pkg.get_metadata(pkg.PKG_INFO)
+    match = re_name.search(metadata_text)
+    pkg_name = match.group(1)
+    match = re_version.search(metadata_text)
+    pkg_version = match.group(1)
+    match = re_summary.search(metadata_text)
+    pkg_summary = match.group(1)
+    # These are named slightly weirdly to match the format we had to get from R
+    pkg_info = {"Package": pkg_name, "Version": pkg_version, "Title": pkg_summary}
+    packages.append(pkg_info)
+
+info = dict()
+info["version"] = f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+info["packages"] = packages
+print(json.dumps(info, indent=3))
+
+EOF
+
