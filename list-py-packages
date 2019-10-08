@@ -10,6 +10,7 @@ import pkg_resources
 import re
 import json
 import sys
+import datetime
 
 re_name = re.compile("^Name: (.*)$", re.MULTILINE)
 re_version = re.compile("^Version: (.*)$", re.MULTILINE)
@@ -29,8 +30,16 @@ for pkg in pkg_resources.working_set:
     pkg_info = {"Package": pkg_name, "Version": pkg_version, "Title": pkg_summary}
     packages.append(pkg_info)
 
+    package_key = lambda x: x["Package"].lower()
+    packages.sort(key=package_key)
+
 info = dict()
 info["version"] = f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+
+
+utc_dt = datetime.datetime.now(datetime.timezone.utc) # UTC time
+dt = utc_dt.astimezone() # local time
+info["generated"] = dt.strftime("%Y-%m-%dT%H:%M:%S%z")
 
 info["packages"] = packages
 print(json.dumps(info, indent=3))
