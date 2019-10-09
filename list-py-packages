@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source /etc/profile.d/modules.sh
+
 module --silent purge
 module --silent load gcc-libs
 module --silent load python3/recommended
