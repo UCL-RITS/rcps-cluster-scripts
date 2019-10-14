@@ -55,7 +55,7 @@ done
 
 
 echo -n "Checking whether user has been blocked from submitting jobs: "
-if qconf -su NoSubmission 2>/dev/null
+if qconf -su NoSubmission 2>/dev/null >/dev/null
 then
     # check NoSubmission for blocked users
     qconf -su NoSubmission | grep -q "$username"
