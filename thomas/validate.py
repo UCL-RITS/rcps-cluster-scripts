@@ -48,3 +48,15 @@ def ucl_user(email, username):
         print ("This is a UCL email address and you have specified an mmm username")
         exit(1)
 
+# Check that this MMM username is in the range we have created
+def mmm_username_in_range(username):
+    # the highest mmm account currently existing
+    MAX_ACCOUNT_NO = 600
+    if username.startswith("mmm"):
+        number = int(username[len(prefix):])
+        if number > MAX_ACCOUNT_NO:
+            print("Username "+username+ "does not exist. The last existing MMM account is " + MAX_ACCOUNT_NO)
+            exit(1)
+        else if number > MAX_ACCOUNT_NO-100:
+            print("WARNING: last existing MMM role account is " + MAX_ACCOUNT_NO + ", we need to request more from ISD.User Services.")
+

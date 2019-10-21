@@ -130,6 +130,8 @@ def approverequest(args, args_dict, cursor, nodename):
                 args.id = row['id']
                 args.approver = os.environ['USER']
                 args.cluster = row['cluster']
+                # Check the MMM username exists and warn if getting near max
+                validate.mmm_username_in_range(args.username)
                 # check the cluster matches where we are running from
                 if (args.cluster in nodename):
                     # create the account
@@ -179,10 +181,12 @@ if __name__ == "__main__":
             # UCL user validation - if this is a UCL email, make sure username was given 
             # and that it wasn't an mmm one.
             validate.ucl_user(args.email, args.username)
+            # Check the MMM username exists and warn if getting near max
+            validate.mmm_username_in_range(args.username)
             create_and_add_user(args, args_dict, cursor, nodename)
         elif (args.subcommand == "request"):
             approverequest(args, args_dict, cursor, nodename)
-        
+ 
         # commit the change to the database unless we are debugging
         if (not args.debug):
             conn.commit()
