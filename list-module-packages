@@ -4,7 +4,7 @@ source "/etc/profile.d/modules.sh"
 # We need to use a 4.x release for this or the redirection doesn't work. (Or is different, at least.)
 source "/shared/ucl/apps/modules/4.3.0/init/bash"
 
-module load python 2>/dev/null >/dev/null
+module load --auto python3/recommended 2>/dev/null >/dev/null
 
 # This does an extremely dodgy YAML conversion.
 module whatis \
@@ -14,7 +14,7 @@ module whatis \
           -e 's/^\([^-][^:]*\): \(.*\)/    - Name: "\1"\n      Description: "\2"/' \
           -e 's_^---* [^ ]*/\([^ /]*\) ---*$_- Category:\n    Name: "\1"\n    Packages:_' \
     | tee tmp.whatis.yaml \
-    | python3 -c '
+    | python -c '
 import yaml
 import json
 import sys
