@@ -7,7 +7,8 @@ source "/shared/ucl/apps/modules/4.3.0/init/bash"
 module load --auto python3/recommended 2>/dev/null >/dev/null
 
 # This does an extremely dodgy YAML conversion.
-module whatis \
+# module whatis --no-pager \ # Blargh
+/usr/bin/tclsh /shared/ucl/apps/modules/4.3.0/libexec/modulecmd.tcl bash --no-pager whatis \
     | grep -e ':' -e '---' \
     | sed -e 's/"/\\"/g' \
           -e 's/^ *//' \
