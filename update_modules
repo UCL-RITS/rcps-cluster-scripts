@@ -17,7 +17,6 @@ ops_user=ccspapp
 # 3 if 2, does become exist?
 
 if [ "$(whoami)" == "${ops_user}" ]; then
-
   echo "I am ops user ${ops_user}.  No need to use become."
 elif (id -Gn | grep -v '\bccsprcop\b' >/dev/null 2>/dev/null); then
   echo "Error: user should be in ccsprcop group to use this script." >&2
@@ -43,7 +42,7 @@ Usage: $scriptname [-h] [-f|-i] [-r]
     -h  Prints this help
     -f  Force update even if it would be the same
     -i  Do not treat it as an error if the update would be the same
-    -d  Do not remove old module trees after update
+    -k  Do not remove old module trees after update
 "
 
 # Mode defaults
@@ -164,20 +163,24 @@ ln -Tfs "${target_dir}" modulefiles
 
 if [[ "$remove_old_mfs" == "true" ]]; then
     echo "Removing module dirs older than 7 days..." >&2
-    mapfile -t old_dirs \
-        <(find \
-            "${moduledirs_path:?error: no module dirs path set}" \
-            -maxdepth 1 \
-            -type d \
-            -name ".mf_*" \
-            | grep -v "${target_dir}" )
     rm_count=0
-    #shellcheck disable=SC2154
-    for dir in "${old_dirs[@]}"; do
-        #'rm' -Rf "${dir}"
-        rm_count=$(( rm_count + 1 ))
+    skip_count=0
+    for dir in $(find \
+                    "${moduledirs_path:?error: no module dirs path set}" \
+                    -maxdepth 1 \
+                    -type d \
+                    -name ".mf_*" \
+                    -ctime +7 \
+                    | grep -v "${target_dir}" )
+    do
+        if [[ ! -a "$dir/.keep" ]]; then
+            echo 'rm' -rf "${dir}"
+            rm_count=$(( rm_count + 1 ))
+        else
+            skip_count=$(( skip_count + 1 ))
+        fi
     done
-    echo "Removed $rm_count dirs." >&2
+    echo "Removed $rm_count dirs, skipped $skip_count dirs marked to keep." >&2
 fi
 
 echo "--Done--" >&2
