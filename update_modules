@@ -165,7 +165,7 @@ if [[ "$remove_old_mfs" == "true" ]]; then
     echo "Removing module dirs older than 7 days..." >&2
     rm_count=0
     skip_count=0
-    for dir in $(find \
+    for dir in $(find -L \
                     "${moduledirs_path:?error: no module dirs path set}" \
                     -maxdepth 1 \
                     -type d \
