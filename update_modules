@@ -174,7 +174,7 @@ if [[ "$remove_old_mfs" == "true" ]]; then
                     | grep -v "${target_dir}" )
     do
         if [[ ! -a "$dir/.keep" ]]; then
-            echo 'rm' -rf "${dir}"
+            'rm' -rf "${dir}"
             rm_count=$(( rm_count + 1 ))
         else
             skip_count=$(( skip_count + 1 ))
