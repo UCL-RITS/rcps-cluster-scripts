@@ -56,8 +56,8 @@ def mmm_username_in_range(username):
     if username.startswith(prefix):
         number = int(username[len(prefix):])
         if number > MAX_ACCOUNT_NO:
-            print("Username "+username+ "does not exist. The last existing MMM account is " + MAX_ACCOUNT_NO)
+            print("Username "+username+ "does not exist. The last existing MMM account is " + str(MAX_ACCOUNT_NO))
             exit(1)
         elif number > MAX_ACCOUNT_NO-100:
-            print("WARNING: last existing MMM role account is " + MAX_ACCOUNT_NO + ", we need to request more from ISD.User Services.")
+            print("WARNING: last existing MMM role account is " + str(MAX_ACCOUNT_NO) + ", we need to request more from ISD.User Services.")
 
