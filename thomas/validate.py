@@ -52,7 +52,8 @@ def ucl_user(email, username):
 def mmm_username_in_range(username):
     # the highest mmm account currently existing
     MAX_ACCOUNT_NO = 600
-    if username.startswith("mmm"):
+    prefix="mmm"
+    if username.startswith(prefix):
         number = int(username[len(prefix):])
         if number > MAX_ACCOUNT_NO:
             print("Username "+username+ "does not exist. The last existing MMM account is " + MAX_ACCOUNT_NO)
