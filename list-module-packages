@@ -13,7 +13,7 @@ module whatis --paginate \
     | sed -e 's/"/\\"/g' \
           -e 's/^ *//' \
           -e 's/^\([^-][^:]*\): \(.*\)/    - Name: "\1"\n      Description: "\2"/' \
-          -e 's_^---* [^ ]*/\([^ /]*\) ---*$_- Category:\n    Name: "\1"\n    Packages:_' \
+          -e 's@^---* [^ ]*/\([^ /]*\) ---*$@\1:@' \
     | tee tmp.whatis.yaml \
     | python -c '
 import yaml
@@ -26,7 +26,7 @@ package_list = yaml.safe_load(sys.stdin.read())
 utc_dt = datetime.datetime.now(datetime.timezone.utc) # UTC time
 dt = utc_dt.astimezone() # local time
 info = {"generated": dt.strftime("%Y-%m-%dT%H:%M:%S%z"),
-        "packages": package_list}
+        "package_groups": package_list}
 
 print(json.dumps(info, indent=3))
 '
