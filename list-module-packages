@@ -6,6 +6,10 @@ source "/shared/ucl/apps/modules/4.3.0/init/bash"
 
 module load --auto python3/recommended 2>/dev/null >/dev/null
 
+# If we don't load these modules, the beta modules and workaround modules aren't visible
+module load workaround-modules
+module load beta-modules
+
 # This does an extremely dodgy YAML conversion.
 export MODULES_PAGER=cat
 module whatis --paginate \
