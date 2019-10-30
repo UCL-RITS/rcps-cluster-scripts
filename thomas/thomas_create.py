@@ -86,7 +86,10 @@ def create_and_add_user(args, args_dict, cursor, nodename):
         # if no username was specified, get the next available mmm username
         if (args.username == None):
             args.username = thomas_utils.getunusedmmm(cursor)
-    
+   
+        # Check the MMM username exists and warn if getting near max
+        validate.mmm_username_in_range(args.username)
+ 
         # First add the information to the database, as it enforces unique usernames etc.
         args_dict['status'] = "active"
         thomas_utils.addusertodb(args, args_dict, cursor)
@@ -181,8 +184,6 @@ if __name__ == "__main__":
             # UCL user validation - if this is a UCL email, make sure username was given 
             # and that it wasn't an mmm one.
             validate.ucl_user(args.email, args.username)
-            # Check the MMM username exists and warn if getting near max
-            validate.mmm_username_in_range(args.username)
             create_and_add_user(args, args_dict, cursor, nodename)
         elif (args.subcommand == "request"):
             approverequest(args, args_dict, cursor, nodename)
