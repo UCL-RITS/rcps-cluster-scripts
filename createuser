@@ -21,6 +21,10 @@ elif /usr/bin/hostname -A | grep -q legion
 then
    PLATFORM="legion"
    ACL="AY201617"
+elif /usr/bin/hostname -A | grep -q kathleen
+then
+   PLATFORM="kathleen"
+   ACL="Open"
 elif /usr/bin/hostname -A | grep -q myriad
 then
    PLATFORM="myriad"
