@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -e
+
+USAGE="addsshkey [-h] [USER KEY] -- add a new ssh key to an account.
+Creates and chmods .ssh if it doesn't exist, appends key to ~/.ssh/authorized_keys
+
+    -h     show this help text 
+    USER   the account username 
+    KEY    the ssh key (in quotes, including ssh-rsa)"
+
+# No options, show usage
+if [ $# == 0 ] ; then
+    echo "$USAGE"
+    exit 0;
+fi
+
+# options
+while getopts 'h' option; do
+  case "$option" in
+    h) echo "$USAGE"
+       exit 0
+       ;;
+  esac
+done
+
+# no options, use two arguments
+username=$1
+ssh_key=$2
+
+# become user, create ssh directory and add key
+echo "Becoming ${username}, creating ssh dir and adding key"
+become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
+echo "Beacon"
+mkdir -p .ssh
+chmod go-rwx .ssh
+echo "${ssh_key}" >> ~/.ssh/authorized_keys
+EOF
+)
+become_exit_status=$?
+if [ "${become_output:0:6}" != "Beacon" ]; then
+  echo "Error: could not become user ${username}" >&2
+  exit 1
+fi
+

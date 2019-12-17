@@ -5,6 +5,8 @@ from tabulate import tabulate
 from ldap3 import Server, Connection, ALL
 import socket
 import thomas_queries
+import validate
+import subprocess
 
 ##########################
 #                        #
@@ -284,4 +286,59 @@ def AD_username_from_email(config, email):
         exit(1)
     return conn.entries[0].cn.values[0]
 
-    
+#################################
+#                               #
+# Add SSH key to user's account #
+#                               #
+#################################
+
+def addsshkey(username, key, args): 
+    # runs bash script (also in rcps-cluster-scripts) to become user and 
+    # add key to their ~/.ssh/authorized_keys 
+
+    # first verify ssh key
+    validate.ssh_key(key)
+
+    key_args = ['addsshkey', username, key]
+
+    if (args.debug):
+        print("Arguments that would be used:")
+        return print(key_args)
+    else:
+        return subprocess.check_call(key_args) 
+
+#################################
+#                               #
+# Run external Gold scripts     #
+#                               #
+#################################
+
+def transfergold(source_id, source_alloc_id, project_code, description, amount, args):
+
+    # make sure source_id, source_alloc_id, amount are strings
+    if not isinstance(source_id, str):
+        source_id = str(source_id)
+    if not isinstance(source_alloc_id, str):
+        source_alloc_id = str(source_alloc_id)
+    if not isinstance(amount, str):
+        amount = str(amount)
+
+    transfer_args = ['transfergold', '-i', source_id, '-a', source_alloc_id, '-p', project_code, '-t', description, '-g', amount]
+
+    if (args.debug):
+        print("Arguments that would be used:")
+        return print(transfer_args)
+    else:
+        return subprocess.check_call(transfer_args)
+
+
+def refreshSAFEgold(args):
+
+    refresh_args = ['refreshsafegold']
+    if (args.debug):
+        print("Command that would be used:")
+        return print(refresh_args)
+    else:
+        return subprocess.check_call(refresh_args)
+
+

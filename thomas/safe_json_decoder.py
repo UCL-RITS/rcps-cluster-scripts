@@ -1,8 +1,10 @@
-# This module provides classes and procedures for converting the JSON example we have been provided with into 
-# Python classes.
+# This module provides classes and procedures for converting JSON SAFE tickets
+# into Python classes.
 
-# We only have an example of a create account request so far so to process that call JSONtoAccountRequest(JSONData)
-# where JSONData is a string with an account request.
+# Many fields are optional depending on the type of ticket, so they are 
+# initialised to empty when they do not exist.
+
+# JSONDataToTickets(yourjsondata) parses JSON into a list of Python objects.
 
 # Also includes fairly dodgy __str__ methods for testing purposes.
 
@@ -11,7 +13,7 @@
 # For reasons the request is enclosed in a Sysadmin object.
 class SysAdmin:
 
-    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Approver", "Person", "ProjectGroup", "Project", "Account", "ExtraText"]
+    known_keys = ["Id", "Type", "Status", "StartDate", "EndDate", "Machine", "Handler", "Approver", "Person", "ProjectGroup", "Project", "Account", "ExtraText", "GoldTransfer"]
 
     def __init__(self, SysAdminDict):
         for a in SysAdminDict.keys():
@@ -25,21 +27,34 @@ class SysAdmin:
         self.Machine=SysAdminDict["Machine"]
         self.HandlerName=SysAdminDict["Handler"]["Name"]
         self.HandlerEmail=SysAdminDict["Handler"]["Email"]
-        self.Approver=""
         # Approver is an instance of Person
         if "Approver" in SysAdminDict.keys():
             self.Approver=Person(SysAdminDict["Approver"])
-        self.Person=""
+        else:
+            self.Approver=Person()
         if "Person" in SysAdminDict.keys():
             self.Person=Person(SysAdminDict["Person"])
-        self.ProjectGroup=ProjectGroup(SysAdminDict["ProjectGroup"])
-        self.Project=Project(SysAdminDict["Project"])
-        self.Account=""
+        else:
+            self.Person=Person()
+        if "ProjectGroup" in SysAdminDict.keys():
+            self.ProjectGroup=ProjectGroup(SysAdminDict["ProjectGroup"])
+        else:
+            self.ProjectGroup=ProjectGroup()
+        if "Project" in SysAdminDict.keys():
+            self.Project=Project(SysAdminDict["Project"])
+        else:
+            self.Project=Project()
         if "Account" in SysAdminDict.keys():
             self.Account=Account(SysAdminDict["Account"])            
+        else:
+            self.Account=Account()
         self.ExtraText=""
         if "ExtraText" in SysAdminDict.keys():
             self.ExtraText=SysAdminDict["ExtraText"]
+        if "GoldTransfer" in SysAdminDict.keys():
+            self.GoldTransfer=GoldTransfer(SysAdminDict["GoldTransfer"])
+        else:
+            self.GoldTransfer=GoldTransfer()
 
     def __str__(self):
         return "SysAdmin: " + ",\n".join([self.Id, 
@@ -55,23 +70,30 @@ class SysAdmin:
                                         str(self.ProjectGroup),
                                         str(self.Account),
                                         self.Machine,
-                                        self.ExtraText])
+                                        self.ExtraText,
+                                        str(self.GoldTransfer)])
 
 class Project:
 
     known_keys = ["Code", "Name", "Status", "ProjectClass", "FundingBody", "Machines", "TopGroup"]
 
-    def __init__(self, ProjectDict):
-        for a in ProjectDict.keys():
-            if a not in self.known_keys:
-                print("Warning [Project]: Detected unknown key: " + a + ": " + str(ProjectDict[a]))
-        self.Code=ProjectDict["Code"]
-        self.Name=ProjectDict["Name"]
-        self.Status=ProjectDict["Status"]
-        self.ProjectClass=ProjectDict["ProjectClass"]
-        self.FundingBody=ProjectDict["FundingBody"]
-        self.Machines=str.split(ProjectDict["Machines"], ",") # Comma sep list
-        self.TopGroup=ProjectGroup(ProjectDict["TopGroup"])
+    def __init__(self, ProjectDict=None):
+        # Empty values are created if no dict is passed in.
+        if ProjectDict is None:
+            for a in self.known_keys:
+                setattr(self, a, "")
+        else:
+            for a in ProjectDict.keys():
+                if a not in self.known_keys:
+                    print("Warning [Project]: Detected unknown key: " + a + ": " + str(ProjectDict[a]))
+            # ternary: if a key is missing, set it to empty
+            self.Code=ProjectDict["Code"] if "Code" in ProjectDict.keys() else ""
+            self.Name=ProjectDict["Name"] if "Name" in ProjectDict.keys() else ""
+            self.Status=ProjectDict["Status"] if "Status" in ProjectDict.keys() else ""
+            self.ProjectClass=ProjectDict["ProjectClass"] if "ProjectClass" in ProjectDict.keys() else ""
+            self.FundingBody=ProjectDict["FundingBody"] if "FundingBody" in ProjectDict.keys() else ""
+            self.Machines=str.split(ProjectDict["Machines"], ",") if "Machines" in ProjectDict.keys() else "" # Comma sep list
+            self.TopGroup=ProjectGroup(ProjectDict["TopGroup"]) if "TopGroup" in ProjectDict.keys() else ""
 
     def __str__(self):
         return "Project: " + ",\n".join([self.Code,
@@ -85,40 +107,73 @@ class Project:
 class ProjectGroup:
 
     known_keys = ["Code", "GroupID"]
-
-    def __init__(self, ProjectGroupDict):
-        for a in ProjectGroupDict.keys():
-            if a not in self.known_keys:
-                print("Warning [ProjectGroup]: Detected unknown key: " + a + ": " + str(ProjectGroupDict[a]))
-        self.Code=ProjectGroupDict["Code"]
-        self.GroupID=ProjectGroupDict["GroupID"]
+ 
+    def __init__(self, ProjectGroupDict=None):
+        # Empty values are created if no dict is passed in.
+        if ProjectGroupDict is None:
+            for a in self.known_keys:
+                setattr(self, a, "")
+        else:
+            for a in ProjectGroupDict.keys():
+                if a not in self.known_keys:
+                    print("Warning [ProjectGroup]: Detected unknown key: " + a + ": " + str(ProjectGroupDict[a]))
+            # ternary: if a key is missing, set it to empty
+            self.Code=ProjectGroupDict["Code"] if "Code" in ProjectGroupDict.keys() else ""
+            self.GroupID=ProjectGroupDict["GroupID"] if "GroupID" in ProjectGroupDict.keys() else ""
 
     def __str__(self):
         return "ProjectGroup: " + ",\n".join([self.Code,
                                             self.GroupID])
 
+class GoldTransfer:
+    known_keys = ["Amount", "SourceAllocation", "SourceAccountID"]
+
+    def __init__(self, GoldDict=None):
+        # Empty values are created if no dict is passed in.
+        if GoldDict is None:
+            for a in self.known_keys:
+                setattr(self, a, "")
+        else:
+            for a in GoldDict.keys():
+                if a not in self.known_keys:
+                    print("Warning [GoldTransfer]: Detected unknown key: " + a + ": " + str(GoldDict[a]))
+            # ternary: if a key is missing, set it to empty
+            self.Amount=GoldDict["Amount"] if "Amount" in GoldDict.keys() else ""
+            self.SourceAllocation=GoldDict["SourceAllocation"] if "SourceAllocation" in GoldDict.keys() else ""
+            self.SourceAccountID=GoldDict["SourceAccountID"] if "SourceAccountID" in GoldDict.keys() else ""
+
+    def __str__(self):
+        return "GoldTransfer: " + ",\n".join([self.Amount,
+                                        self.SourceAllocation,
+                                        self.SourceAccountID])
+
 class Account:
 
     known_keys = ["Name", "GID", "Groups", "Person", "UID", "Machines"]
 
-    def __init__(self, AccountDict):
-
-        for a in AccountDict.keys():
-            if (a not in self.known_keys) and (not a.startswith("Group")):
-                print("Warning [Account]: Detected unknown key: " + a + ": " + str(AccountDict[a]))
-
-        self.Name=AccountDict["Name"]
-        self.GroupID=AccountDict["GID"]
+    def __init__(self, AccountDict=None):
+        # Empty values are created if no dict is passed in.
+        if AccountDict is None:
+            for a in ["Name", "GroupID", "Groups", "UserID", "Machines"]:
+                setattr(self, a, "")
+            self.Person=Person()
+        else:
+            for a in AccountDict.keys():
+                if (a not in self.known_keys) and (not a.startswith("Group")):
+                    print("Warning [Account]: Detected unknown key: " + a + ": " + str(AccountDict[a]))
+            # ternary: if a key is missing, set it to empty
+            self.Name=AccountDict["Name"] if "Name" in AccountDict.keys() else ""
+            self.GroupID=AccountDict["GID"] if "GID" in AccountDict.keys() else ""
         
-        # Need code for parsing group fmt
-        self.Groups=[]
-        for a in AccountDict.keys():
-            if (a.startswith("Group") and a != "Groups"):
-                self.Groups.append(ProjectGroup(AccountDict[a])) 
+            # Need code for parsing group fmt
+            self.Groups=[]
+            for a in AccountDict.keys():
+                if (a.startswith("Group") and a != "Groups"):
+                    self.Groups.append(ProjectGroup(AccountDict[a])) 
 
-        self.Person=Person(AccountDict["Person"])
-        self.UserID=AccountDict["UID"]
-        self.Machines=str.split(AccountDict["Machines"], ",")
+            self.Person=Person(AccountDict["Person"]) if "Person" in AccountDict.keys() else Person()
+            self.UserID=AccountDict["UID"] if "UID" in AccountDict.keys() else ""
+            self.Machines=str.split(AccountDict["Machines"], ",") if "Machines" in AccountDict.keys() else ""
 
     def __str__(self):
         strGroups = "Groups: "
@@ -136,30 +191,26 @@ class Person:
 
     known_keys = ["Name", "Email", "WebName", "PublicKey", "NormalisedPublicKey", "HartreeName"]
 
-    def __init__(self, PersonDict):
-        for a in PersonDict.keys():
-            if a not in self.known_keys:
-                print("Warning [Person]: Detected unknown key: " + a + ": " + str(PersonDict[a]))
-
-        self.Title=PersonDict["Name"]["Title"]
-        if type(self.Title) == type(None):
-            self.Title = ""
-        self.FirstName=PersonDict["Name"]["Firstname"]
-        self.LastName=PersonDict["Name"]["Lastname"]
-        self.Email=PersonDict["Email"]
-        self.WebName=""
-        if "WebName" in PersonDict.keys():
-            self.WebName=PersonDict["WebName"]
-        self.PublicKey=""
-        if "PublicKey" in PersonDict.keys():
-            self.PublicKey=PersonDict["PublicKey"]
-        self.NormalisedPublicKey=""
-        if "NormalisedPublicKey" in PersonDict.keys():
-            self.NormalisedPublicKey=PersonDict["NormalisedPublicKey"]
-        self.HartreeName=""
-        if "HartreeName" in PersonDict.keys():
-            self.HartreeName=PersonDict["HartreeName"]
-
+    def __init__(self, PersonDict=None):
+        # Empty values are created if no dict is passed in.
+        if PersonDict is None:
+            for a in ["Title", "FirstName", "LastName", "Email", "WebName", "PublicKey", "NormalisedPublicKey", "HartreeName"]:
+                setattr(self, a, "")
+        else:
+            for a in PersonDict.keys():
+                if a not in self.known_keys:
+                    print("Warning [Person]: Detected unknown key: " + a + ": " + str(PersonDict[a]))
+            
+            self.Title=PersonDict["Name"]["Title"]
+            if type(self.Title) == type(None):
+                self.Title = ""
+            self.FirstName=PersonDict["Name"]["Firstname"]
+            self.LastName=PersonDict["Name"]["Lastname"]
+            self.Email=PersonDict["Email"]
+            self.WebName=PersonDict["WebName"] if "WebName" in PersonDict.keys() else ""
+            self.PublicKey=PersonDict["PublicKey"] if "PublicKey" in PersonDict.keys() else ""
+            self.NormalisedPublicKey=PersonDict["NormalisedPublicKey"] if "NormalisedPublicKey" in PersonDict.keys() else ""
+            self.HartreeName=PersonDict["HartreeName"] if "HartreeName" in PersonDict.keys() else ""
 
     def __str__(self):
         return "Person: " + ",\n".join([
@@ -196,7 +247,8 @@ def JSONDataToTickets(JSONData):
         Tickets.append(AccountRequest(JSONData))
     return Tickets
 
-# If this is run directly, process test.json in the current working directory and print the output as a string.
+# If this is run directly, process test.json in the current working directory 
+# and print the output as a string.
 if __name__=="__main__":
     import json
     import sys

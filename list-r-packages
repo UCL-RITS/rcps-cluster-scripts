@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+source /etc/profile.d/modules.sh
+
+# The R modules spit out useless messages for some reason.
+module purge >/dev/null 2>/dev/null
+module load r/recommended >/dev/null 2>/dev/null
+
+command -v Rscript >/dev/null && \
+Rscript --vanilla /dev/stdin <<'EOF'
+
+library(RJSONIO)
+
+p <- installed.packages(fields=c('Package','Version','Title'))
+p2 <- p[,c('Package','Version','Title')]
+
+# Some of the package titles have newlines in. Remove them.
+p2[,'Title'] <- gsub('\n', ' ', p2[,'Title'])
+
+v <- version$version
+t <- format(Sys.time(),"%Y-%m-%dT%H:%M:%S%z")
+
+exportJson <- toJSON(list(version=v,generated=t,packages=p2), pretty=TRUE)
+
+# In theory write should output to stdout automatically,
+#  but with this it seems not to for some reason.  >:(
+write(exportJson, file='')
+EOF

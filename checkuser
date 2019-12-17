@@ -32,6 +32,8 @@ sge_access_groups+=(AY201718)
 sge_access_group_labels+=("access group for 2017-2018")
 sge_access_groups+=(AY201819)
 sge_access_group_labels+=("access group for 2018-2019")
+sge_access_groups+=(Open)
+sge_access_group_labels+=("Open access group")
 
 for (( access_group_index=0; access_group_index < "${#sge_access_groups[@]}"; access_group_index++ )); do
     access_group="${sge_access_groups[$access_group_index]}"
@@ -53,13 +55,18 @@ done
 
 
 echo -n "Checking whether user has been blocked from submitting jobs: "
-# check NoSubmission for blocked users
-qconf -su NoSubmission | grep -q "$username"
-if [ $? == 0 ]
+if qconf -su NoSubmission 2>/dev/null >/dev/null
 then
-  echo "${RED}yes${RESET}"
+    # check NoSubmission for blocked users
+    qconf -su NoSubmission | grep -q "$username"
+    if [ $? == 0 ]
+    then
+      echo "${RED}yes${RESET}"
+    else
+      echo "${GREEN}no${RESET}"
+    fi
 else
-  echo "${GREEN}no${RESET}"
+    echo "${GREEN}no (no blocked ACL here)${RESET}"
 fi
 
 echo "" # Blank line for section separation
@@ -101,6 +108,29 @@ then
       echo "${GREEN}yes${RESET}"
     else
       echo "${RED}no${RESET}"
+    fi
+else
+    echo "${BLUE}skipped${RESET}"
+fi
+
+echo -n "Checking whether home directory is usable by owner: "
+perms="$(stat --printf=%A "/home/${username}" 2>/dev/null)"
+if [[ "${perms:1:3}" =~ rwx ]];
+then
+    echo  "${GREEN}yes${RESET}"
+else 
+    echo "${RED}no: perms are ${perms}${RESET}"
+fi
+
+echo -n "Checking whether scratch directory is usable by owner: "
+if [ -z "$flag_has_no_scratch" ];
+then
+    perms="$(stat --printf=%A "/scratch/scratch/${username}" 2>/dev/null)"
+    if [[ "${perms:1:3}" =~ rwx ]];
+    then
+        echo  "${GREEN}yes${RESET}"
+    else 
+        echo "${RED}no: perms are ${perms}${RESET}"
     fi
 else
     echo "${BLUE}skipped${RESET}"

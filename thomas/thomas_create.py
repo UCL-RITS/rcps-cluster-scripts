@@ -86,7 +86,10 @@ def create_and_add_user(args, args_dict, cursor, nodename):
         # if no username was specified, get the next available mmm username
         if (args.username == None):
             args.username = thomas_utils.getunusedmmm(cursor)
-    
+   
+        # Check the MMM username exists and warn if getting near max
+        validate.mmm_username_in_range(args.username)
+ 
         # First add the information to the database, as it enforces unique usernames etc.
         args_dict['status'] = "active"
         thomas_utils.addusertodb(args, args_dict, cursor)
@@ -130,6 +133,8 @@ def approverequest(args, args_dict, cursor, nodename):
                 args.id = row['id']
                 args.approver = os.environ['USER']
                 args.cluster = row['cluster']
+                # Check the MMM username exists and warn if getting near max
+                validate.mmm_username_in_range(args.username)
                 # check the cluster matches where we are running from
                 if (args.cluster in nodename):
                     # create the account
@@ -182,7 +187,7 @@ if __name__ == "__main__":
             create_and_add_user(args, args_dict, cursor, nodename)
         elif (args.subcommand == "request"):
             approverequest(args, args_dict, cursor, nodename)
-        
+ 
         # commit the change to the database unless we are debugging
         if (not args.debug):
             conn.commit()

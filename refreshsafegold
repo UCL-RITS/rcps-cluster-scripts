@@ -1,0 +1,6 @@
+#!/bin/bash 
+
+# get script location
+DIR=$(dirname "$(readlink -f "$0")")
+"$DIR"/glsalloc --raw | "$DIR"/safegold --uploadgold
+

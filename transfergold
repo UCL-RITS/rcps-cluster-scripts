@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+
+set -e
+
+USAGE="transfergold [-h] [-i source_id | -s source_project_code] [-a source_allocation] [-d dest_id | -p dest_project_code] -g gold_amount [-t description_text] 
+-- transfer Gold from one budget to another, using the numeric id or name (if both are provided it will use the numeric id).
+Executes the transfer as ccspapp (RC Support account).
+
+    -h                       show this help text 
+    -i source_id             id of the source account
+    -s source_project_code   name of the source account (instead of id)
+    -a source_allocation     id of the source allocation to use (optional)
+    -d dest_id               id of the destination account
+    -p dest_project_code     name of the destination account
+    -g gold_amount           amount of Gold to move (core hours) 
+    -t description_text      reason for the move (optional, no spaces)
+"
+
+# No options, show usage
+if [ $# == 0 ] ; then
+    echo "$USAGE"
+    exit 0;
+fi
+
+# options
+while getopts 'hi:s:a:d:p:t:g:' option; do
+  case "$option" in
+    h) echo "$USAGE"
+       exit 0
+       ;;
+    i) source_id="$OPTARG"
+       ;;
+    s) source_project_code="$OPTARG"
+       ;;
+    a) source_allocation="$OPTARG"
+       ;;
+    d) dest_id="$OPTARG"
+       ;; 
+    p) dest_project_code="$OPTARG" 
+       ;;
+    t) description_text="$OPTARG"
+       ;;
+    g) gold_amount="$OPTARG"
+       ;;
+    # any wrong option
+    \?) echo "$USAGE"
+       exit 1
+       ;;
+  esac
+done
+# remove parsed options from arg list
+shift $((OPTIND -1))
+
+# Build gtransfer command, checking all necessary options are provided.
+gtransfer_command="gtransfer"
+gtransfer_args=""
+# add only one source
+if [ ! -z "$source_id" ]
+then
+    gtransfer_args+="--fromAccount $source_id"
+elif [ ! -z "$source_project_code" ]
+then
+    gtransfer_args+="--fromProject $source_project_code"
+else
+    echo "No source budget specified with -i or -s, exiting"
+    exit 1
+fi
+
+# optionally add allocation id: if none specified will use oldest active
+if [ ! -z "$source_allocation" ]
+then
+    gtransfer_args+=" -i $source_allocation"
+fi
+
+# add only one destination
+if [ ! -z "$dest_id" ]
+then
+    gtransfer_args+=" --toAccount $dest_id"
+elif [ ! -z "$dest_project_code" ]
+then
+    gtransfer_args+=" --toProject $dest_project_code"
+else
+    echo "No destination budget specified with -d or -p, exiting"
+    exit 1
+fi
+
+# optionally add description
+if [ ! -z "$description_text" ]
+then
+    gtransfer_args+=" -d $description_text"
+fi
+
+# add amount of Gold to move
+if [ ! -z "$gold_amount" ]
+then
+    gtransfer_args+=" -z $gold_amount"
+else
+    echo "No amount of Gold was specified, exiting"
+    exit 1
+fi
+
+echo "Gtransfer command is: $gtransfer_command $gtransfer_args"
+
+# get current script location - gtransfer wrapper should be in the same place
+DIR=$(dirname "$(readlink -f "$0")")
+
+echo "Becoming ccspapp to run gtransfer"
+become_output=$(sudo /shared/ucl/sysops/libexec/become ccspapp <<EOF
+echo "Beacon"
+
+"$DIR/$gtransfer_command" "$gtransfer_args"
+
+EOF
+)
+become_exit_status=$?
+if [ "${become_output:0:6}" != "Beacon" ]; then
+  echo "Error: could not become ccspapp" >&2
+  exit 1
+fi
+echo "Output from become:"
+echo "$become_output"
+

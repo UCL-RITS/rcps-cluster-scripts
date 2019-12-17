@@ -1,0 +1,46 @@
+#!/bin/bash
+
+cd "/home/$USER/cron"
+source /etc/profile.d/modules.sh
+module load gcc-libs
+module load userscripts
+
+_email_notify() {
+  /usr/sbin/sendmail -t<<EOF
+From: rc-support@ucl.ac.uk
+To: i8w1f4w7p2h0a2v3@ucl-rits.slack.com
+Subject: SAFE tickets pending
+
+"$output"
+
+EOF
+}
+
+
+# get and log current open tickets
+output=$(safetickets --refresh | tee safetickets.log)
+
+# if output is empty, do nothing - either there are no tickets and
+# we don't want an update saying there are none, or there was an error
+# (and only stdout is captured)
+if [ -z "$output" ] 
+then
+    exit(0)
+fi
+
+# if old ticket log exists, diff it and send email if the diff is not empty
+if [ -f safetickets_prev.log ]
+then
+  diff safetickets_prev.log safetickets.log > safetickets.diff
+  if [ -s "safetickets.diff" ]
+  then
+    _email_notify
+  fi
+# no previous log, always email
+else
+  _email_notify
+fi
+
+# rotate logs
+cp safetickets.log safetickets_prev.log
+

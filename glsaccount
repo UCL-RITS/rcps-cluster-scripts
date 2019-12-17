@@ -1,13 +1,22 @@
 #!/usr/bin/env bash
 
 # Make sure we are on a cluster with Gold
+if /shared/ucl/apps/cluster-bin/whereami &> /dev/null
+then
+  identifycluster="/shared/ucl/apps/cluster-bin/whereami"
+else
+  identifycluster="hostname -f"
+fi
 
-if hostname -A | grep -q thomas
+if $identifycluster | grep -q thomas
 then
   ssh util04 glsaccount -h "$@"
-elif hostname -A | grep -q michael
+elif $identifycluster | grep -q michael
 then
   ssh util11 glsaccount -h "$@"
+elif "$identifycluster" | grep -q myriad
+then
+  ssh util05 glsaccount -h "$@"
 else 
   echo "There is no resource management on this cluster."
 fi

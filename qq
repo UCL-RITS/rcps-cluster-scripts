@@ -37,26 +37,31 @@ def parse_error(qstat_cmd, stdout, stderr):
 
 def decompose_queue(queue_info_tag, user):
   # Reads the XML and prints jobs with status belonging to user.
-  job_count = 0
   if queue_info_tag is None:
     sys.stderr.write("Decomposition error!\n")
     sys.exit(1)
-    
+  
+  job_count = 0
+
   for job_list in queue_info_tag:
-    if (job_list.find("JB_owner").text == user) or (user == "\*") or (user == "*"):
-      job_string = "  " + job_list.find("JB_job_number").text
-      job_string = job_string + "  " + job_list.find("JB_name").text
-      state = job_list.find("state").text.upper()
+    if (job_list.find("JB_owner").text != user) and (user != "\*"):
+      continue
+
+    job_number = job_list.find("JB_job_number").text
+    job_name   = job_list.find("JB_name").text
+    state      = job_list.find("state").text.upper()
       
-      if state == "R":
-        state = color.green + state + color.reset
-      elif state == "QW" or state == "Q" :
-        state = color.blue + state + color.reset
-      else:
-        state = color.red + state + color.reset
-      
-      job_string = job_string + " : " + state
-      print job_string
+    if state == "R":
+      state = color.green + state + color.reset
+    elif state == "QW" or state == "Q" or state == "RQW":
+      state = color.blue + state + color.reset
+    elif state == "RR":
+      state = color.blue + "R" + color.green + "R" + color.reset
+    else:
+      state = color.red + state + color.reset
+    
+    job_string = "  %s  %s : %s" % (job_number, job_name, state)
+    print(job_string)
     job_count = job_count + 1    
 
   return job_count  
@@ -72,6 +77,8 @@ def main():
     sys.stderr.write("Too many arguments! Either no arguments or a username, please.\n")
     exit(5)
   
+  if user == "*":
+      user = "\\*" # Too many levels of escaping -_-
   qstat_cmd = "qstat -xml -u %s" % (user)
 
   # Run qstat with a pipe

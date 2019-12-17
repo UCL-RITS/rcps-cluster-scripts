@@ -20,7 +20,7 @@ then
 elif /usr/bin/hostname -A | grep -q legion
 then
    PLATFORM="legion"
-   ACL="AY201617"
+   ACL="Open"
 elif /usr/bin/hostname -A | grep -q kathleen
 then
    PLATFORM="kathleen"

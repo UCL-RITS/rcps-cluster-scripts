@@ -7,7 +7,7 @@
 # Updated user detection stuff - OK, 20160225
 
 moduledirs_path=/shared/ucl/apps
-become_path=$(which become  2>/dev/null)
+become_path="$(command -v become  2>/dev/null)"
 ops_user=ccspapp
 
 # OK what we want to do:
@@ -17,7 +17,6 @@ ops_user=ccspapp
 # 3 if 2, does become exist?
 
 if [ "$(whoami)" == "${ops_user}" ]; then
-
   echo "I am ops user ${ops_user}.  No need to use become."
 elif (id -Gn | grep -v '\bccsprcop\b' >/dev/null 2>/dev/null); then
   echo "Error: user should be in ccsprcop group to use this script." >&2
@@ -36,15 +35,46 @@ EOF
   exit
 fi
 
-# Parse options (super-simple atm)
+scriptname="$(basename "$0")"
+usage="
+Usage: $scriptname [-h] [-f|-i] [-r]
 
-if [[ -n "$1" ]]; then
-  if [[ "$1" == "-f" ]]; then
-    force_update="y"
-  elif [[ "$1" == "-i" ]]; then
-    idempotent="y"
-  fi
-fi
+    -h  Prints this help
+    -f  Force update even if it would be the same
+    -i  Do not treat it as an error if the update would be the same
+    -k  Do not remove old module trees after update
+"
+
+# Mode defaults
+force_update="n"
+idempotent="n"
+remove_old_mfs="true"
+
+# Parse options
+while getopts ":hfik" opt; do
+  case ${opt} in
+    h )
+        printf "%s" "$usage"
+        exit 0
+    ;;
+    f )
+        ## Force mode -- deploys even if the current deployment is the same as the most recent
+        force_update="y"
+    ;;
+    i )
+        ## Idempotent mode -- does not treat it as an error if the current deployment is the same as the most recent
+        idempotent="y"
+    ;;
+    k )
+        ## Keep module_dirs older than 7 days after deployment -- default is to remove them
+        remove_old_mfs="false"
+    ;;
+    \? ) 
+        printf "%s" "$usage"
+        exit 2
+      ;;
+  esac
+done
 
 
 # Don't try to continue if something breaks
@@ -98,7 +128,7 @@ echo "Checking for existing directory from latest commit..." >&2
 target_dir=.mf_${short_sha}
 
 if [[ -d "$target_dir" || -d "$target_dir.*" ]]; then
-  if [[ "${force_update}" != "y" ]]; then
+  if [[ "${force_update}" == "n" ]]; then
     if [[ "$idempotent" == "y" ]]; then
       exit
     else
@@ -106,6 +136,7 @@ if [[ -d "$target_dir" || -d "$target_dir.*" ]]; then
       exit 2
     fi
   else
+    echo "Forcing update..." >&2
     suffix_number=0
    
     new_target_dir=${target_dir} 
@@ -130,8 +161,31 @@ rm -Rf "${target_dir:-/if_you_see_this_it_means_target_dir_variable_was_empty_so
 echo "Linking..." >&2
 ln -Tfs "${target_dir}" modulefiles
 
+if [[ "$remove_old_mfs" == "true" ]]; then
+    echo "Removing module dirs older than 7 days..." >&2
+    rm_count=0
+    skip_count=0
+    for dir in $(find -L \
+                    "${moduledirs_path:?error: no module dirs path set}" \
+                    -maxdepth 1 \
+                    -type d \
+                    -name ".mf_*" \
+                    -ctime +7 \
+                    | grep -v "${target_dir}" )
+    do
+        if [[ ! -a "$dir/.keep" ]]; then
+            'rm' -rf "${dir}"
+            rm_count=$(( rm_count + 1 ))
+        else
+            skip_count=$(( skip_count + 1 ))
+        fi
+    done
+    echo "Removed $rm_count dirs, skipped $skip_count dirs marked to keep." >&2
+fi
+
 echo "--Done--" >&2
 
-num_old_module_dirs="$(find /shared/ucl/apps/ -maxdepth 1 -type d -name ".mf_*" | wc -l)"
+num_old_module_dirs="$(find -L "$moduledirs_path" -maxdepth 1 -type d -name ".mf_*" | wc -l)"
 echo "Module dirs in ${moduledirs_path}: ${num_old_module_dirs}" >&2
 echo "Most recent log in active dir: $most_recent_log"
+

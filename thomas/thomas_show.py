@@ -94,7 +94,7 @@ def tableprint(cursor, results):
 
 # Get user info (not ssh key as it is huge)
 def userinfo(cursor, args_dict):
-    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username=%(user)s")
+    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users WHERE username=%(user)s")
     cursor.execute(query, args_dict)
     return cursor
 
@@ -106,7 +106,7 @@ def sshinfo(cursor, args_dict):
 
 # Get all of user's projects and related points of contact
 def projectinfo(cursor, args_dict):
-    query = ("SELECT project, poc_id, creation_date, modification_date FROM projectusers WHERE username=%(user)s")
+    query = ("SELECT project, poc_id, status, creation_date, modification_date FROM projectusers WHERE username=%(user)s")
     cursor.execute(query, args_dict)
     return cursor
 
@@ -125,13 +125,13 @@ def instituteinfo(cursor):
 
 # Get all existing users (username, names, email, dates but not ssh keys)
 def alluserinfo(cursor):
-    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users")
+    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users")
     cursor.execute(query)
     return cursor
 
 # Get the n latest users (not ssh keys). Default n provided by argparser.
 def recentinfo(cursor, args_dict):
-    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users ORDER BY creation_date DESC LIMIT %(n)s")
+    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users ORDER BY creation_date DESC LIMIT %(n)s")
     cursor.execute(query, args_dict)
     return cursor
 
@@ -158,7 +158,7 @@ def projectcombo(cursor, args_dict):
 # Allowing partial matches with %username%.
 # The default is a blank, so ends up as %% which matches all
 def whoisuser(cursor, args_dict):
-    query = ("SELECT username, givenname, surname, email, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args_dict["username"] + "%", "%" + args_dict["email"] + "%", "%" + args_dict["given_name"] + "%", "%" + args_dict["surname"] + "%")
+    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args_dict["username"] + "%", "%" + args_dict["email"] + "%", "%" + args_dict["given_name"] + "%", "%" + args_dict["surname"] + "%")
     cursor.execute(query, args_dict)
     return cursor
 

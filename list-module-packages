@@ -1,0 +1,37 @@
+#!/bin/bash
+
+source "/etc/profile.d/modules.sh"
+# We need to use a 4.x release for this or the redirection doesn't work. (Or is different, at least.)
+source "/shared/ucl/apps/modules/4.3.0/init/bash"
+
+module load --auto python3/recommended 2>/dev/null >/dev/null
+
+# If we don't load these modules, the beta modules and workaround modules aren't visible
+module load workaround-modules
+module load beta-modules
+
+# This does an extremely dodgy YAML conversion.
+export MODULES_PAGER=cat
+module whatis --paginate \
+    | grep -e ':' -e '---' \
+    | sed -e 's/"/\\"/g' \
+          -e 's/^ *//' \
+          -e 's/^\([^-][^:]*\): \(.*\)/    - Name: "\1"\n      Description: "\2"/' \
+          -e 's@^---* [^ ]*/\([^ /]*\) ---*$@\1:@' \
+    | tee tmp.whatis.yaml \
+    | python -c '
+import yaml
+import json
+import sys
+import datetime
+
+package_list = yaml.safe_load(sys.stdin.read())
+
+utc_dt = datetime.datetime.now(datetime.timezone.utc) # UTC time
+dt = utc_dt.astimezone() # local time
+info = {"generated": dt.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        "package_groups": package_list}
+
+print(json.dumps(info, indent=3))
+'
+
