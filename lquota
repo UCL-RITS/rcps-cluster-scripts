@@ -1,0 +1,541 @@
+#!/bin/bash
+
+trap callstack ERR
+
+set -o errexit \
+    -o nounset \
+    -o pipefail
+
+
+clustername="$(/shared/ucl/sysops/libexec/clustname)"
+
+# This lfs is used to read existing quotas and project IDs
+alias lfs=/usr/bin/lfs
+
+# ... whereas _lfs is used for all the set operations so you can do a dry-run
+function _lfs() { 
+    if [[ -z "${global_dry_run:-}" ]]; then
+        [[ "$EUID" != 0 ]] \
+            && msg fatal "without dry-run mode, this command must be run as root"
+        msg debug "running lfs to set with args: $*"
+        /usr/bin/lfs "$@"
+    else
+        msg info "would run lfs but dry-run enabled: lfs $*"
+    fi
+}
+
+function logdate() {
+    date +"%Y-%m-%d %H:%M:%S %Z"
+}
+
+function msg() {
+    if [[ "$#" -ne 2 ]]; then
+        printf "[%s] %s: (%s) %s" "$(logdate)" "$0" "fatal" "incorrect number of arguments provided to msg function"
+        exit 1
+    fi
+
+    local level="$1"
+    local message="$2"
+    local active_level="${global_msg_level:-none}"
+
+    local -A levels=([none]=0 [fatal]=1 [error]=2 [warn]=3 [info]=4 [debug]=5)
+    local num_level="${levels[$level]}"
+    local num_active_level="${levels[$active_level]}"
+
+    if [[ "$num_level" -le "${num_active_level}" ]]; then
+        printf "[%s] %s: (%s) %s\n" "$(logdate)" "$0" "$level" "$message" >&2
+    fi
+    if [[ "$level" == "fatal" ]]; then
+        callstack
+    fi
+}
+
+function callstack() {
+    echo --- Trace: ---
+    local i
+    # These arrays start at index 0, but 0 is this callstack function, so skip it.
+    for ((i=1; i<${#FUNCNAME[*]}; i++)) do
+        if [ $i -ne 1 ]; then 
+            echo -n "  "  
+        fi
+        echo "${BASH_SOURCE[$i]}: in \"${FUNCNAME[$i]}\" called from line ${BASH_LINENO[$i]}"
+    done
+    echo --------------
+    exit 1
+}
+
+function check_user_exists() {
+    local username="$1"
+    id -- "$username" >/dev/null || msg fatal "user \"$username\" not found"
+    return 0
+}
+
+function check_path_exists() {
+    local path="$1"
+    [[ -a "$path" ]] || msg fatal "path \"$path\" not found"
+    return 0
+}
+
+function prompt_yn() {
+    [[ "$#" -ne 2 ]] && msg fatal "incorrect number of arguments provided to prompt_yn"
+    local prompt="$1"
+    local default="${2:-n}"
+
+    local result
+    read -r -n 1 -p "$prompt" result
+    echo # cleans up the newline
+
+    if [[ -z "$result" ]]; then
+        result="$default"
+    fi
+    if [[ ! "${result,,}" =~ [yn] ]]; then
+        prompt_yn "$@"
+        return $?
+    else
+        if [[ "${result,,}" == "y" ]]; then
+            return 0
+        elif [[ "${result,,}" == "n" ]]; then
+            return 1
+        else
+            msg fatal "incomprehensible result in prompt_yn"
+        fi
+    fi
+}
+
+function _get_user_quota() {
+    local username="$1"
+    local lustre_path="$2"
+
+    lfs quota -q -u "$username" "$lustre_path" \
+        |tr -d '\n*' \
+        |awk '{print $4}'
+}
+
+function _get_user_quota_usage() {
+    local username="$1"
+    local lustre_path="$2"
+
+    lfs quota -q -u "$username" "$lustre_path" \
+        |tr -d '\n*' \
+        |awk '{print $2}'
+}
+
+function _get_project_quota() {
+    command -v lsattr >/dev/null \
+        || msg fatal "could not find lsattr command, needed for project quota ID"
+
+    local lustre_path="$1"
+
+    project_id="$(lsattr -pd "$lustre_path" \
+                    || msg fatal "lsattr command could not get project ID"
+                )"
+    project_id="${project_id%% *}"
+
+    lfs quota -q -p "$project_id" "$lustre_path" \
+        | tr -d '\n*' \
+        | awk '{print $4}'
+}
+
+function _get_project_quota_usage() {
+    command -v lsattr >/dev/null \
+        || msg fatal "could not find lsattr command, needed for project quota ID"
+
+    local lustre_path="$1"
+
+    local project_id
+          project_id="$(lsattr -pd "$lustre_path" \
+                            || msg fatal "lsattr command could not get project ID"
+                       )"
+          project_id="${project_id%% *}"
+
+    lfs quota -q -p "$project_id" "$lustre_path" \
+        | tr -d '\n*' \
+        | awk '{print $2}'
+}
+
+
+function print_user_quota_for_poolkvs() {
+    local username="$1"
+    shift
+    declare -a poolkvs
+               poolkvs=("$@")
+
+    local usage_kb
+    local quota_kb
+    local human_usage
+    local human_quota
+    local usage_pc
+    local pool_name
+    local pool_path
+    local warn_user="n"
+    local -a pools_approaching_limit
+    local -a pools_over_limit
+    if [[ -z "$global_quiet_mode" ]]; then
+        printf "%*s  %*s   %*s   %*s   %*s\n" 12 "Storage" 10 "Used" 10 "Quota" 6 "% Used" 4 "Path"
+    fi
+    for poolkv in "${poolkvs[@]}"; do
+          pool_name="${poolkv%%=*}"
+          pool_path="${poolkv#*=}"
+          usage_kb="$(_get_user_quota_usage "$username" "$pool_path")"
+          quota_kb="$(_get_user_quota       "$username" "$pool_path")"
+          human_usage="$(raw_kb_to_human_size "$usage_kb")"
+          human_quota="$(raw_kb_to_human_size "$quota_kb")"
+          usage_pc="$(( (usage_kb * 100) / quota_kb ))"
+
+          printf "%*s  %*s   %*s   %5d%%   %s\n" 12 "$pool_name" 10 "$human_usage" 10 "$human_quota" "$usage_pc" "$pool_path"
+          if [[ "$usage_pc" -ge 90 ]] && [[ "$usage_pc" -le 100 ]]; then
+              warn_user="y"
+              pools_approaching_limit+=("$pool_name")
+          fi
+          if [[ "$usage_pc" -gt 100 ]]; then
+              warn_user="y"
+              pools_over_limit+=("$pool_name")
+          fi
+    done
+    if [[ -z "$global_quiet_mode" ]] && [[ "$warn_user" != "n" ]]; then
+        printf "\n"
+        if [[ "${#pools_approaching_limit[@]}" -gt 0 ]]; then
+            for pool_name in "${pools_approaching_limit[@]}"; do
+                printf "Warning: data in %s is approaching the quota limit.\n" "$pool_name"
+            done
+        fi
+        if [[ "${#pools_over_limit[@]}" -gt 0 ]]; then
+            for pool_name in "${pools_over_limit[@]}"; do
+                printf "Warning: data in %s exceeds the quota limit.\n" "$pool_name"
+            done
+        fi
+    fi
+}
+
+function print_project_quota_for_poolkvs() {
+    declare -a poolkvs
+               poolkvs=("$@")
+
+    local usage_kb
+    local quota_kb
+    local human_usage
+    local human_quota
+    local usage_pc
+    local pool_name
+    local pool_path
+    local warn_user="n"
+    local -a pools_approaching_limit
+    local -a pools_over_limit
+    if [[ -z "$global_quiet_mode" ]]; then
+        printf "%*s  %*s   %*s   %*s   %*s\n" 12 "Storage" 10 "Used" 10 "Quota" 6 "% Used" 4 "Path"
+    fi
+    for poolkv in "${poolkvs[@]}"; do
+          pool_name="${poolkv%%=*}"
+          pool_path="${poolkv#*=}"
+          msg debug "calling _get_project_quota_usage \"$pool_path\""
+          usage_kb="$(_get_project_quota_usage "$pool_path")"
+          msg debug "calling _get_project_quota \"$pool_path\""
+          quota_kb="$(_get_project_quota       "$pool_path")"
+          human_usage="$(raw_kb_to_human_size "$usage_kb")"
+          human_quota="$(raw_kb_to_human_size "$quota_kb")"
+          usage_pc="$(( (usage_kb * 100) / quota_kb ))"
+
+          printf "%*s  %*s   %*s   %5d%%   %s\n" 12 "$pool_name" 10 "$human_usage" 10 "$human_quota" "$usage_pc" "$pool_path"
+          if [[ "$usage_pc" -ge 90 ]] && [[ "$usage_pc" -le 100 ]]; then
+              warn_user="y"
+              pools_approaching_limit+=("$pool_name")
+          fi
+          if [[ "$usage_pc" -gt 100 ]]; then
+              warn_user="y"
+              pools_over_limit+=("$pool_name")
+          fi
+    done
+    if [[ -z "$global_quiet_mode" ]] && [[ "$warn_user" != "n" ]]; then
+        printf "\n"
+        if [[ "${#pools_approaching_limit[@]}" -gt 0 ]]; then
+            for pool_name in "${pools_approaching_limit[@]}"; do
+                printf "Warning: data in %s is approaching the quota limit.\n" "$pool_name"
+            done
+        fi
+        if [[ "${#pools_over_limit[@]}" -gt 0 ]]; then
+            for pool_name in "${pools_over_limit[@]}"; do
+                printf "Warning: data in %s exceeds the quota limit.\n" "$pool_name"
+            done
+        fi
+        printf "Programs will fail to write data if there is no space remaining.\n"
+        printf "\n"
+    fi
+}
+
+
+function validate_size() {
+    local size="$1"
+    # *yes* strictly this allows for millibits and other nonsensical
+    # combinations but *whatever*
+    # people gonna be bad at exactness
+    if [[ "$size" =~ [0-9]+(\.[0-9]+)?[kKmMgGtTpPeE]i?[bB] ]]; then
+        return 0
+    fi
+    return 1
+} 
+
+function filter_size() {
+    # see comment in validate_size
+    tr 'Kmgtpeb' 'kMGTPEB' <<<"$1"
+}
+
+function human_size_to_kb() {
+    local size="$1"
+    if ! validate_size "$size"; then
+        msg fatal "invalid human-readable size provided to human_size_to_raw_kb(): $size"
+    fi
+    msg debug "size spec before filtering: $size"
+    size="$(filter_size "$size")"
+    msg debug "size spec after filtering: $size"
+
+    # NB: yes, we could go higher, but bash arithmetic has an upper limit around 1<<62 (10^19)
+    declare -A size_prefixes=([ki]="1024" \
+                              [Mi]="$((1024*1024))" \
+                              [Gi]="$((1024*1024*1024))" \
+                              [Ti]="$((1024*1024*1024*1024))" \
+                              [Pi]="$((1024*1024*1024*1024*1024))" \
+                              [Ei]="$((1024*1024*1024*1024*1024*1024))" \
+                              [k]="1000" \
+                              [M]="1000000" \
+                              [G]="1000000000" \
+                              [T]="1000000000000" \
+                              [P]="1000000000000000" \
+                              [E]="1000000000000000000" \
+                              )
+    size="${size%B}"
+    local prefix="${size: -2}"
+    if [[ ! "${prefix: -1}" == "i" ]]; then
+        prefix="${prefix: -1}"
+    fi
+    num_size="${size%$prefix}"
+    command -v bc >/dev/null || msg fatal "bc command not found, needed for size conversion"
+    human_size="$(bc <<<"scale=10; f = $num_size * ${size_prefixes[$prefix]} / 1024; scale=0; f/1")"
+    msg debug "converted human size: $1 -> $human_size"
+    echo "$human_size"
+    return 0
+}
+
+function raw_kb_to_human_size() {
+    local size="$1"
+    #local -a size_prefixes=("B" "kiB" "MiB" "GiB" "TiB" "PiB" "EiB")
+    local -a size_prefixes=([0]="kiB" [1]="MiB" [2]="GiB" [3]="TiB" [4]="PiB" [5]="EiB")
+    local prefix_index=0
+    local size_remainder=0
+
+    if [[ "$#" -ne 1 ]]; then
+        msg fatal "invalid number of args passed to raw_kb_to_human_size: got $#, expected 1" >&2
+    fi
+
+    if [[ ! "$size" =~ [0-9]+ ]]; then
+        msg fatal "invalid size provided to raw_kb_to_human_size: $size (should only be a number)" >&2
+    fi
+
+    while (( size >= 1024 )); do
+        size_remainder="$(( size % 1024 ))"
+        size="$(( size/1024 ))"
+        prefix_index="$(( prefix_index + 1 ))"
+    done
+
+    if (( size_remainder == 0 )); then
+        echo "$size.00 ${size_prefixes[$prefix_index]}"
+        return 0
+    else
+
+        # Fixed-point thousandths
+        size_fxp="$(( ( (size_remainder * 100000) / 1024) / 100 ))"
+
+        # Approximate rounding
+        if (( "${size_fxp: -1}" > 4 )); then
+            size_fxp="$((size_fxp + 5))"
+        fi
+        # Down to hundredths
+        size_fxp="$((size_fxp/10))"
+
+        # CHECK FOR ROLLOVER YOU FOOL
+        if (( size_fxp >= 100 )); then
+            size="$((size + 1))"
+            size_fxp="$(( size_fxp % 100 ))"
+        fi
+
+        # insert left-pad joke here
+        if (( size_fxp < 10 )); then
+            size_fxp="0$size_fxp"
+        fi
+
+        # Trim trailing zeros on the decimal
+        #while [[ "${size_fxp: -1}" == "0" ]]; do
+        #    size_fxp="${size_fxp%0}"
+        #done
+
+        # Add the decimal point if there's something to display
+        size_fxp="${size_fxp:+.$size_fxp}"
+
+        echo "$size$size_fxp ${size_prefixes[$prefix_index]}"
+        return 0
+    fi
+}
+
+
+function usage() {
+    cat <<EOF
+lquota
+
+   user      a username
+   -l        list available pools
+   -q        quiet mode -- do not print quota warnings or column headers
+
+EOF
+    exit 0
+}
+
+
+
+
+function __main() {
+    global_msg_level=info
+    global_robot_mode=""
+    global_dry_run=""
+    global_quiet_mode=""
+    local only_list_pools=""
+    command -v /usr/bin/lfs >/dev/null || msg fatal "no lfs tool found in /usr/bin/lfs"
+
+    local opt
+    while getopts ":hi:nblq" opt; do
+        case "$opt" in
+            h)
+                usage
+                ;;
+            i)
+                global_msg_level="${OPTARG}"
+                if [[ ! "$global_msg_level" =~ (none|fatal|error|warn|info|debug) ]]; then
+                    global_msg_level=debug
+                    msg warn "invalid output level specified, setting to debug"
+                fi
+                ;;
+            l)
+                msg debug "will only list pools"
+                only_list_pools="y"
+                ;;
+            q)
+                msg debug "setting quiet mode -- will not display column headers or user warnings"
+                global_quiet_mode="y"
+                ;;
+            :)
+                msg fatal "command line option \"-$OPTARG\" requires an argument"
+                ;;
+            *)
+                msg fatal "invalid command line option given: $OPTNAME"
+                ;;
+        esac
+    done
+
+    shift $((OPTIND-1))
+
+    [[ "${1:-}" = "--" ]] && shift
+
+    [[ "$#" -gt 1 ]] && usage
+    
+
+    # TODO Settings for other clusters
+
+    # NB! Pools will not display if they are not listed here!
+    local pool_display_order=("home" "scratch" "lustre")
+
+    case "$clustername" in
+        "legion")
+            msg debug "using settings for legion"
+            local quota_mode="project"
+            local -A pools=([home]="/home/%username%" [scratch]="/scratch/scratch/%username%")
+            local default_pool="scratch"
+            ;;
+        "myriad")
+            msg debug "using settings for myriad"
+            local quota_mode="project"
+            local -A pools=([home]="/home/%username%" [scratch]="/scratch/scratch/%username%")
+            local default_pool="scratch"
+            ;;
+        "grace")
+            msg debug "using settings for grace"
+            # Grace has home and scratch but only home has quotas enabled
+            local quota_mode="user"
+            local -A pools=([home]="/home/%username%")
+            local default_pool="home"
+            ;;
+        "thomas")
+            msg debug "using settings for thomas"
+            # The version of Lustre on Thomas is too old to support projects,
+            #  so we have a single quota that encompasses both home and Scratch
+            #  spaces.
+            local quota_mode="user"
+            local -A pools=([lustre]="/scratch")
+            local default_pool="lustre"
+            ;;
+        "michael")
+            msg debug "using settings for michael"
+            # Ditto for michael
+            local quota_mode="user"
+            local -A pools=([lustre]="/scratch")
+            local default_pool="lustre"
+            ;;
+        "kathleen")
+            msg debug "using settings for kathleen"
+            # Whereas Kathleen uses ZFS on the backend storage,
+            #  which doesn't support project attributes on files C_C
+            local quota_mode="user"
+            local -A pools=([lustre]="/home/%username%")
+            local default_pool="lustre"
+            ;;
+        *)
+    esac
+    
+    if [[ -n "$only_list_pools" ]]; then
+        for pool in "${!pools[@]}"; do
+            printf "%s -> %s\n" "$pool" "${pools[$pool]}"
+        done
+        exit 0
+    fi
+
+    if [[ "$#" -eq 0 ]]; then
+        local user="$(whoami)"
+        check_user_exists "$user"
+        local op_mode="display"
+    fi
+    if [[ "$#" -eq 1 ]]; then
+        if [[ "$(whoami)" != "root" ]]; then
+            msg fatal "You must be root to get quotas for other users."
+            check_user_exists "$1"
+            local user="$1"
+            local op_mode="display"
+        fi
+    fi
+
+
+    if [[ "$op_mode" == "display" ]]; then
+        for pool_path in "${pools[@]//%username%/$user}"; do
+            check_path_exists "$pool_path"
+        done
+        local -a subst_pools
+        # The pool assoc array is not inherently ordered the way we'd like
+        # This both gives the output the desired display order and substitutes the username
+        # Also... I wish you could pass assoc arrays through as-is...
+        # ...but you can't, so we build an array of "key=value" strings to use instead
+        for pool in "${pool_display_order[@]}"; do
+            # only include pools that are defined for this cluster
+            if [[ "${pools[$pool]+has_a_value}" == "has_a_value" ]]; then 
+                subst_pools+=("$pool=${pools[$pool]//%username%/$user}")
+            fi
+        done
+        if [[ "$quota_mode" == "user" ]]; then
+            msg debug "calling: print_project_quota_for_paths \"$user\" ${subst_pools[*]@Q}"
+            print_user_quota_for_poolkvs "$user" "${subst_pools[@]}"
+        elif [[ "$quota_mode" == "project" ]]; then
+            msg debug "calling: print_project_quota_for_paths ${subst_pools[*]@Q}"
+            print_project_quota_for_poolkvs "${subst_pools[@]}"
+        fi
+    else 
+        msg fatal "Invalid op_mode: $op_mode"
+    fi
+}
+
+__main "$@"
+
