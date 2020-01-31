@@ -9,7 +9,9 @@ _email_notify() {
   /usr/sbin/sendmail -t<<EOF
 From: rc-support@ucl.ac.uk
 To: i8w1f4w7p2h0a2v3@ucl-rits.slack.com
-Subject: SAFE tickets pending
+Subject: SAFE tickets pending 
+This output from a ccspapp cron job on Thomas running
+/shared/ucl/apps/cluster-scripts/cron/notify_safe_tickets
 
 "$output"
 
