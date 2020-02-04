@@ -81,16 +81,28 @@ def activatependingprojectuser():
                 WHERE username=%s AND status='pending'""")
     return query
 
-# deactivate a user
+# deactivate this user
 def deactivateuser():
     query = ("""UPDATE users SET status='deactivated'
                 WHERE username=%s""")
     return query
 
-# deactivate a projectuser
+# deactivate this projectuser
 def deactivateprojectuser():
     query = ("""UPDATE projectusers SET status='deactivated'
                 WHERE username=%(username)s AND project=%(project)s""")
+    return query
+
+# deactivate a whole project
+def deactivateproject():
+    query = ("""UPDATE projects SET status='deactivated'
+                WHERE project=%(project)s""")
+    return query
+
+# deactivate all membership in this project
+def deactivateallprojectusers():
+    query = ("""UPDATE projectusers SET status='deactivated'
+                WHERE project=%(project)s""")
     return query
 
 # update SAFE ticket status in our DB
