@@ -331,17 +331,10 @@ def main(argv):
     if args.jsonfile is not None:
         parsejsonfile(args.jsonfile)
 
-    # Show tickets live from SAFE
+    # Show pending tickets from our database (not inc ssh key)
     if args.show:
-        # get SAFE tickets
-        ticketlist = gettickets(config)
-
-        # print SAFE tickets
-        for t in ticketlist:
-            #print(str(t.Ticket))
-            values = [t.Ticket.Id, t.Ticket.Type, t.Ticket.Status, t.Ticket.Account.Name, t.Ticket.Machine, t.Ticket.ProjectGroup.Code, t.Ticket.Account.Person.FirstName, t.Ticket.Account.Person.LastName, t.Ticket.Account.Person.Email, t.Ticket.Account.Person.NormalisedPublicKey, t.Ticket.Approver.FirstName, t.Ticket.Approver.LastName, t.Ticket.Approver.Email, t.Ticket.GoldTransfer.SourceAccountID, t.Ticket.GoldTransfer.SourceAllocation, t.Ticket.GoldTransfer.Amount, t.Ticket.ExtraText, t.Ticket.StartDate, t.Ticket.EndDate]
-            print(values)
-        print("Number of pending tickets: " + str(len(ticketlist)))
+        cursor.execute(thomas_queries.showpendingtickets())
+        thomas_utils.tableprint_dict(cursor.fetchall())
 
     # these options require a database connection
     if args.refresh or args.close is not None or args.reject is not None:
@@ -358,9 +351,7 @@ def main(argv):
                     cursor.execute(thomas_queries.refreshsafetickets(), t)
                     thomas_utils.debugcursor(cursor, args.debug)
                 # show database tickets (not inc ssh key)
-                print("Refreshed tickets:")
-                cursor.execute(thomas_queries.showpendingtickets())
-                thomas_utils.tableprint_dict(cursor.fetchall())
+                shownotifytickets(ticketdicts)
     
             # Update and close SAFE tickets
             if args.close is not None:
