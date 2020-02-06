@@ -10,7 +10,7 @@ import mysql.connector
 from mysql.connector import errorcode
 import socket
 import validate
-import thomas_show
+#import thomas_show
 import thomas_utils
 import thomas_queries
 
@@ -76,117 +76,50 @@ def getargs(argv):
 
 # send an email to RC-Support notifying full account deactivation needed,
 # unless debugging in which case just print it.
-def contact_rc_support(args, request_id):
-
-    body = (args.cluster.capitalize() + """ user deactivation request id """ + str(request_id) + """ has been received.
-
-Please run '""" + args.cluster + """-show requests' on a """ + args.cluster.capitalize() + """ login node to see pending requests.
-Requests can then be carried out by running '""" + args.cluster + """-deactivate request id1 [id2 id3 ...]'
-
-""")
-
-    msg = MIMEText(body)
-    msg["From"] = "rc-support@ucl.ac.uk"
-    msg["To"] = "rc-support@ucl.ac.uk"
-    msg["Subject"] = args.cluster.capitalize() + " deactivation request"
-    if (args.debug):
-        print("")
-        print("Email that would be sent:")
-        print(msg)
-    else:
-        p = Popen(["/usr/sbin/sendmail", "-t", "-oi"], stdin=PIPE, universal_newlines=True)
-        p.communicate(msg.as_string())
-        print("RC Support has been notified to deactivate this account.")
+#def contact_rc_support(args, request_id):
+#
+#    body = (args.cluster.capitalize() + """ user deactivation request id """ + str(request_id) + """ has been received.
+#
+#Please run '""" + args.cluster + """-show requests' on a """ + args.cluster.capitalize() + """ login node to see pending requests.
+#Requests can then be carried out by running '""" + args.cluster + """-deactivate request id1 [id2 id3 ...]'
+#
+#""")
+#
+#    msg = MIMEText(body)
+#    msg["From"] = "rc-support@ucl.ac.uk"
+#    msg["To"] = "rc-support@ucl.ac.uk"
+#    msg["Subject"] = args.cluster.capitalize() + " deactivation request"
+#    if (args.debug):
+#        print("")
+#        print("Email that would be sent:")
+#        print(msg)
+#    else:
+#        p = Popen(["/usr/sbin/sendmail", "-t", "-oi"], stdin=PIPE, universal_newlines=True)
+#        p.communicate(msg.as_string())
+#        print("RC Support has been notified to deactivate this account.")
 # end contact_rc_support
 
-# everything needed to create a new account creation request
-def create_user_request(cursor, args, args_dict):
-    # projectusers status is pending until the request is approved
+# everything needed to create an account deactivation request
+def deactivate_user_request(cursor, args, args_dict):
+    # status is pending until the request is approved
     args_dict['status'] = "pending"
-    # add a project-user entry for the user
-    cursor.execute(run_projectuser(), args_dict)
+    # deactivate all project memberships, asking for confirmation
+    cursor.execute(thomas_queries.deactivatemembership(), args_dict)
     debug_cursor(cursor, args)
-    # get the poc_email and add to dictionary
-    cursor.execute(run_poc_email(), args_dict)
-    poc_email = cursor.fetchall()[0][0]
-    args_dict['poc_email'] = poc_email
-    # add the account creation request to the database
-    cursor.execute(run_addrequest(), args_dict)
+    # set user status to deactivated (can't run jobs but doesn't affect login)
+    cursor.execute(thomas_queries.deactivateuser(), args_dict)
     debug_cursor(cursor, args)
-# end create_user_request
-
-# everything needed to create a new user
-def create_new_user(cursor, args, args_dict):
-    # if no username was specified, get the next available mmm username
-    if (args.username == None):
-        args.username = nextmmm()
-    # users status is pending until the request is approved
-    args_dict['status'] = "pending"
-    # insert new user into users table
-    cursor.execute(run_user(args.surname), args_dict)
+    # get the deletion requestor and add to dictionary
+    #cursor.execute(run_poc_email(), args_dict)
+    #poc_email = cursor.fetchall()[0][0]
+    #args_dict['poc_email'] = poc_email
+    # add the account deactivation request to the database
+    cursor.execute(run_deactivaterequest(), args_dict)
     debug_cursor(cursor, args)
-    # create the account creation request
-    create_user_request(cursor, args, args_dict)
-# end create_new_user
+# end delete_user_request
 
-# Check for duplicate users by key: email or username
-def check_dups(key_string, cursor, args, args_dict):
-    cursor.execute(thomas_queries.findduplicate(key_string), args_dict)
-    results = cursor.fetchall()
-    rows_count = cursor.rowcount
-    if rows_count > 0:
-        # We have duplicate(s). Show results and ask them to pick one or none
-        print(str(rows_count) + " user(s) with this " +key_string+ " already exist:\n")
-        data = []
-        # put the results into a list of dictionaries, keys being db column names.
-        for i in range(rows_count):
-            data.append(dict(list(zip(cursor.column_names, results[i]))))
-            # while we do this, print out the results, numbered.
-            print(str(i+1) + ") "+ data[i]['username'] +", "+ data[i]['givenname'] +" "+ data[i]['surname'] +", "+ data[i]['email'] + ", created " + str(data[i]['creation_date']))
 
-        # make a string list of options, counting from 1 and ask the user to pick one
-        options_list = [str(x) for x in range(1, rows_count+1)]
-        response = thomas_utils.select_from_list("\nDo you want to add a new project to one of the existing accounts instead? \n(You should do this if it is the same individual). \n Please respond with a number in the list or n for none.", options_list)
 
-        # said no to using existing user
-        if response == "n":
-            # can create a duplicate if it is *not* a username duplicate
-            if key_string != "username":
-                if thomas_utils.are_you_sure("Do you want to create a second account with that "+key_string+"?"):
-                    # create new duplicate user
-                    create_new_user(cursor, args, args_dict)
-                    return True
-                # said no to everything
-                else: 
-                    print("No second account requested, doing nothing and exiting.")
-                    exit(0)
-            # Was a username duplicate
-            else:
-                print("Username in use, doing nothing and exiting.")
-                exit(0) 
-        # picked an existing user
-        else:
-            # go back to zero-index, get chosen username
-            args.username = data[int(response)-1]['username']
-            print("Using existing user " + args.username)
-            create_user_request(cursor, args, args_dict) 
-            return True
-
-    # there were no duplicates and we did nothing
-    return False
-# end check_dups
-
-# run all this when someone tries to create a new user
-# for now we are assuming the creation request was done on the correct cluster
-def new_user(cursor, args, args_dict):
-
-    # if there was no duplicate username check for duplicate email
-    if not check_dups("username", cursor, args, args_dict):
-        if not check_dups("email", cursor, args, args_dict):
-            # no duplicates at all, create new user
-            create_new_user(cursor, args, args_dict)
-
-# end new_user
 
 def debug_cursor(cursor, args):
     if (args.verbose or args.debug):
@@ -196,7 +129,7 @@ def debug_cursor(cursor, args):
 def main(argv):
 
     # get the name of this cluster
-    nodename = socket.getfqdn()
+    nodename = thomas_utils.getnodename()
 
     # get all the parsed args
     try:
@@ -209,17 +142,6 @@ def main(argv):
         print(err)
         exit(1)
 
-    if (args.subcommand == "user"):
-        # UCL user validation - if this is a UCL email, make sure username was given 
-        # and that it wasn't an mmm one.
-        validate.ucl_user(args.email, args.username)
-        # Unless nosshverify is set, verify the ssh key
-        if (args.nosshverify == False):
-            validate.ssh_key(args.ssh_key)
-            if (args.verbose or args.debug):
-                print("")
-                print("SSH key verified.")
-                print("")
 
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
@@ -237,9 +159,7 @@ def main(argv):
             new_user(cursor, args, args_dict)
 
         elif (args.subcommand == "projectuser"):
-            # This is an existing user, status for the new project-user pairing is active by default
-            args_dict['status'] = "active"
-            cursor.execute(run_projectuser(), args_dict)
+            cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
             debug_cursor(cursor, args)
         elif (args.subcommand == "project"):
             cursor.execute(run_project(), args_dict)
