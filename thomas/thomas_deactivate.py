@@ -101,6 +101,11 @@ def getargs(argv):
 
 # everything needed to create an account deactivation request
 def deactivate_user_request(cursor, args, args_dict):
+    # first, check if user has active project memberships
+
+    # if they do, prompt (may have access via another inst)
+
+    # deactivation request goes ahead:
     # status is pending until the request is approved
     args_dict['status'] = "pending"
     # deactivate all project memberships, asking for confirmation
@@ -116,7 +121,7 @@ def deactivate_user_request(cursor, args, args_dict):
     # add the account deactivation request to the database
     cursor.execute(run_deactivaterequest(), args_dict)
     debug_cursor(cursor, args)
-# end delete_user_request
+# end deactivate_user_request
 
 
 
@@ -130,6 +135,12 @@ def main(argv):
 
     # get the name of this cluster
     nodename = thomas_utils.getnodename()
+    # Doesn't appear to be Thomas or Michael, prompt whether you really want to do this
+    if not ("thomas" in nodename or "michael" in nodename):
+        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michael ("+nodename+")\n Do you want to continue?", False)
+        # they said no, exit
+        if not answer:
+            exit(1)
 
     # get all the parsed args
     try:
@@ -156,7 +167,7 @@ def main(argv):
 
         # cursor.execute takes a querystring and a dictionary or tuple
         if (args.subcommand == "user"):
-            new_user(cursor, args, args_dict)
+            deactivate_user_request(cursor, args, args_dict)
 
         elif (args.subcommand == "projectuser"):
             cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
