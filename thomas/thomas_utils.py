@@ -251,7 +251,13 @@ def checkprojectoncluster(project, nodename):
 # end checkprojectoncluster
 
 def getnodename():
-    nodename = socket.getfqdn().casefold()
+    # if /shared/ucl/apps/cluster-bin/whereami exists, use that
+    try:
+        with open('/shared/ucl/apps/cluster-bin/whereami', 'r') as f:
+            nodename = f.read().rstrip()
+    except IOError as e:
+        # fall back to getfqdn
+        nodename = socket.getfqdn().casefold()
     return nodename
 
 def getcluster(nodename):
