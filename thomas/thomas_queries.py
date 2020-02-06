@@ -93,6 +93,12 @@ def deactivateprojectuser():
                 WHERE username=%(username)s AND project=%(project)s""")
     return query
 
+# deactivate all project memberships for this user
+def deactivatememberships():
+    query = ("""UPDATE projectusers SET status='deactivated'
+                WHERE username=%(username)s""")
+    return query
+
 # deactivate a whole project
 def deactivateproject():
     query = ("""UPDATE projects SET status='deactivated'
