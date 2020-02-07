@@ -154,6 +154,12 @@ def projectinfo():
                 FROM projectusers WHERE username=%(user)s""")
     return query
 
+# Get user's active projects
+def activeprojectinfo():
+    query = ("""SELECT project 
+                FROM projectusers WHERE username=%(user)s AND status='active'""")
+    return query
+
 # Get all points of contact and their username if they have one.
 def contactsinfo():
     query = ("""SELECT poc_id, poc_givenname, poc_surname, poc_email, institute, username 
