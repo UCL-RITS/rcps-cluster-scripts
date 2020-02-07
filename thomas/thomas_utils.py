@@ -251,9 +251,9 @@ def checkprojectoncluster(project, nodename):
 # end checkprojectoncluster
 
 def getnodename():
-    # if /shared/ucl/apps/cluster-bin/whereami exists, use that
+    # if /opt/sge/default/common/cluster_name exists, use that
     try:
-        with open('/shared/ucl/apps/cluster-bin/whereami', 'r') as f:
+        with open('/opt/sge/default/common/cluster_name', 'r') as f:
             nodename = f.read().rstrip()
     except IOError as e:
         # fall back to getfqdn
