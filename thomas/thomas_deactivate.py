@@ -36,33 +36,34 @@ def getargs(argv):
     # the arguments for subcommand 'user'
     userparser = subparsers.add_parser("user", help="Deactivate a user account")
     userparser.add_argument("-u", "--user", dest="username", help="Username of user", action=ValidateUser)
+    userparser.add_argument("--force", help="Force user deactivation without project confirmations (use with caution)", action='store_true')
     userparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'project'
     projectparser = subparsers.add_parser("project", help="Deactivate an entire project")
-    projectparser.add_argument("-p", "--project", dest="project_ID", help="The existing project ID", required=True)
+    projectparser.add_argument("-p", "--project", dest="project", help="The existing project ID", required=True)
     projectparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'projectuser'
     projectuserparser = subparsers.add_parser("projectuser", help="Deactivate this user's membership in this project")
     projectuserparser.add_argument("-u", "--user", dest="username", help="An existing UCL username", required=True, action=ValidateUser)
-    projectuserparser.add_argument("-p", "--project", dest="project_ID", help="An existing project ID", required=True)
+    projectuserparser.add_argument("-p", "--project", dest="project", help="An existing project ID", required=True)
     parser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectuserparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'poc'
-    pocparser = subparsers.add_parser("poc", help="Deactivate this Point of Contact (only RC Support)")
-    pocparser.add_argument("-p", "--poc_id", dest="poc_id", help="Unique PoC ID, in form N(ame)N(ame)_instituteID", required=True)
-    pocparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
-    pocparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    #pocparser = subparsers.add_parser("poc", help="Deactivate this Point of Contact (only RC Support)")
+    #pocparser.add_argument("-p", "--poc_id", dest="poc_id", help="Unique PoC ID, in form N(ame)N(ame)_instituteID", required=True)
+    #pocparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
+    #pocparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'institute'
-    instituteparser = subparsers.add_parser("institute", help="Deactivate an entire institute/consortium (only RC Support)")
-    instituteparser.add_argument("-i", "--id", dest="inst_ID", help="Unique institute ID, eg QMUL, Imperial, Soton", required=True)
-    instituteparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
-    instituteparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    #instituteparser = subparsers.add_parser("institute", help="Deactivate an entire institute/consortium (only RC Support)")
+    #instituteparser.add_argument("-i", "--id", dest="inst_ID", help="Unique institute ID, eg QMUL, Imperial, Soton", required=True)
+    #instituteparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
+    #instituteparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # Show the usage if no arguments are supplied
     if len(argv) < 1:
@@ -101,16 +102,28 @@ def getargs(argv):
 
 # everything needed to create an account deactivation request
 def deactivate_user_request(cursor, args, args_dict):
-    # first, check if user has active project memberships
-
-    # if they do, prompt (may have access via another inst)
-
-    # deactivation request goes ahead:
-    # status is pending until the request is approved
-    args_dict['status'] = "pending"
-    # deactivate all project memberships, asking for confirmation
+    # first, get user's active project memberships
+    cursor.execute(thomas_queries.projectinfo(), args_dict)
+    debug_cursor(cursor, args)
+    results = cursor.fetchall()
+    if (args.debug):
+        print("Active projects found:")
+        thomas_utils.tableprint_dict(results)
+    if not args.force:
+        # if they have any active, prompt (may have access via another inst)
+        for row in results:
+            answer = thomas_utils.are_you_sure("User has active membership in project " + row['project'] + " - deactivate it?", False)
+            # they said no, exit
+            if not answer:
+                print("Active project membership being kept: user will not be deactivated.")
+                exit(0)
+    # deactivate all user's active memberships
     cursor.execute(thomas_queries.deactivatemembership(), args_dict)
     debug_cursor(cursor, args)
+
+    # status in requests is pending until the full deactivation is done by us
+    args_dict['status'] = "pending"
+    
     # set user status to deactivated (can't run jobs but doesn't affect login)
     cursor.execute(thomas_queries.deactivateuser(), args_dict)
     debug_cursor(cursor, args)
@@ -168,7 +181,7 @@ def main(argv):
         # cursor.execute takes a querystring and a dictionary or tuple
         if (args.subcommand == "user"):
             deactivate_user_request(cursor, args, args_dict)
-
+            print(args.user + "'s membership of " + args.project + " has been deactivated.")
         elif (args.subcommand == "projectuser"):
             cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
             debug_cursor(cursor, args)
