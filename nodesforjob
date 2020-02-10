@@ -134,12 +134,18 @@ class Node:
     elif self.offline == True:
       sys.stdout.write("    %s:  offline -- no jobs should be assigned to this node\n")
     else:
-      sys.stdout.write  ("    %s:  %3.1f %% load, %3.1f %% memory used, %3.1f %% swap used\n" %
+      load_partial = "%3.1f %% load" % (100 * float(self.load_avg) / self.num_proc)
+      mem_partial  = "%3.1f %% memory used" % (100 * float(self.mem_used) / self.mem_total)
+      if self.swap_total == 0.0:
+          swap_partial = ""
+      else:
+          swap_partial = ", %3.1f%% swap used" % (100 * float(self.swap_used) / self.swap_total)
+      sys.stdout.write("    %s:  %s, %s%s\n" %
                        (self.hostname,
-                        100 * float(self.load_avg) / self.num_proc,
-                        100 * float(self.mem_used) / self.mem_total,
-                        100 * float(self.swap_used) / self.swap_total)
-                       )
+                        load_partial,
+                        mem_partial,
+                        swap_partial
+                       ))
 
 class Job:
   def __init__(self):
