@@ -297,7 +297,7 @@ def main(source="command", source_file=None):
   if job_nodes["primary"].threads_per_core > 1:
     sys.stderr.write(("NB: jobs without hyperthreading should ideally put nodes at %d%% load\n" +
                       "    This does not mean your job is wasting processor time\n")
-                     % (int(100/threads_per_core)))
+                     % (int(100/job_nodes["primary"].threads_per_core)))
 
   if len(job_nodes["secondaries"]) != 0:
     sys.stdout.write("  Secondaries:\n")
