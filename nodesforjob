@@ -125,6 +125,11 @@ class Node:
       self.swap_total = deSI(self.swap_total)
       self.num_proc   = int(self.num_proc)
 
+    if self.m_thread != "-":
+      self.m_thread = int(self.m_thread)
+    if self.m_core != "-":
+      self.m_core = int(self.m_core)
+
   def __repr__(self):
     return repr(self.__dict__)
 
