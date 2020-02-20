@@ -290,14 +290,14 @@ def main(source="command", source_file=None):
     sys.stderr.write("Error: no nodes found for job %s\n" % jobid)
     sys.exit(6)
 
-  sys.stdout.write("Nodes for job %s:\n" % jobid)
-  sys.stdout.write("  Primary:\n")
-  job_nodes["primary"].print_props()
   # Hyperthreading hint:
   if job_nodes["primary"].threads_per_core > 1:
     sys.stderr.write(("NB: jobs without hyperthreading should ideally put nodes at %d%% load\n" +
                       "    This does not mean your job is wasting processor time\n")
                      % (int(100/job_nodes["primary"].threads_per_core)))
+  sys.stdout.write("Nodes for job %s:\n" % jobid)
+  sys.stdout.write("  Primary:\n")
+  job_nodes["primary"].print_props()
 
   if len(job_nodes["secondaries"]) != 0:
     sys.stdout.write("  Secondaries:\n")
