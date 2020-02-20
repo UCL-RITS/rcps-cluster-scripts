@@ -129,6 +129,8 @@ class Node:
       self.m_thread = int(self.m_thread)
     if self.m_core != "-":
       self.m_core = int(self.m_core)
+    if self.m_thread != "-" and self.m_core != "-":
+      self.threads_per_core = self.m_thread / self.m_core
 
   def __repr__(self):
     return repr(self.__dict__)
@@ -139,12 +141,6 @@ class Node:
     elif self.offline == True:
       sys.stdout.write("    %s:  offline -- no jobs should be assigned to this node\n")
     else:
-      # Hyperthreading hint:
-      threads_per_core = self.m_thread / self.m_core
-      if threads_per_core > 1:
-        sys.stderr.write(("NB: jobs without hyperthreading should ideally put nodes at %d%% load\n" +
-                          "    This does not mean your job is wasting processor time\n")
-                         % (int(100/threads_per_core)))
       load_partial = "%3.1f %% load" % (100 * float(self.load_avg) / self.num_proc)
       mem_partial  = "%3.1f %% memory used" % (100 * float(self.mem_used) / self.mem_total)
       if self.swap_total == 0.0:
@@ -297,6 +293,11 @@ def main(source="command", source_file=None):
   sys.stdout.write("Nodes for job %s:\n" % jobid)
   sys.stdout.write("  Primary:\n")
   job_nodes["primary"].print_props()
+  # Hyperthreading hint:
+  if job_nodes["primary"].threads_per_core > 1:
+    sys.stderr.write(("NB: jobs without hyperthreading should ideally put nodes at %d%% load\n" +
+                      "    This does not mean your job is wasting processor time\n")
+                     % (int(100/threads_per_core)))
 
   if len(job_nodes["secondaries"]) != 0:
     sys.stdout.write("  Secondaries:\n")
