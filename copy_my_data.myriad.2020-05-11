@@ -1,15 +1,20 @@
 #!/bin/bash
 
-set -o errexit
+set -o errexit \
+    -o nounset
+
+log_file="copy_log.$(date +%Y-%m-%d--%H:%M:%S)"
 
 echo "This will copy all your data from the Old Scratch space to the new Scratch space."
 echo ""
 echo "If it is interrupted, you can run it again, and it will pick up where it left off."
 echo ""
+echo "It will log progress to a file in your home directory, named: \"$log_file\""
+echo ""
 read -n 1 -p "Press any key to continue."
 
 cd
-rsync -avh --log-file="data-copy.$(date +%Y-%m-%d--%H:%M:%S)" OldScratch/ Scratch/
+rsync -avh --log-file="$log_file" OldScratch/ Scratch/
 
 
 
