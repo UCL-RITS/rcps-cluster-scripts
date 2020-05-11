@@ -1,0 +1,14 @@
+#!/bin/bash
+
+echo "This will copy all your data from the Old Scratch space to the new Scratch space."
+echo ""
+echo "If it is interrupted, you can run it again, and it will pick up where it left off."
+echo ""
+read -n 1 -p "Press any key to continue."
+
+cd
+rsync -avh OldScratch/ Scratch/
+
+
+
+
