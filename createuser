@@ -25,7 +25,7 @@ case "$PLATFORM" in
         ACL="Open"
         ;;
     "myriad")
-        ACL="AY201819"
+        ACL="Open"
         ;;
     "thomas"|"michael")
         echo "Error: this is not the correct way to add users to the Thomas and Michael clusters." >&2
