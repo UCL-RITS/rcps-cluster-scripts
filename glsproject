@@ -16,7 +16,7 @@ then
   ssh util11 glsproject "$@"
 elif $identifycluster | grep -q myriad
 then
-  ssh util05 glsproject "$@"
+  ssh util-ha-nfs glsproject "$@"
 else 
   echo "There is no resource management on this cluster."
 fi

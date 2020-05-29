@@ -16,7 +16,7 @@ then
   ssh util11 gtransfer -h "$@"
 elif $identifycluster | grep -q myriad
 then
-  ssh util05 gtransfer -h "$@"
+  ssh util-ha-nfs gtransfer -h "$@"
 else 
   echo "There is no resource management on this cluster."
 fi

@@ -16,7 +16,7 @@ then
   ssh util11 gbalance -h --show Id,Name,Amount,Reserved,Available "$@"
 elif "$identifycluster" | grep -q myriad
 then
-  ssh util05 gbalance -h --show Id,Name,Amount,Reserved,Available "$@"
+  ssh util-ha-nfs gbalance -h --show Id,Name,Amount,Reserved,Available "$@"
 else 
   echo "There is no resource management on this cluster."
 fi

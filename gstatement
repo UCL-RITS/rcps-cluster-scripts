@@ -16,7 +16,7 @@ then
   ssh util11 gstatement -h "$@"
 elif $identifycluster | grep -q myriad
 then
-  ssh util05 gstatement -h "$@"
+  ssh util-ha-nfs gstatement -h "$@"
 else 
   echo "There is no resource management on this cluster."
 fi
