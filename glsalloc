@@ -16,7 +16,7 @@ then
   ssh util11 glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
 elif "$identifycluster" | grep -q myriad
 then
-  ssh util05 glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
+  ssh util-ha-nfs glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
 else 
   echo "There is no resource management on this cluster."
 fi
