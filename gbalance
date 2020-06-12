@@ -13,7 +13,7 @@ then
   ssh util04 gbalance -h --show Id,Name,Amount,Reserved,Available "$@"
 elif $identifycluster | grep -q michael
 then
-  ssh util11 gbalance -h --show Id,Name,Amount,Reserved,Available "$@"
+  ssh util-ha-nfs gbalance -h --show Id,Name,Amount,Reserved,Available "$@"
 elif "$identifycluster" | grep -q myriad
 then
   ssh util-ha-nfs gbalance -h --show Id,Name,Amount,Reserved,Available "$@"

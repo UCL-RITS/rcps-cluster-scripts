@@ -13,7 +13,7 @@ then
   ssh util04 glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
 elif $identifycluster | grep -q michael
 then
-  ssh util11 glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
+  ssh util-ha-nfs glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
 elif "$identifycluster" | grep -q myriad
 then
   ssh util-ha-nfs glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"

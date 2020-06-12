@@ -13,7 +13,7 @@ then
   ssh util04 glstxn -h "$@"
 elif $identifycluster | grep -q michael
 then
-  ssh util11 glstxn -h "$@"
+  ssh util-ha-nfs glstxn -h "$@"
 elif $identifycluster | grep -q myriad
 then
   ssh util-ha-nfs glstxn -h "$@"

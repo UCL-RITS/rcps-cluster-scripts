@@ -13,7 +13,7 @@ then
   ssh util04 gstatement -h "$@"
 elif $identifycluster | grep -q michael
 then
-  ssh util11 gstatement -h "$@"
+  ssh util-ha-nfs gstatement -h "$@"
 elif $identifycluster | grep -q myriad
 then
   ssh util-ha-nfs gstatement -h "$@"

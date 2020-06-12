@@ -13,7 +13,7 @@ then
   ssh util04 gusage -h "$@"
 elif $identifycluster | grep -q michael
 then
-  ssh util11 gusage -h "$@"
+  ssh util-ha-nfs gusage -h "$@"
 elif $identifycluster | grep -q myriad
 then
   ssh util-ha-nfs gusage -h "$@"

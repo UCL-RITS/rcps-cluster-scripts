@@ -13,7 +13,7 @@ then
   ssh util04 gtransfer -h "$@"
 elif $identifycluster | grep -q michael
 then
-  ssh util11 gtransfer -h "$@"
+  ssh util-ha-nfs gtransfer -h "$@"
 elif $identifycluster | grep -q myriad
 then
   ssh util-ha-nfs gtransfer -h "$@"
