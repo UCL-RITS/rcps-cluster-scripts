@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-ACL="AY201617"
+ACL="Open"
 thomas_users="thomas-users-request@ucl.ac.uk"
 # Email address that subscribe command notification goes to.
 # Can't be rc-support or we get tickets and bounce messages
