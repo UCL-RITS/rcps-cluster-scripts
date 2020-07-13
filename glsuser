@@ -10,7 +10,7 @@ fi
 
 if $identifycluster | grep -q thomas
 then
-  ssh util04 glsuser "$@"
+  ssh util-ha-nfs glsuser "$@"
 elif $identifycluster | grep -q michael
 then
   ssh util-ha-nfs glsuser "$@"

@@ -10,7 +10,7 @@ fi
 
 if "$identifycluster" | grep -q thomas
 then
-  ssh util04 mybalance -h | column -t
+  ssh util-ha-nfs mybalance -h | column -t
 elif "$identifycluster" | grep -q michael
 then
   ssh util-ha-nfs mybalance -h | column -t

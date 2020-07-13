@@ -10,7 +10,7 @@ fi
 
 if $identifycluster | grep -q thomas
 then
-  ssh util04 gusage -h "$@"
+  ssh util-ha-nfs gusage -h "$@"
 elif $identifycluster | grep -q michael
 then
   ssh util-ha-nfs gusage -h "$@"

@@ -10,7 +10,7 @@ fi
 
 if $identifycluster | grep -q thomas
 then
-  ssh util04 gtransfer -h "$@"
+  ssh util-ha-nfs gtransfer -h "$@"
 elif $identifycluster | grep -q michael
 then
   ssh util-ha-nfs gtransfer -h "$@"
