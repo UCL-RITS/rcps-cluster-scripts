@@ -183,10 +183,12 @@ def recentinfo():
                 FROM users ORDER BY creation_date DESC LIMIT %(n)s""")
     return query
 
-# Get the most recent mmm username used
+# Get the most recent mmm username used, across either db
 def lastmmm():
-    query = ("""SELECT username FROM users WHERE username LIKE 'mmm%' 
-                ORDER BY creation_date DESC LIMIT 1""")
+    query = ("""SELECT username FROM young.users WHERE username LIKE 'mmm%' 
+                UNION ALL 
+                SELECT username FROM thomas.users WHERE username LIKE 'mmm%' 
+                ORDER BY username DESC limit 1""")
     return query
 
 # Get all users in this project/inst/PoC combo
