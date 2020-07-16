@@ -278,6 +278,7 @@ def getdb(nodename):
         db = "young"
     else:
         db = "thomas"
+    return db
 
 #########################
 #                       #
