@@ -81,16 +81,34 @@ def activatependingprojectuser():
                 WHERE username=%s AND status='pending'""")
     return query
 
-# deactivate a user
+# deactivate this user
 def deactivateuser():
     query = ("""UPDATE users SET status='deactivated'
                 WHERE username=%s""")
     return query
 
-# deactivate a projectuser
+# deactivate this projectuser
 def deactivateprojectuser():
     query = ("""UPDATE projectusers SET status='deactivated'
                 WHERE username=%(username)s AND project=%(project)s""")
+    return query
+
+# deactivate all project memberships for this user
+def deactivatememberships():
+    query = ("""UPDATE projectusers SET status='deactivated'
+                WHERE username=%(username)s""")
+    return query
+
+# deactivate a whole project
+def deactivateproject():
+    query = ("""UPDATE projects SET status='deactivated'
+                WHERE project=%(project)s""")
+    return query
+
+# deactivate all membership in this project
+def deactivateallprojectusers():
+    query = ("""UPDATE projectusers SET status='deactivated'
+                WHERE project=%(project)s""")
     return query
 
 # update SAFE ticket status in our DB
@@ -136,6 +154,12 @@ def projectinfo():
                 FROM projectusers WHERE username=%(user)s""")
     return query
 
+# Get user's active projects
+def activeprojectinfo():
+    query = ("""SELECT project 
+                FROM projectusers WHERE username=%(user)s AND status='active'""")
+    return query
+
 # Get all points of contact and their username if they have one.
 def contactsinfo():
     query = ("""SELECT poc_id, poc_givenname, poc_surname, poc_email, institute, username 
@@ -159,10 +183,12 @@ def recentinfo():
                 FROM users ORDER BY creation_date DESC LIMIT %(n)s""")
     return query
 
-# Get the most recent mmm username used
+# Get the most recent mmm username used, across either db
 def lastmmm():
-    query = ("""SELECT username FROM users WHERE username LIKE 'mmm%' 
-                ORDER BY creation_date DESC LIMIT 1""")
+    query = ("""SELECT username FROM young.users WHERE username LIKE 'mmm%' 
+                UNION ALL 
+                SELECT username FROM thomas.users WHERE username LIKE 'mmm%' 
+                ORDER BY username DESC limit 1""")
     return query
 
 # Get all users in this project/inst/PoC combo

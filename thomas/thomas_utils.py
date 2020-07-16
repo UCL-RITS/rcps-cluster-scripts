@@ -251,7 +251,13 @@ def checkprojectoncluster(project, nodename):
 # end checkprojectoncluster
 
 def getnodename():
-    nodename = socket.getfqdn().casefold()
+    # if /opt/sge/default/common/cluster_name exists, use that
+    try:
+        with open('/opt/sge/default/common/cluster_name', 'r') as f:
+            nodename = f.read().rstrip()
+    except IOError as e:
+        # fall back to getfqdn
+        nodename = socket.getfqdn().casefold()
     return nodename
 
 def getcluster(nodename):
@@ -259,10 +265,20 @@ def getcluster(nodename):
         return "thomas"
     elif "michael" in nodename:
         return "michael"
+    elif "young" in nodename:
+        return "young"
     else:
         print("Cluster not recognised, nodename is "+nodename)
         exit(1)
 # end getcluster
+
+# get the correct MMM db to connect to for this cluster
+def getdb(nodename):
+    if "young" in nodename:
+        db = "young"
+    else:
+        db = "thomas"
+    return db
 
 #########################
 #                       #

@@ -268,8 +268,9 @@ def debug_cursor(cursor, args):
 # Put main in a function so it is importable.
 def main(argv):
 
-    # get the name of this cluster
-    nodename = socket.getfqdn()
+    # get the name of this cluster and the MMM db to connect to
+    nodename = thomas_utils.getnodename()
+    db = thomas_utils.getdb(nodename)
 
     # get all the parsed args
     try:
@@ -298,7 +299,7 @@ def main(argv):
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
+        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
         cursor = conn.cursor()
 
         if (args.verbose or args.debug):

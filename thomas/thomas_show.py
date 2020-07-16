@@ -7,6 +7,8 @@ import mysql.connector
 from mysql.connector import errorcode
 from tabulate import tabulate
 import validate
+import thomas_queries
+import thomas_utils
 
 ###############################################################
 # user <username>           show all current info for this user
@@ -94,109 +96,84 @@ def tableprint(cursor, results):
 
 # Get user info (not ssh key as it is huge)
 def userinfo(cursor, args_dict):
-    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users WHERE username=%(user)s")
+    query = thomas_queries.userinfo()
     cursor.execute(query, args_dict)
     return cursor
 
 # Get ssh key on file
 def sshinfo(cursor, args_dict):
-    query = ("SELECT ssh_key FROM users WHERE username=%(user)s")
+    query = thomas_queries.sshinfo()
     cursor.execute(query, args_dict)
     return cursor
 
 # Get all of user's projects and related points of contact
 def projectinfo(cursor, args_dict):
-    query = ("SELECT project, poc_id, status, creation_date, modification_date FROM projectusers WHERE username=%(user)s")
+    query = thomas_queries.projectinfo()
     cursor.execute(query, args_dict)
     return cursor
 
 # Get all points of contact and their username if they have one.
 def contactsinfo(cursor):
-    query = ("""SELECT poc_id, poc_givenname, poc_surname, poc_email, institute, username """
-             """FROM pointofcontact """)
+    query = thomas_queries.contactsinfo()
     cursor.execute(query)
     return cursor
 
 # Get all institutes
 def instituteinfo(cursor):
-    query = ("SELECT inst_id, name FROM institutes")
+    query = thomas_queries.instituteinfo()
     cursor.execute(query)
     return cursor
 
 # Get all existing users (username, names, email, dates but not ssh keys)
 def alluserinfo(cursor):
-    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users")
+    query = thomas_queries.alluserinfo()
     cursor.execute(query)
     return cursor
 
 # Get the n latest users (not ssh keys). Default n provided by argparser.
 def recentinfo(cursor, args_dict):
-    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users ORDER BY creation_date DESC LIMIT %(n)s")
+    query = thomas_queries.recentinfo()
     cursor.execute(query, args_dict)
     return cursor
 
 # Get the most recent mmm username used - sorting by username as well as date
 # in case of identical timestamps.
 def lastmmm(cursor):
-    query = ("SELECT username FROM users WHERE username LIKE 'mmm%' ORDER BY creation_date DESC, username DESC LIMIT 1")
+    query = thomas_queries.lastmmm()
     cursor.execute(query)
     return cursor
 
 # Get all users in this project/inst/PoC combo
 # Need to use LIKE so can match all by default with % when an option is not specified
 def projectcombo(cursor, args_dict):
-    query = ("""SELECT users.username, givenname, surname, email, projectusers.project, 
-                    poc_id, institute_id FROM projectusers 
-                  INNER JOIN users ON projectusers.username=users.username 
-                  INNER JOIN projects ON projectusers.project=projects.project 
-                WHERE projectusers.project LIKE %(project)s 
-                  AND institute_id LIKE %(inst_ID)s 
-                  AND poc_id LIKE %(poc_ID)s""")
+    query = thomas_queries.projectcombo()
     cursor.execute(query, args_dict)
     return cursor
 
 # Allowing partial matches with %username%.
 # The default is a blank, so ends up as %% which matches all
 def whoisuser(cursor, args_dict):
-    query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args_dict["username"] + "%", "%" + args_dict["email"] + "%", "%" + args_dict["given_name"] + "%", "%" + args_dict["surname"] + "%")
-    cursor.execute(query, args_dict)
+    query = thomas_queries.whoisuser()
+    #query = ("SELECT username, givenname, surname, email, status, creation_date, modification_date FROM users WHERE username LIKE '{}' AND email LIKE '{}' AND givenname LIKE '{}' AND surname LIKE '{}'").format("%" + args_dict["username"] + "%", "%" + args_dict["email"] + "%", "%" + args_dict["given_name"] + "%", "%" + args_dict["surname"] + "%")
+    cursor.execute(query, ("%" + args_dict["username"] + "%", "%" + args_dict["email"] + "%", "%" + args_dict["given_name"] + "%", "%" + args_dict["surname"] + "%"))
     return cursor
 
 # Get all pending account requests 
 # ('is not true' will pick up any nulls, though there shouldn't be any).
 def pendingrequests(cursor):
-    #query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests
-    #            WHERE isdone IS NOT TRUE """)
-    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
-                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, cluster, requests.creation_date, requests.modification_date 
-                FROM requests
-                  INNER JOIN users ON requests.username = users.username
-                WHERE isdone IS NOT TRUE""")
+    query = thomas_queries.pendingrequests()
     cursor.execute(query)
     return cursor
 
 # Get all existing requests and also display the user's names.
 def allrequests(cursor):
-    #query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests""")
-    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
-                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, cluster, requests.creation_date, requests.modification_date 
-                FROM requests
-                  INNER JOIN users ON requests.username = users.username""")
+    query = thomas_queries.allrequests() 
     cursor.execute(query)
     return cursor
 
 # Get the n most recent requests, in any state. Default n provided by argparser.
 def recentrequests(cursor, args_dict):
-    #query = ("""SELECT id, request, isdone, creation_date, modification_date FROM requests 
-    #            ORDER BY creation_date DESC LIMIT %(n)s""")
-    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
-                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
-                  approver, cluster, requests.creation_date, requests.modification_date 
-                FROM requests
-                  INNER JOIN users ON requests.username = users.username
-                ORDER BY creation_date DESC LIMIT %(n)s""")
+    query = thomas_queries.recentrequests()
     cursor.execute(query, args_dict)
     return cursor
 
@@ -218,6 +195,10 @@ def showrequests(cursor, args, args_dict, printoutput):
 # Put main in a function so it is importable.
 def main(argv, printoutput):
 
+    # check which MMM cluster we are on and pick the correct db to connect to.
+    nodename = thomas_utils.getnodename()
+    db = thomas_utils.getdb(nodename)
+
     try:
         args = getargs(argv)
         # make a dictionary from args to make string substitutions doable by key name
@@ -229,7 +210,7 @@ def main(argv, printoutput):
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database='thomas')
+        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database=db)
         cursor = conn.cursor()
 
         # Get info for the given user, print if running directly.
