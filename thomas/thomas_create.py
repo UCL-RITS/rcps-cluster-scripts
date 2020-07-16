@@ -153,13 +153,13 @@ def approverequest(args, args_dict, cursor, nodename):
 
 if __name__ == "__main__":
 
-    # check we are on Thomas or Michael before continuing.
+    # check we are on an MMM Hub cluster before continuing.
     # Later we also need to check if we are on the correct cluster for this project.
     nodename = thomas_utils.getnodename()
     # if fqdn does not contain a suitable hostname prompt whether you really want to do this
     # (in case you *are* somewhere on those clusters and fqdn is not useful)
-    if not ("thomas" in nodename or "michael" in nodename):
-        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michael ("+nodename+")\n Do you want to continue?", False)    
+    if not ("thomas" in nodename or "michael" in nodename or "young" in nodename):
+        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michaelor Young ("+nodename+")\n Do you want to continue?", False)    
         # they said no, exit
         if not answer:
             exit(1)
@@ -173,10 +173,16 @@ if __name__ == "__main__":
         print(err)
         exit(1)
 
+    # Pick the correct MMM db to connect to
+    if "young" in nodename:
+        db = "young"
+    else:
+        db = "thomas"
+
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
+        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
         cursor = conn.cursor(dictionary=True)
 
         # Either create a user from scratch or approve an existing request
