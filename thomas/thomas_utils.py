@@ -265,6 +265,8 @@ def getcluster(nodename):
         return "thomas"
     elif "michael" in nodename:
         return "michael"
+    elif "young" in nodename:
+        return "young"
     else:
         print("Cluster not recognised, nodename is "+nodename)
         exit(1)
