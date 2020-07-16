@@ -272,6 +272,13 @@ def getcluster(nodename):
         exit(1)
 # end getcluster
 
+# get the correct MMM db to connect to for this cluster
+def getdb(nodename):
+    if "young" in nodename:
+        db = "young"
+    else:
+        db = "thomas"
+
 #########################
 #                       #
 # Get user info from AD #

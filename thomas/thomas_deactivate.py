@@ -148,9 +148,10 @@ def main(argv):
 
     # get the name of this cluster
     nodename = thomas_utils.getnodename()
-    # Doesn't appear to be Thomas or Michael, prompt whether you really want to do this
-    if not ("thomas" in nodename or "michael" in nodename):
-        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michael ("+nodename+")\n Do you want to continue?", False)
+
+# Doesn't appear to be an MMM cluster, prompt whether you really want to do this
+    if not ("thomas" in nodename or "michael" in nodename or "young" in nodename):
+        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michael or Young ("+nodename+")\n Do you want to continue?", False)
         # they said no, exit
         if not answer:
             exit(1)
@@ -166,12 +167,14 @@ def main(argv):
         print(err)
         exit(1)
 
+    # get the MMM db to connect to
+    db = thomas_utils.getdb(nodename)
 
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database='thomas')
+        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
         cursor = conn.cursor()
 
         if (args.verbose or args.debug):

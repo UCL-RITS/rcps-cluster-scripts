@@ -159,7 +159,7 @@ if __name__ == "__main__":
     # if fqdn does not contain a suitable hostname prompt whether you really want to do this
     # (in case you *are* somewhere on those clusters and fqdn is not useful)
     if not ("thomas" in nodename or "michael" in nodename or "young" in nodename):
-        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michaelor Young ("+nodename+")\n Do you want to continue?", False)    
+        answer = thomas_utils.are_you_sure("Current hostname does not appear to be on Thomas or Michael or Young ("+nodename+")\n Do you want to continue?", False)    
         # they said no, exit
         if not answer:
             exit(1)
@@ -174,10 +174,7 @@ if __name__ == "__main__":
         exit(1)
 
     # Pick the correct MMM db to connect to
-    if "young" in nodename:
-        db = "young"
-    else:
-        db = "thomas"
+    db = thomas_utils.getdb(nodename)
 
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)

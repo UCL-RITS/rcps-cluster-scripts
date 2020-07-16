@@ -197,10 +197,7 @@ def main(argv, printoutput):
 
     # check which MMM cluster we are on and pick the correct db to connect to.
     nodename = thomas_utils.getnodename()
-    if "young" in nodename:
-        db = "young"
-    else:
-        db = "thomas"
+    db = thomas_utils.getdb(nodename)
 
     try:
         args = getargs(argv)
