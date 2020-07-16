@@ -8,6 +8,7 @@ from mysql.connector import errorcode
 from tabulate import tabulate
 import validate
 import thomas_queries
+import thomas_utils
 
 ###############################################################
 # user <username>           show all current info for this user
@@ -194,6 +195,13 @@ def showrequests(cursor, args, args_dict, printoutput):
 # Put main in a function so it is importable.
 def main(argv, printoutput):
 
+    # check which MMM cluster we are on and pick the correct db to connect to.
+    nodename = thomas_utils.getnodename()
+    if "young" in nodename:
+        db = "young"
+    else:
+        db = "thomas"
+
     try:
         args = getargs(argv)
         # make a dictionary from args to make string substitutions doable by key name
@@ -205,7 +213,7 @@ def main(argv, printoutput):
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database='thomas')
+        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database=db)
         cursor = conn.cursor()
 
         # Get info for the given user, print if running directly.
