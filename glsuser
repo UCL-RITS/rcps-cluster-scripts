@@ -8,7 +8,7 @@ else
   identifycluster="hostname -f"
 fi
 
-if [[ "$identifycluster" | grep -q thomas || "$identifycluster" | grep -q michael || "$identifycluster" | grep -q young || "$identifycluster" | grep -q myriad ]]
+if "$identifycluster" | grep -q thomas || "$identifycluster" | grep -q michael || "$identifycluster" | grep -q young || "$identifycluster" | grep -q myriad
 then
   ssh util-ha-nfs mybalance -h | column -t
 else
