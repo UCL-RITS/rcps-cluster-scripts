@@ -8,16 +8,10 @@ else
   identifycluster="hostname -f"
 fi
 
-if $identifycluster| grep -q thomas
+if [[ "$identifycluster" | grep -q thomas || "$identifycluster" | grep -q michael || "$identifycluster" | grep -q young || "$identifycluster" | grep -q myriad ]]
 then
-  ssh util-ha-nfs glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
-elif $identifycluster | grep -q michael
-then
-  ssh util-ha-nfs glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
-elif "$identifycluster" | grep -q myriad
-then
-  ssh util-ha-nfs glsalloc -h --show Id,Account,Projects,StartTime,EndTime,Amount,Deposited,Description "$@"
-else 
+  ssh util-ha-nfs mybalance -h | column -t
+else
   echo "There is no resource management on this cluster."
 fi
 
