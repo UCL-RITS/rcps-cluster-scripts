@@ -10,7 +10,7 @@ fi
 
 if "$identifycluster" | grep -q thomas || "$identifycluster" | grep -q michael || "$identifycluster" | grep -q young || "$identifycluster" | grep -q myriad
 then
-  ssh util-ha-nfs mybalance -h | column -t
+  ssh util-ha-nfs glsproject "$@"
 else
   echo "There is no resource management on this cluster."
 fi
