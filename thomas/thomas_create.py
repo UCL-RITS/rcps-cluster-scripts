@@ -59,6 +59,8 @@ def createaccount(args, nodename):
         create_args = ['createThomasuser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
     elif ("michael" in nodename):
         create_args = ['createMichaeluser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
+    elif ("young" in nodename):
+        create_args = ['createYounguser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
     else:
         print("You do not appear to be on a supported cluster: nodename is "+nodename)
         exit(1)
