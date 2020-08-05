@@ -1,0 +1,17 @@
+#!/bin/bash 
+# wrapper for python3 Young script
+
+# Source global definitions
+if [ -f /etc/bashrc ]; then
+        . /etc/bashrc
+fi
+
+module purge
+module load gcc-libs
+module load --silent python3/3.6
+module load mysql-connector-python/2.0.4/python-3.6.3
+
+# get script location
+DIR=$(dirname "$(readlink -f "$0")")
+$DIR/thomas/thomas_show.py "$@"
+
