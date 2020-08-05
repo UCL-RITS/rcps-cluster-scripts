@@ -74,31 +74,68 @@ def createaccount(args, nodename):
         return print(create_args)
     else:
         return subprocess.check_call(create_args)
+# end createaccount
+
+# Check for duplicate users by key: email or username
+def check_dups(key_string, cursor, args, args_dict):
+    cursor.execute(thomas_queries.findduplicate(key_string), args_dict)
+    results = cursor.fetchall()
+    rows_count = cursor.rowcount
+    if rows_count > 0:
+        # We have duplicate(s). Show results and ask them to pick one or none
+        print(str(rows_count) + " user(s) with this " +key_string+ " already exist:\n")
+        data = []
+        # put the results into a list of dictionaries, keys being db column names.
+        for i in range(rows_count):
+            data.append(dict(list(zip(cursor.column_names, results[i]))))
+            # while we do this, print out the results, numbered.
+            print(str(i+1) + ") "+ data[i]['username'] +", "+ data[i]['givenname'] +" "+ data[i]['surname'] +", "+ data[i]['email'] + ", created " + str(data[i]['creation_date']))
+
+        # can create a duplicate if it is *not* a username duplicate
+        if key_string != "username":
+            if thomas_utils.are_you_sure("Do you want to create a second account with that "+key_string+"?"):
+                return True
+            # said no to everything
+            else:
+                print("No second account requested, doing nothing and exiting.")
+                exit(0)
+        # Was a username duplicate  
+       else:
+            print("Username in use, doing nothing and exiting.")
+            exit(0)
+
+    # there were no duplicates and we did nothing
+    return False
+# end check_dups
 
 def create_and_add_user(args, args_dict, cursor, nodename):
 
-        # check the cluster matches the project
-        thomas_utils.checkprojectoncluster(args.project_ID, nodename)
-        # if nosshverify is not set, verify the ssh key
-        if (args.nosshverify == False):
-            validate.ssh_key(args.ssh_key)
+    # check the cluster matches the project
+    thomas_utils.checkprojectoncluster(args.project_ID, nodename)
+    # if nosshverify is not set, verify the ssh key
+    if (args.nosshverify == False):
+        validate.ssh_key(args.ssh_key)
 
-        # check for duplicates and ask
+    # Check for duplicates and ask.
+    # If there was no duplicate username check for duplicate email.
+    if not check_dups("username", cursor, args, args_dict):
+        if not check_dups("email", cursor, args, args_dict):
+            print("No duplicate users found, continuing.")
 
-        # if no username was specified, get the next available mmm username
-        if (args.username == None):
-            args.username = thomas_utils.getunusedmmm(cursor)
+    # if no username was specified, get the next available mmm username
+    if (args.username == None):
+        args.username = thomas_utils.getunusedmmm(cursor)
    
-        # Check the MMM username exists and warn if getting near max
-        validate.mmm_username_in_range(args.username)
+    # Check the MMM username exists and warn if getting near max
+    validate.mmm_username_in_range(args.username)
  
-        # First add the information to the database, as it enforces unique usernames etc.
-        args_dict['status'] = "active"
-        thomas_utils.addusertodb(args, args_dict, cursor)
-        thomas_utils.addprojectuser(args, args_dict, cursor)
+    # First add the information to the database, as it enforces unique usernames etc.
+    args_dict['status'] = "active"
+    thomas_utils.addusertodb(args, args_dict, cursor)
+    thomas_utils.addprojectuser(args, args_dict, cursor)
 
-        # Now create the account.
-        createaccount(args, nodename)
+    # Now create the account.
+    createaccount(args, nodename)
 # end createuser
 
 def updaterequest(args, cursor):
