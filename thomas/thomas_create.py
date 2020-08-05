@@ -100,7 +100,7 @@ def check_dups(key_string, cursor, args, args_dict):
                 print("No second account requested, doing nothing and exiting.")
                 exit(0)
         # Was a username duplicate  
-       else:
+        else:
             print("Username in use, doing nothing and exiting.")
             exit(0)
 
