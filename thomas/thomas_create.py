@@ -84,12 +84,12 @@ def check_dups(key_string, cursor, args, args_dict):
     if rows_count > 0:
         # We have duplicate(s). Show results and ask them to pick one or none
         print(str(rows_count) + " user(s) with this " +key_string+ " already exist:\n")
-        data = []
+        print(results)
         # put the results into a list of dictionaries, keys being db column names.
-        for i in range(rows_count):
-            data.append(dict(list(zip(cursor.column_names, results[i]))))
+        #for i in range(rows_count):
+            #data.append(dict(list(zip(cursor.column_names, results[i]))))
             # while we do this, print out the results, numbered.
-            print(str(i+1) + ") "+ data[i]['username'] +", "+ data[i]['givenname'] +" "+ data[i]['surname'] +", "+ data[i]['email'] + ", created " + str(data[i]['creation_date']))
+            #print(str(i+1) + ") "+ data[i]['username'] +", "+ data[i]['givenname'] +" "+ data[i]['surname'] +", "+ data[i]['email'] + ", created " + str(data[i]['creation_date']))
 
         # can create a duplicate if it is *not* a username duplicate
         if key_string != "username":
@@ -101,7 +101,7 @@ def check_dups(key_string, cursor, args, args_dict):
                 exit(0)
         # Was a username duplicate  
         else:
-            print("Username in use, doing nothing and exiting.")
+            print("\n Username in use, doing nothing and exiting.")
             exit(0)
 
     # there were no duplicates and we did nothing
