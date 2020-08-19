@@ -16,7 +16,7 @@ fi
 </opt/sge/default/common/cluster_name read -r PLATFORM || (echo "Error: could not determine cluster." >&2; exit 1)
 case "$PLATFORM" in
     "grace")
-        ACL="AY201617"
+        ACL="Open"
         ;;
     "legion")
         ACL="Open"
