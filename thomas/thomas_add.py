@@ -6,6 +6,7 @@ import sys
 from email.mime.text import MIMEText
 import subprocess
 from subprocess import Popen, PIPE
+import csv
 import mysql.connector
 from mysql.connector import errorcode
 import socket
@@ -32,6 +33,12 @@ def getargs(argv):
     parser = argparse.ArgumentParser(description="Add data to the Thomas database. Use [positional argument -h] for more help.")
     # store which subparser was used in args.subcommand
     subparsers = parser.add_subparsers(dest="subcommand")
+
+    # the arguments for subcommand 'csv'
+    csvparser = subparsers.add_parser("csv", help="Add all users from the provided CSV file")
+    csvparser.add_argument("-f", "--file", dest="csvfile", help="Path to CSV file of users", required=True)
+    csvparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
+    csvparser.add_argument("--debug", help="Show SQL queries submitted without committing the changes", action='store_true')
 
     # the arguments for subcommand 'user'
     userparser = subparsers.add_parser("user", help="Adding a new user with their initial project")
@@ -144,10 +151,13 @@ def run_addrequest():
 
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
-def contact_rc_support(args, request_id):
-
-    body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.
-
+# By default, assumes this is not a CSV multi-user creation (csv and num are optional).
+def contact_rc_support(args, request_id, csv='no', num=1):
+    if csv == 'no':
+        body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.""")
+    else:
+        body = (args.cluster.capitalize() + """ multi-user account request has been received for """ + str(num) """ users, last request id """ + str(request_id) + """. """)
+    body += ("""
 Please run '""" + args.cluster + """-show requests' on a """ + args.cluster.capitalize() + """ login node to see pending requests.
 Requests can then be approved by running '""" + args.cluster + """-create request id1 [id2 id3 ...]'
 
@@ -164,7 +174,7 @@ Requests can then be approved by running '""" + args.cluster + """-create reques
     else:
         p = Popen(["/usr/sbin/sendmail", "-t", "-oi"], stdin=PIPE, universal_newlines=True)
         p.communicate(msg.as_string())
-        print("RC Support has been notified to create this account.")
+        print("RC Support has been notified to create the account(s).")
 # end contact_rc_support
 
 # query to run to get PoC email address
@@ -306,8 +316,17 @@ def main(argv):
             print("")
             print(">>>> Queries being sent:")
 
+        # CSV file was provided
+        if (args.subcommand == "csv"):
+            with open(args.csvfile) as input:
+                reader = csv.DictReader(input, delimiter=',')
+                num_users = 0
+                for row_dict in reader:
+                    new_user(cursor, args, row_dict)
+                    num_users += 1
+
         # cursor.execute takes a querystring and a dictionary or tuple
-        if (args.subcommand == "user"):
+        elif (args.subcommand == "user"):
             new_user(cursor, args, args_dict)
 
         elif (args.subcommand == "projectuser"):
@@ -339,6 +358,9 @@ def main(argv):
             # this has to be run after the commit
             last_id = cursor.lastrowid
             contact_rc_support(args, last_id)
+        elif (args.subcommand == "csv"):
+            last_id = cursor.lastrowid
+            contact_rc_support(args, last_id, csv='yes', num=num_users)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
