@@ -156,7 +156,7 @@ def contact_rc_support(args, request_id, csv='no', num=1):
     if csv == 'no':
         body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.""")
     else:
-        body = (args.cluster.capitalize() + """ multi-user account request has been received for """ + str(num) """ users, last request id """ + str(request_id) + """. """)
+        body = (args.cluster.capitalize() + """ multi-user account request has been received for """ + str(num) + """ users, last request id """ + str(request_id) + """. """)
     body += ("""
 Please run '""" + args.cluster + """-show requests' on a """ + args.cluster.capitalize() + """ login node to see pending requests.
 Requests can then be approved by running '""" + args.cluster + """-create request id1 [id2 id3 ...]'
