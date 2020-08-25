@@ -125,6 +125,13 @@ class Node:
       self.swap_total = deSI(self.swap_total)
       self.num_proc   = int(self.num_proc)
 
+    if self.m_thread != "-":
+      self.m_thread = int(self.m_thread)
+    if self.m_core != "-":
+      self.m_core = int(self.m_core)
+    if self.m_thread != "-" and self.m_core != "-":
+      self.threads_per_core = self.m_thread / self.m_core
+
   def __repr__(self):
     return repr(self.__dict__)
 
@@ -134,12 +141,18 @@ class Node:
     elif self.offline == True:
       sys.stdout.write("    %s:  offline -- no jobs should be assigned to this node\n")
     else:
-      sys.stdout.write  ("    %s:  %3.1f %% load, %3.1f %% memory used, %3.1f %% swap used\n" %
+      load_partial = "%3.1f %% load" % (100 * float(self.load_avg) / self.num_proc)
+      mem_partial  = "%3.1f %% memory used" % (100 * float(self.mem_used) / self.mem_total)
+      if self.swap_total == 0.0:
+          swap_partial = ""
+      else:
+          swap_partial = ", %3.1f%% swap used" % (100 * float(self.swap_used) / self.swap_total)
+      sys.stdout.write("    %s:  %s, %s%s\n" %
                        (self.hostname,
-                        100 * float(self.load_avg) / self.num_proc,
-                        100 * float(self.mem_used) / self.mem_total,
-                        100 * float(self.swap_used) / self.swap_total)
-                       )
+                        load_partial,
+                        mem_partial,
+                        swap_partial
+                       ))
 
 class Job:
   def __init__(self):
@@ -277,6 +290,11 @@ def main(source="command", source_file=None):
     sys.stderr.write("Error: no nodes found for job %s\n" % jobid)
     sys.exit(6)
 
+  # Hyperthreading hint:
+  if job_nodes["primary"].threads_per_core > 1:
+    sys.stderr.write(("NB: jobs without hyperthreading should ideally put nodes at %d%% load\n" +
+                      "    This does not mean your job is wasting processor time\n")
+                     % (int(100/job_nodes["primary"].threads_per_core)))
   sys.stdout.write("Nodes for job %s:\n" % jobid)
   sys.stdout.write("  Primary:\n")
   job_nodes["primary"].print_props()

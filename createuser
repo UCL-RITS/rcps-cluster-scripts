@@ -13,26 +13,29 @@ then
 fi 
 
 # Work out where we are
-if /usr/bin/hostname -A | grep -q grace
-then
-   PLATFORM="grace"
-   ACL="AY201617"
-elif /usr/bin/hostname -A | grep -q legion
-then
-   PLATFORM="legion"
-   ACL="Open"
-elif /usr/bin/hostname -A | grep -q kathleen
-then
-   PLATFORM="kathleen"
-   ACL="Open"
-elif /usr/bin/hostname -A | grep -q myriad
-then
-   PLATFORM="myriad"
-   ACL="AY201819"
-else
-   echo -e "This script does not know where it is.\n It is panicking, like a lost kitten. \n"
-   exit 1 
-fi
+</opt/sge/default/common/cluster_name read -r PLATFORM || (echo "Error: could not determine cluster." >&2; exit 1)
+case "$PLATFORM" in
+    "grace")
+        ACL="Open"
+        ;;
+    "legion")
+        ACL="Open"
+        ;;
+    "kathleen")
+        ACL="Open"
+        ;;
+    "myriad")
+        ACL="Open"
+        ;;
+    "thomas"|"michael")
+        echo "Error: this is not the correct way to add users to the Thomas and Michael clusters." >&2
+        exit 1
+        ;;
+    *)
+        echo "Error: unknown cluster: $PLATFORM" >&2
+        exit 1
+        ;;
+esac
 
 if [[ "$PLATFORM" == "legion" ]]; then
     echo "Reminder: new accounts unassociated with existing paid projects 
@@ -65,7 +68,7 @@ GETTING HELP
 
 Information to help you get started in using ${PLATFORM^} is available at 
 
-https://wiki.rc.ucl.ac.uk/wiki/Main_Page
+https://www.rc.ucl.ac.uk/docs/
 
 including a user guide covering all of our systems.
 

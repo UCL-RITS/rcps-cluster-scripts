@@ -8,16 +8,10 @@ else
   identifycluster="hostname -f"
 fi
 
-if $identifycluster | grep -q thomas
-then
-  ssh util04 glsaccount -h "$@"
-elif $identifycluster | grep -q michael
-then
-  ssh util11 glsaccount -h "$@"
-elif "$identifycluster" | grep -q myriad
+if "$identifycluster" | grep -q thomas || "$identifycluster" | grep -q michael || "$identifycluster" | grep -q young || "$identifycluster" | grep -q myriad
 then
   ssh util-ha-nfs glsaccount -h "$@"
-else 
+else
   echo "There is no resource management on this cluster."
 fi
 

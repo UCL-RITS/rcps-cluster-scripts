@@ -189,12 +189,12 @@ class Account:
 
 class Person:
 
-    known_keys = ["Name", "Email", "WebName", "PublicKey", "NormalisedPublicKey", "HartreeName"]
+    known_keys = ["Name", "Email", "WebName", "UKAMF", "PublicKey", "NormalisedPublicKey", "HartreeName"]
 
     def __init__(self, PersonDict=None):
         # Empty values are created if no dict is passed in.
         if PersonDict is None:
-            for a in ["Title", "FirstName", "LastName", "Email", "WebName", "PublicKey", "NormalisedPublicKey", "HartreeName"]:
+            for a in ["Title", "FirstName", "LastName", "Email", "WebName", "UKAMF", "PublicKey", "NormalisedPublicKey", "HartreeName"]:
                 setattr(self, a, "")
         else:
             for a in PersonDict.keys():
@@ -208,6 +208,7 @@ class Person:
             self.LastName=PersonDict["Name"]["Lastname"]
             self.Email=PersonDict["Email"]
             self.WebName=PersonDict["WebName"] if "WebName" in PersonDict.keys() else ""
+            self.WebName=PersonDict["UKAMF"] if "UKAMF" in PersonDict.keys() else ""
             self.PublicKey=PersonDict["PublicKey"] if "PublicKey" in PersonDict.keys() else ""
             self.NormalisedPublicKey=PersonDict["NormalisedPublicKey"] if "NormalisedPublicKey" in PersonDict.keys() else ""
             self.HartreeName=PersonDict["HartreeName"] if "HartreeName" in PersonDict.keys() else ""
@@ -219,6 +220,7 @@ class Person:
                                         self.LastName,
                                         self.Email,
                                         self.WebName,
+                                        self.UKAMF,
                                         self.PublicKey,
                                         self.NormalisedPublicKey,
                                         self.HartreeName])
