@@ -218,23 +218,24 @@ def get_poc_id(cursor, args, args_dict):
     # no matches or none chosen - ask to pick from whole list
     cursor.execute(thomas_queries.contactstatusinfo())
     results = cursor.fetchall()
-        # put the results into a list of dictionaries, keys being db column names.
-        for i in range(rows_count):
-            data.append(dict(list(zip(cursor.column_names, results[i]))))
-            # while we do this, print out the results, numbered.
-            print(str(i+1) + ") "+ data[i]['poc_id'] +", "+ data[i]['poc_givenname'] +" "+ data[i]['poc_surname'] +", "+ data[i]['institute'] + ", status: " + data[i]['status'])
+    data = []
+    # put the results into a list of dictionaries, keys being db column names.
+    for i in range(rows_count):
+        data.append(dict(list(zip(cursor.column_names, results[i]))))
+        # while we do this, print out the results, numbered.
+        print(str(i+1) + ") "+ data[i]['poc_id'] +", "+ data[i]['poc_givenname'] +" "+ data[i]['poc_surname'] +", "+ data[i]['institute'] + ", status: " + data[i]['status'])
 
-        # make a string list of options, counting from 1 and ask the user to pick one
-        options_list = [str(x) for x in range(1, rows_count+1)]
-        response = thomas_utils.select_from_list("\nPlease choose which point of contact ID to use for these user account requests. \n Please respond with a number in the list or n for none.", options_list)
-        if response == "n":
-            print("None chosen, doing nothing and exiting.")
-            exit(0)
-        else:
-            # go back to zero-index, get chosen username
-            args_dict['poc_id'] = data[int(response)-1]['poc_id']
-            print("Using Point of Contact ID " + args_dict['poc_id'])
-            return True
+    # make a string list of options, counting from 1 and ask the user to pick one
+    options_list = [str(x) for x in range(1, rows_count+1)]
+    response = thomas_utils.select_from_list("\nPlease choose which point of contact ID to use for these user account requests. \n Please respond with a number in the list or n for none.", options_list)
+    if response == "n":
+        print("None chosen, doing nothing and exiting.")
+        exit(0)
+    else:
+        # go back to zero-index, get chosen username
+        args_dict['poc_id'] = data[int(response)-1]['poc_id']
+        print("Using Point of Contact ID " + args_dict['poc_id'])
+        return True
 # end get_poc_id
 
 # everything needed to create a new account creation request
