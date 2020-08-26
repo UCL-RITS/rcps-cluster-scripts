@@ -383,6 +383,8 @@ def main(argv):
                 for row_dict in reader:
                     args.username = row_dict['username']
                     args.surname = row_dict['surname']
+                    row_dict['poc_id'] = args_dict['poc_id']
+                    row_dict['cluster'] = args_dict['cluster']
                     new_user(cursor, args, row_dict)
                     num_users += 1
 
