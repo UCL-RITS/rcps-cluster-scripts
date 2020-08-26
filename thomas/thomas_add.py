@@ -376,6 +376,7 @@ def main(argv):
         if (args.subcommand == "csv"):
             # Get poc_id for submitter, or prompt
             get_poc_id(cursor, args, args_dict)
+            args.poc_id = args_dict['poc_id']
             with open(args.csvfile) as input:
                 reader = csv.DictReader(input, delimiter=',')
                 num_users = 0
