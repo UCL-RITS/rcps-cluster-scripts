@@ -257,8 +257,9 @@ def create_user_request(cursor, args, args_dict):
 # everything needed to create a new user
 def create_new_user(cursor, args, args_dict):
     # if no username was specified, get the next available mmm username
-    if (args.username == None or args.username == ''):
+    if (args.username == None or args_dict['username'] == ''):
         args.username = nextmmm()
+        args_dict['username'] = args.username
     # users status is pending until the request is approved
     args_dict['status'] = "pending"
     # insert new user into users table
