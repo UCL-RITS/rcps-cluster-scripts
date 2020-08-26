@@ -217,6 +217,7 @@ def get_poc_id(cursor, args, args_dict):
     # no matches or none chosen - ask to pick from whole list
     cursor.execute(thomas_queries.contactstatusinfo())
     results = cursor.fetchall()
+    rows_count = cursor.rowcount
     data = []
     # put the results into a list of dictionaries, keys being db column names.
     for i in range(rows_count):
