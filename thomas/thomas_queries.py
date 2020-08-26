@@ -166,6 +166,12 @@ def contactsinfo():
                 FROM pointofcontact""")
     return query
 
+# Temporary: not all dbs have 'status' yet
+def contactstatusinfo():
+    query = ("""SELECT poc_id, poc_givenname, poc_surname, poc_email, institute, username, status 
+                FROM pointofcontact""")
+    return query
+
 # Get all institutes
 def instituteinfo():
     query = ("""SELECT inst_id, name FROM institutes""")
@@ -278,6 +284,12 @@ def findpocbylastname():
     query = ("""SELECT poc_givenname, poc_surname, poc_email
                 FROM pointofcontact 
                 WHERE poc_surname=%(poc_surname)s""")
+    return query
+
+def findpocbyusername():
+    query = ("""SELECT poc_id,  poc_givenname, poc_surname, poc_email
+                FROM pointofcontact 
+                WHERE username=%(username)s""")
     return query
 
 # Get all open tickets for printing (not including the ssh keys)
