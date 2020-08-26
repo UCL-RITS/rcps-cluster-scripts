@@ -322,6 +322,8 @@ def main(argv):
                 reader = csv.DictReader(input, delimiter=',')
                 num_users = 0
                 for row_dict in reader:
+                    args.username = row_dict['username']
+                    args.surname = row_dict['surname']
                     new_user(cursor, args, row_dict)
                     num_users += 1
 
