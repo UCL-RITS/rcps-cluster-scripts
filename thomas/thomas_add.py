@@ -208,7 +208,6 @@ def get_poc_id(cursor, args, args_dict):
         response = thomas_utils.select_from_list("\nPlease choose which point of contact ID to use for these user account requests. \n Please respond with a number in the list or n for none.", options_list)
         if response == "n":
             print("None chosen, showing all points of contact.")
-            break
         else:
             # go back to zero-index, get chosen username
             args_dict['poc_id'] = data[int(response)-1]['poc_id']
