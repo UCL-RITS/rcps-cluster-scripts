@@ -114,7 +114,7 @@ def projectinfo(cursor, args_dict):
 
 # Get all points of contact and their username if they have one.
 def contactsinfo(cursor):
-    query = thomas_queries.contactsinfo()
+    query = thomas_queries.contactstatusinfo()
     cursor.execute(query)
     return cursor
 
