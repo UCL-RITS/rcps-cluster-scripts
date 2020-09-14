@@ -191,7 +191,8 @@ def get_poc_id(cursor, args, args_dict):
     rows_count = cursor.rowcount
     # I am a PoC and unique
     if rows_count == 1:
-        args_dict['poc_id'] = results[0]['poc_id']
+        result = dict(zip(cursor.column_names, results[0]))
+        args_dict['poc_id'] = result['poc_id']
         return True
     # I am more than one PoC
     elif rows_count > 1:
