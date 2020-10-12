@@ -75,7 +75,7 @@ class SysAdmin:
 
 class Project:
 
-    known_keys = ["Code", "Name", "Status", "ProjectClass", "FundingBody", "Machines", "TopGroup"]
+    known_keys = ["Code", "Id", "Name", "Status", "ProjectClass", "FundingBody", "Machines", "TopGroup"]
 
     def __init__(self, ProjectDict=None):
         # Empty values are created if no dict is passed in.
@@ -88,6 +88,7 @@ class Project:
                     print("Warning [Project]: Detected unknown key: " + a + ": " + str(ProjectDict[a]))
             # ternary: if a key is missing, set it to empty
             self.Code=ProjectDict["Code"] if "Code" in ProjectDict.keys() else ""
+            self.Code=ProjectDict["Id"] if "Id" in ProjectDict.keys() else ""
             self.Name=ProjectDict["Name"] if "Name" in ProjectDict.keys() else ""
             self.Status=ProjectDict["Status"] if "Status" in ProjectDict.keys() else ""
             self.ProjectClass=ProjectDict["ProjectClass"] if "ProjectClass" in ProjectDict.keys() else ""
@@ -97,6 +98,7 @@ class Project:
 
     def __str__(self):
         return "Project: " + ",\n".join([self.Code,
+                                        self.Id,
                                         self.Name,
                                         self.Status,
                                         self.ProjectClass,
