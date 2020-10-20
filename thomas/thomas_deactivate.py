@@ -184,9 +184,10 @@ def main(argv):
         # cursor.execute takes a querystring and a dictionary or tuple
         if (args.subcommand == "user"):
             deactivate_user_request(cursor, args, args_dict)
-            print(args.user + "'s membership of " + args.project + " has been deactivated.")
+            print(args.username + "'s membership of " + args.project + " has been deactivated.")
         elif (args.subcommand == "projectuser"):
             cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
+            print(args.username + "'s membership of " + args.project + " is being deactivated.")
             debug_cursor(cursor, args)
         elif (args.subcommand == "project"):
             cursor.execute(run_project(), args_dict)
