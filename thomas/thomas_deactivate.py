@@ -48,7 +48,7 @@ def getargs(argv):
 
     # the arguments for subcommand 'projectuser'
     projectuserparser = subparsers.add_parser("projectuser", help="Deactivate this user's membership in this project")
-    projectuserparser.add_argument("-u", "--user", dest="username", help="An existing UCL username", required=True, action=ValidateUser)
+    projectuserparser.add_argument("-u", "--user", dest="username", help="An existing username", required=True, action=ValidateUser)
     projectuserparser.add_argument("-p", "--project", dest="project", help="An existing project ID", required=True)
     parser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectuserparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
