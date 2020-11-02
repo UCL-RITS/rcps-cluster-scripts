@@ -4,82 +4,177 @@ set -o errexit \
     -o pipefail \
     -o nounset
 
-export LDAPTLS_REQCERT=never
-LDAPSEARCH_PATH=/usr/bin/ldapsearch
+# Command deps
+ldapsearch_path="/usr/bin/ldapsearch"
+getopt_path="/usr/bin/getopt"
+command -v "$ldapsearch_path" >/dev/null
+command -v "$getopt_path" >/dev/null
 
-if [[ -z "${AD_PASS_FILE:-}" ]]; then
-    if [[ -f "$HOME/.adname_ad_pass" ]]; then
-        ad_pass_file="$HOME/.adname_ad_pass"
-    elif [[ -f "/shared/ucl/etc/adpw" ]]; then
-        ad_pass_file="/shared/ucl/etc/adpw"
-    else
-        echo "No ~/.adname_ad_pass or /shared/ucl/etc/adpw file, quitting..." >&2
-        exit 2
-    fi
-else
-    ad_pass_file="$AD_PASS_FILE"
+help_message="
+usage: adname [<flags>] <term>...
+
+A program to quickly query Active Directory for user and group data.
+
+Flags:
+  -h, --help                   Show this help.
+  -d, --debug                  Debug mode.
+  -k, --insecure               Insecurely ignore server certificate. (Current Default)
+  -x, --secure                 Don't ignore server certificate.
+  -f, --search-field=\"CN\"      Field to search on. (e.g. mail, memberOf, sn)
+  -s, --server=\"ldaps://ldap-auth-ad-slb.ucl.ac.uk:636/\"  
+                               URL of the LDAP/AD server to connect to.
+  -u, --user=\"AD\\sa-ritsldap01\"  
+                               User to authenticate to the server with. (\"Bind\" user.)
+  -p, --password=\"\"          Password to authenticate to the server with. (\"Bind\" password.)
+  -P, --passfile=FILE          File to get password from. (Default: first of ~/.adpw /shared/ucl/etc/adpw)
+  -b, --base=\"DC=ad,DC=ucl,DC=ac,DC=uk\"  
+                               Search base in the LDAP tree.
+  -o, --output=OUTPUT          Command-separated fields to show in output. (Default: all)
+
+Args:
+  <term>  Search term (e.g. a username or group name).
+"
+
+function show_help_and_exit() {
+    printf "%s" "$help_message"
+    exit "${1:-0}"
+}
+
+canonical_args="$(
+/usr/bin/getopt \
+    -n adname \
+    -l "help,debug,insecure,secure,search-field:,server:,hostname:,user:,password::,passfile:,base:,output:" \
+    -o "hdukxf:s:u:p::P:b:o:" \
+    -- \
+    "$@"
+)"
+
+
+eval set -- "$canonical_args"
+
+# Defaults
+debug_mode="false"
+check_cert="false"
+search_key="CN"
+ldap_uri="ldaps://ldap-auth-ad-slb.ucl.ac.uk:636/"
+user="AD\\sa-ritsldap01"
+password=""
+prompt_for_password="false"
+pass_file=""
+search_base="DC=ad,DC=ucl,DC=ac,DC=uk"
+output_fields=""
+
+while true ; do
+    case "$1" in
+        -h|--help) show_help_and_exit; shift ;;
+        -d|--debug) debug_mode="true"; shift ;;
+        -k|--insecure) check_cert="false" ;;
+        -x|--secure) check_cert="true" ;;
+        -f|--search-field) search_key="$2"; shift 2 ;;
+        -s|--server|--hostname) ldap_uri="$2"; shift 2 ;;
+        -u|--user) user="$2"; shift 2 ;;
+        -p|--password)
+            # c has an optional argument. As we are in quoted mode,
+            # an empty parameter will be generated if its optional
+            # argument is not found.
+            case "$2" in
+                "") password=""; prompt_for_password="true"; shift 2 ;;
+                *) password="$2" ; shift 2 ;;
+            esac ;;
+        -P|--passfile) pass_file="$2"; shift 2 ;;
+        -b|--base) search_base="$2"; shift 2 ;;
+        -o|--output) output_fields="$2"; shift 2 ;;
+        --) shift ; break ;;
+        *) echo "Error: invalid argument '$1'" ; exit 1 ;;
+    esac
+done
+
+if [[ $# -eq 0 ]]; then
+    show_help_and_exit 1
 fi
 
-if [[ "$1" == "-d" ]]; then
-    debug_mode="y"
-    shift
+if [[ "$check_cert" == "false" ]]; then
+    export LDAPTLS_REQCERT=never
 else
-    debug_mode=""
+    export LDAPTLS_REQCERT=demand
+fi
+
+if [[ -z "$password" ]]; then
+    if [[ "$prompt_for_password" == "true" ]]; then
+        read -rsp "Please enter password for LDAP Bind User: " password
+    else
+        if [[ -z "${pass_file:-}" ]]; then
+            if [[ -r "$HOME/.adname_ad_pass" ]]; then
+                password="$(cat "$HOME/.adname_ad_pass")"
+            elif [[ -r "/shared/ucl/etc/adpw" ]]; then
+                password="$(cat /shared/ucl/etc/adpw)"
+            else
+                echo "Error: no ~/.adname_ad_pass or /shared/ucl/etc/adpw file was readable" >&2
+                exit 2
+            fi
+        else
+            if [[ -r "$pass_file" ]]; then
+                password="$(cat "$pass_file")"
+            else
+                echo "Error: pass file could not be read: $pass_file" >&2
+                exit 2
+            fi
+        fi
+    fi
 fi
 
 for name in "$@"; do
-      # Attempt at using AD instead
-      ldap_uri="ldaps://ldap-auth-ad-slb.ucl.ac.uk:636/"
-      #ldap_rdn="OU=Accounts,DC=ad,DC=ucl,DC=ac,DC=uk"
-      ldap_rdn="DC=ad,DC=ucl,DC=ac,DC=uk"
-      # Course accounts aren't in the OU=Accounts part. Obviously. Why would they be, it's not like they're ACCOUNTS OR ANYTHING
+    ldap_rdn="$search_base"
 
-      ldap_bind_user='AD\sa-ritsldap01'
-      ldap_password="$(cat "$ad_pass_file")"
-      
-      search_key='sAMAccountName'
-      search_key='cn'
+    ldap_bind_user="$user"
+    ldap_password="$password"
 
-      ldap_search_term="(${search_key}=${name})"
+    ldap_search_term="(${search_key}=${name})"
+    ldap_rdn="$search_base"
 
-      if [ -n "$debug_mode" ]; then
-        ldap_search_args=("-d5" "-Epr=1" "-v" "-x" "-LLL" "-w$ldap_password" "-H$ldap_uri" "-b$ldap_rdn" "-D$ldap_bind_user" "$ldap_search_term")
-      else
-        ldap_search_args=("-x" "-Epr=1" "-LLL" "-w$ldap_password" "-H$ldap_uri" "-b$ldap_rdn" "-D$ldap_bind_user" "$ldap_search_term")
-      fi
-
-      if [ -n "$debug_mode" ]; then 
-        echo "Debug: ldapsearch path is: $LDAPSEARCH_PATH" >&2
-        echo "Debug: ldapsearch arguments are: ${ldap_search_args[*]}" >&2
-      fi
-
-      if [ -n "$debug_mode" ]; then
-        set -x
-      fi
-
-      # Have to set the NSS_HASH_ALT_SUPPORT environment variable to 
-      #  allow MD5 as a cert hash algorithm. Broken in RHEL6.5->6.6 change. Wooooo.
-      # The cryptic perl expression removes wrapping 
-      if [ -n "$debug_mode" ]; then
-        echo "Debug: command to run: NSS_HASH_ALG_SUPPORT=+MD5 $LDAPSEARCH_PATH" "${ldap_search_args[@]}"
-      fi
-      search_result=$(NSS_HASH_ALG_SUPPORT=+MD5 $LDAPSEARCH_PATH "${ldap_search_args[@]}" | perl -p00e 's/\r?\n //g')
-      #search_result=$($LDAPSEARCH_PATH "${ldap_search_args[@]}" | perl -p00e 's/\r?\n //g')
-      
-      if [ -n "$debug_mode" ]; then
-        set +x
-      fi
-      # And that's us done with LDAP
-
-
-    if [ -n "$search_result" ]; then
-      if [ $# -gt 1 ]; then
-        echo "${name}: ${search_result}"
-      else
-        echo "${search_result}"
-      fi
+    if [[ "$debug_mode" == "true" ]]; then
+        ldapsearch_args=("-d5" "-Epr=1" "-v" "-x" "-LLL" "-w$ldap_password" "-H$ldap_uri" "-b$ldap_rdn" "-D$ldap_bind_user" "$ldap_search_term")
     else
-      echo "Error: no user found for username \"${name}\"" >&2
+        ldapsearch_args=("-x" "-Epr=1" "-LLL" "-w$ldap_password" "-H$ldap_uri" "-b$ldap_rdn" "-D$ldap_bind_user" "$ldap_search_term")
+    fi
+
+    if [[ "$debug_mode" == "true" ]]; then 
+        echo "Debug: ldapsearch path is: $ldapsearch_path" >&2
+        echo "Debug: ldapsearch arguments are: ${ldapsearch_args[*]}" >&2
+    fi
+
+    if [[ "$debug_mode" == "true" ]]; then
+        set -x
+    fi
+
+    # Have to set the NSS_HASH_ALT_SUPPORT environment variable to 
+    #  allow MD5 as a cert hash algorithm. Broken in RHEL6.5->6.6 change. Wooooo.
+    # The cryptic perl expression removes wrapping 
+    if [[ "$debug_mode" == "true" ]]; then
+        echo "Debug: command to run: NSS_HASH_ALG_SUPPORT=+MD5 $ldapsearch_path" "${ldapsearch_args[@]}"
+    fi
+
+    if [[ "$output_fields" == "" ]]; then
+        search_result=$(NSS_HASH_ALG_SUPPORT=+MD5 $ldapsearch_path "${ldapsearch_args[@]}" | perl -p00e 's/\r?\n //g')
+    else
+        grep_pattern="^(${output_fields//,/|}):"
+        search_result=$(NSS_HASH_ALG_SUPPORT=+MD5 $ldapsearch_path "${ldapsearch_args[@]}" | perl -p00e 's/\r?\n //g' | grep -E -e "$grep_pattern")
+    fi
+
+    if [[ "$debug_mode" == "true" ]]; then
+        set +x
+    fi
+    # And that's us done with LDAP
+
+
+    if [[ -n "$search_result" ]]; then
+        if [[ $# -gt 1 ]]; then
+            echo "${name}: ${search_result}"
+        else
+            echo "${search_result}"
+        fi
+    else
+        echo "Error: no user found for username \"${name}\"" >&2
     fi
 done
 
