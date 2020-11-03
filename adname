@@ -29,10 +29,27 @@ Flags:
   -P, --passfile=FILE          File to get password from. (Default: first of ~/.adpw /shared/ucl/etc/adpw)
   -b, --base=\"DC=ad,DC=ucl,DC=ac,DC=uk\"  
                                Search base in the LDAP tree.
-  -o, --output=OUTPUT          Command-separated fields to show in output. (Default: all)
+  -o, --output=OUTPUT          Comma-separated fields to show in output. (Default: all)
 
 Args:
   <term>  Search term (e.g. a username or group name).
+
+Examples:
+  adname ccspapp    Search for any objects named ccspapp (should turn up the service account user).
+  adname ccsprcop   Search for any objects named ccsprcop (should turn up the group).
+
+  adname -o member ccsprcop
+                    Search for any objects named ccsprcop, only showing the member fields. 
+
+  adname -f mail i.kirker@ucl.ac.uk   
+                    Search for any objects with the *primary* email address as shown.
+  
+  adname -f proxyAddresses i.kirker@ucl.ac.uk  
+                    A slightly more thorough search: goes through e.g. alumnus
+                     addresses and any alternatives.
+
+  adname -f employeeID ikirk33
+                    Search for any objects with a UPI (stored under employeeID in AD) of ikirk33.
 "
 
 function show_help_and_exit() {
