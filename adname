@@ -13,7 +13,7 @@ command -v "$getopt_path" >/dev/null
 help_message="
 usage: adname [<flags>] <term>...
 
-A program to quickly query Active Directory for user and group data.
+A script to quickly query Active Directory for user and group data.
 
 Flags:
   -h, --help                   Show this help.
