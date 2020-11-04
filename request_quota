@@ -10,7 +10,7 @@ cluster=$(whereami)
 echo "This will create a quota request on ${cluster^} for $USER."
 echo ""
 
-echo "What is the total quota you are requesting? (Eg. 500G, 1.5T)"
+echo "What is the total quota limit you wish your account to have? (Eg. 500G, 1.5T)"
 read -r quota_amount 
 echo ""
 
