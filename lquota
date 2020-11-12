@@ -485,6 +485,13 @@ function __main() {
             local -A pools=([lustre]="/home/%username%")
             local default_pool="lustre"
             ;;
+        "young")
+            msg debug "using settings for young"
+            # ZFS, no project attributes, one single quota
+            local quota_mode="user"
+            local -A pools=([lustre]="/home/%username%")
+            local default_pool="lustre"
+            ;;
         *)
     esac
     
