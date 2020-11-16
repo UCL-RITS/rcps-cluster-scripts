@@ -85,8 +85,8 @@ while true ; do
     case "$1" in
         -h|--help) show_help_and_exit; shift ;;
         -d|--debug) debug_mode="true"; shift ;;
-        -k|--insecure) check_cert="false" ;;
-        -x|--secure) check_cert="true" ;;
+        -k|--insecure) check_cert="false"; shift ;;
+        -x|--secure) check_cert="true"; shift ;;
         -f|--search-field) search_key="$2"; shift 2 ;;
         -s|--server|--hostname) ldap_uri="$2"; shift 2 ;;
         -u|--user) user="$2"; shift 2 ;;
