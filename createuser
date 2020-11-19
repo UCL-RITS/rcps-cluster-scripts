@@ -27,7 +27,7 @@ case "$PLATFORM" in
     "myriad")
         ACL="Open"
         ;;
-    "thomas"|"michael")
+    "thomas"|"michael"|"young")
         echo "Error: this is not the correct way to add users to the Thomas and Michael clusters." >&2
         exit 1
         ;;
@@ -40,6 +40,15 @@ esac
 if [[ "$PLATFORM" == "legion" ]]; then
     echo "Reminder: new accounts unassociated with existing paid projects 
           are no longer to be created on Legion (as of 2019-01-01). "
+    read -r -p "Are you sure you want to create this account? Please type 'yes' if so: " response
+    if [[ "$response" != "yes" ]]; then
+        echo "Okay, stopping."
+        exit
+    fi
+fi
+
+if [[ "$PLATFORM" == "grace" ]]; then
+    echo "Reminder: new accounts are no longer to be created on Grace."
     read -r -p "Are you sure you want to create this account? Please type 'yes' if so: " response
     if [[ "$response" != "yes" ]]; then
         echo "Okay, stopping."
