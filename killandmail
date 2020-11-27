@@ -26,6 +26,8 @@ elif [[ "$hostnamef" =~ myriad.ucl.ac.uk ]]; then
   this_cluster="Myriad"
 elif [[ "$hostnamef" =~ kathleen.ucl.ac.uk ]]; then
   this_cluster="Kathleen"
+elif [[ "$hostnamef" =~ young.ucl.ac.uk ]]; then
+  this_cluster="Young"
 else
   echo "Error: I do not know which cluster this is. Panicking..."
   exit 1
