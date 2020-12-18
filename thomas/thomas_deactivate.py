@@ -113,13 +113,19 @@ def deactivate_user_request(cursor, args, args_dict):
         # if they have any active, prompt (may have access via another inst)
         for row in results:
             answer = thomas_utils.are_you_sure("User has active membership in project " + row['project'] + " - deactivate it?", False)
+            # they said yes, deactivate it
+            if answer:
+                cursor.execute(thomas_queries.deactivateprojectuser(), {"user": args.username, "project": row['project']})
+                print(args.username + "'s membership of " + row['project'] + " is being deactivated.")
+                debug_cursor(cursor, args)
             # they said no, exit
-            if not answer:
+            else:
                 print("Active project membership being kept: user will not be deactivated.")
                 exit(0)
-    # deactivate all user's active memberships
-    cursor.execute(thomas_queries.deactivatemembership(), args_dict)
-    debug_cursor(cursor, args)
+    else:
+        # force deactivatation of all user's active memberships
+        cursor.execute(thomas_queries.deactivatememberships(), args_dict)
+        debug_cursor(cursor, args)
 
     # status in requests is pending until the full deactivation is done by us
     args_dict['status'] = "pending"
@@ -184,7 +190,7 @@ def main(argv):
         # cursor.execute takes a querystring and a dictionary or tuple
         if (args.subcommand == "user"):
             deactivate_user_request(cursor, args, args_dict)
-            print(args.username + "'s membership of " + args.project + " has been deactivated.")
+            print(args.username + "'s account is being marked as deactivated. They will still be able to log in until RCAS fully deactivate the account.")
         elif (args.subcommand == "projectuser"):
             cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
             print(args.username + "'s membership of " + args.project + " is being deactivated.")
