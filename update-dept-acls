@@ -2,6 +2,9 @@
 
 AccessACL=Open
 
+# We need adname, and this is the most direct way to get it.
+PATH=$PATH:/shared/ucl/apps/rcps-cluster-scripts
+
 set -o errexit \
     -o nounset \
     -o pipefail
