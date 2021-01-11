@@ -137,9 +137,9 @@ class Node:
 
   def print_props(self):
     if self.unresponsive == True and self.offline == False:
-      sys.stdout.write("    %s:  unresponsive, no data available -- jobs on this node may have failed\n")
+      sys.stdout.write("    %s:  unresponsive, no data available -- jobs on this node may have failed\n" % self.hostname)
     elif self.offline == True:
-      sys.stdout.write("    %s:  offline -- no jobs should be assigned to this node\n")
+      sys.stdout.write("    %s:  offline -- no jobs should be assigned to this node\n" % self.hostname)
     else:
       load_partial = "%3.1f %% load" % (100 * float(self.load_avg) / self.num_proc)
       mem_partial  = "%3.1f %% memory used" % (100 * float(self.mem_used) / self.mem_total)
