@@ -131,7 +131,11 @@ function pipe_users_to_acl() {
 
     list="$(tr '\n' ',')"
     list="${list%,}"
-    qconf -au "$list" "$1"
+    if [[ "$list" != "" ]]; then
+        echo qconf -au "$list" "$1"
+    else
+        tslog "no new users to add to ACL: $1"
+    fi
 }
 
 function wipe_acl() {
@@ -186,9 +190,20 @@ function intersect_with_acl() {
         return 1
     fi
 
-    sort \
+    sort -u \
         | comm -1 -2 - <(get_users_from_acl "$1")
 }
+
+function subtract_acl() {
+    if [[ "$#" -ne 1 ]]; then
+        tslog "error: wrong number of args to subtract_acl"
+        return 1
+    fi
+
+    sort -u \
+        | comm -2 -3 - <(get_users_from_acl "$1")
+}
+
 
 function main() {
     fail_if_insufficient_perms
@@ -250,6 +265,8 @@ function main() {
                 tslog "adding to ACL: ${dept_acl_name}"
                 echo "$expanded_spec" \
                     | grep -v '^#' \
+                    | sort -u \
+                    | subtract_acl "${dept_acl_name}" \
                     | pipe_users_to_acl "${dept_acl_name}"
             else
                 tslog "skipping SGE ACL changes"
@@ -347,4 +364,3 @@ fi
 if [[ "$only_def_funcs" == "false" ]]; then
     main "$@"
 fi
-
