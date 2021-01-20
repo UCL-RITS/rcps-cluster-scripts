@@ -132,7 +132,7 @@ function pipe_users_to_acl() {
     list="$(tr '\n' ',')"
     list="${list%,}"
     if [[ "$list" != "" ]]; then
-        echo qconf -au "$list" "$1"
+        qconf -au "$list" "$1"
     else
         tslog "no new users to add to ACL: $1"
     fi
