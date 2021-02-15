@@ -11,6 +11,21 @@ BLUE="$(tput setaf 4)"
 RED="$(tput setaf 1)"
 RESET="$(tput sgr0)"
 
+if [[ "$username" =~ ^[a-z0-9.]+@ucl\.ac\.uk$ ]]; then
+    echo "${RED}Warning: this username looks like an email address.${RESET}"
+    echo "${RED}         It will be checked and converted.${RESET}"
+
+    echo -n "Can id email address: "
+    id "$username" >/dev/null 2>/dev/null && echo "${GREEN}yes${RESET}" || echo "${RED}no${RESET}"
+    old_username="$username"
+    if username="$(id -un "$username")"; then
+        echo "Username converted successfully to: ${GREEN}${username}${RESET}"
+    else
+        echo "${RED}Could not convert email address to username, leaving as-is.${RESET}"
+        username="${old_username}"
+    fi
+fi
+
 echo -n "Can id user: "
 id "$username" >/dev/null 2>/dev/null && echo "${GREEN}yes${RESET}" || echo "${RED}no${RESET}"
 
