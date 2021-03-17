@@ -35,6 +35,9 @@ function get_sched_lines () {
     if [[ "${schedule_file##*\.}" == "gz" ]] && [[ ! "$schedule_file" == "gz" ]]; then
         CAT="zcat"
         GREP="zgrep"
+    elif [[ "${schedule_file##*\.}" == "xz" ]]; then
+        CAT="xzcat"
+        GREP="xzgrep"
     else
         CAT="cat"
         GREP="grep"
@@ -95,18 +98,16 @@ function main() {
         schedule_files=("${first_arg#--schedule-file=}")
         shift
     elif [[ "${first_arg}" == "--all" ]]; then
-        schedule_files=($(/bin/ls "$schedule_dir"/schedule "$schedule_dir"/schedule-????????.gz))
+        schedule_files=($(/bin/ls -f "$schedule_dir"/schedule "$schedule_dir"/schedule-????????.gz) $(/bin/ls -f "$schedule_dir"/schedule-????????.*.xz))
         shift
     elif [[ "${first_arg:0:11}" == "--daysback=" ]]; then
         num_days="${first_arg:11}"
         declare -a schedule_files
         days=0
         while [[ $days -le $num_days ]]; do
-            this_file="$schedule_dir/schedule-$(date --date="$days days ago" +%Y%m%d).gz"
-            if [[ -f "$this_file" ]]; then
-                schedule_files+=($this_file)
-            fi
-            let days=$days+1
+            dated_file_stem="$schedule_dir/schedule-$(date --date="$days days ago" +%Y%m%d)"
+            schedule_files+=($(/bin/ls -f "$dated_file_stem"* 2>/dev/null))
+            days=$(( days + 1 ))
         done
         shift
     elif [[ "${first_arg}" == "-h" ]] || [[ "${first_arg}" == "--help" ]]; then
