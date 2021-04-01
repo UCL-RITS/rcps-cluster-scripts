@@ -1,0 +1,83 @@
+#!/bin/bash
+
+set -o errexit \
+    -o nounset \
+    -o pipefail
+
+if ! command -v dirname >/dev/null; then
+    echo "Could not find required 'dirname' command." >&2
+    exit 1
+fi
+if ! command -v lfs >/dev/null; then
+    echo "Could not find required 'lfs' command." >&2
+    exit 1
+fi
+
+function print_project_quota_for_path() {
+    if [[ "$#" -ne 1 ]]; then
+        echo "Incorrect number of args to print_project_quota." >&2
+        exit 200
+    fi
+
+    local target_path="$1"
+
+    if [[ ! -r "$target_path" ]]; then
+        echo "Target file/directory does not exist or could not be read." >&2
+        exit 2
+    fi
+
+    local dir_project_id
+
+    if ! dir_project_id="$(lsattr -d -p "$target_path")"; then
+        echo "No project ID for target file/directory." >&2
+        exit 3
+    fi
+
+    # Get just the numeric ID off the beginning of the line
+    dir_project_id="${dir_project_id%% *}"
+
+    # lfs quota needs a directory, so if it's a file get the dirname
+    local target_dir
+    if [[ -f "$target_path" ]]; then
+        target_dir="$(dirname "$target_path")"
+    else
+        target_dir="$target_path"
+    fi
+
+    lfs quota -h -p "$dir_project_id" "$target_dir"
+}
+
+function show_help_and_exit() {
+    help_message="
+lpquota - Shows the quota for the project ID associated with a file or directory.
+
+Note that you must have read access for the file or directory in question.
+
+Usage:
+   
+    lpquota /path/to/file_or_dir   Shows the quota associated with the given file or directory.
+    lpquota                        As above, but for the current working directory.
+    lpquota -h                     Shows this message.
+    lpquota --help                 As above.
+
+    "
+    echo "$help_message" >&2
+    exit
+}
+
+# This is super-basic: if more CLI options are needed, this will have to be replaced
+#  with a proper getopt_long call or something.
+for arg in "$@"; do
+    if [[ "$arg" == "-h" ]] || [[ "$arg" == "--help" ]]; then
+        show_help_and_exit
+    fi
+done
+
+if [[ "$#" -eq 0 ]]; then
+    print_project_quota_for_path "."
+else
+    for dir in "$@"; do
+        print_project_quota_for_path "$dir"
+    done
+fi
+
