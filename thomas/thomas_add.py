@@ -9,6 +9,7 @@ from subprocess import Popen, PIPE
 import csv
 import mysql.connector
 from mysql.connector import errorcode
+from contextlib import closing
 import socket
 import validate
 import thomas_show
@@ -367,77 +368,79 @@ def main(argv):
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
-        cursor = conn.cursor()
+        #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
+        # make sure we close the connection wherever we exit from
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor()) as cursor:
+            #cursor = conn.cursor()
 
-        if (args.verbose or args.debug):
-            print("")
-            print(">>>> Queries being sent:")
-
-        # CSV file was provided
-        if (args.subcommand == "csv"):
-            # Get poc_id for submitter, or prompt
-            get_poc_id(cursor, args, args_dict)
-            args.poc_id = args_dict['poc_id']
-            with open(args.csvfile) as input:
-                reader = csv.DictReader(input, delimiter=',')
-                num_users = 0
-                for row_dict in reader:
-                    args.username = row_dict['username']
-                    args.surname = row_dict['surname']
-                    row_dict['poc_id'] = args_dict['poc_id']
-                    row_dict['cluster'] = args_dict['cluster']
-                    new_user(cursor, args, row_dict)
-                    num_users += 1
-
-        # cursor.execute takes a querystring and a dictionary or tuple
-        elif (args.subcommand == "user"):
-            new_user(cursor, args, args_dict)
-
-        elif (args.subcommand == "projectuser"):
-            # This is an existing user, status for the new project-user pairing is active by default
-            args_dict['status'] = "active"
-            cursor.execute(run_projectuser(), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "project"):
-            cursor.execute(run_project(), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "poc"):
-            args_dict['status'] = "active"
-            cursor.execute(run_poc(args.surname, args.username), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "institute"):
-            cursor.execute(run_institute(), args_dict)
-            debug_cursor(cursor, args)
-
-        # commit the change to the database unless we are debugging
-        if (not args.debug):
-            if (args.verbose):
+            if (args.verbose or args.debug):
                 print("")
-                print("Committing database change")
-                print("")
-            conn.commit()
+                print(">>>> Queries being sent:")
 
-        # Databases are updated, now email rc-support unless nosupportemail is set
-        if (args.subcommand == "user" and args.nosupportemail == False):
-            # get the last id added (which is from the requests table)
-            # this has to be run after the commit
-            last_id = cursor.lastrowid
-            contact_rc_support(args, last_id)
-        elif (args.subcommand == "csv"):
-            last_id = cursor.lastrowid
-            contact_rc_support(args, last_id, csv='yes', num=num_users)
+            # CSV file was provided
+            if (args.subcommand == "csv"):
+                # Get poc_id for submitter, or prompt
+                get_poc_id(cursor, args, args_dict)
+                args.poc_id = args_dict['poc_id']
+                with open(args.csvfile) as input:
+                    reader = csv.DictReader(input, delimiter=',')
+                    num_users = 0
+                    for row_dict in reader:
+                        args.username = row_dict['username']
+                        args.surname = row_dict['surname']
+                        row_dict['poc_id'] = args_dict['poc_id']
+                        row_dict['cluster'] = args_dict['cluster']
+                        new_user(cursor, args, row_dict)
+                        num_users += 1
 
-    except mysql.connector.Error as err:
-        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Access denied: Something is wrong with your user name or password")
-        elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
+            # cursor.execute takes a querystring and a dictionary or tuple
+            elif (args.subcommand == "user"):
+                new_user(cursor, args, args_dict)
+
+            elif (args.subcommand == "projectuser"):
+                # This is an existing user, status for the new project-user pairing is active by default
+                args_dict['status'] = "active"
+                cursor.execute(run_projectuser(), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "project"):
+                cursor.execute(run_project(), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "poc"):
+                args_dict['status'] = "active"
+                cursor.execute(run_poc(args.surname, args.username), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "institute"):
+                cursor.execute(run_institute(), args_dict)
+                debug_cursor(cursor, args)
+
+            # commit the change to the database unless we are debugging
+            if (not args.debug):
+                if (args.verbose):
+                    print("")
+                    print("Committing database change")
+                    print("")
+                conn.commit()
+
+            # Databases are updated, now email rc-support unless nosupportemail is set
+            if (args.subcommand == "user" and args.nosupportemail == False):
+                # get the last id added (which is from the requests table)
+                # this has to be run after the commit
+                last_id = cursor.lastrowid
+                contact_rc_support(args, last_id)
+            elif (args.subcommand == "csv"):
+                last_id = cursor.lastrowid
+                contact_rc_support(args, last_id, csv='yes', num=num_users)
+
+        except mysql.connector.Error as err:
+            if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+                print("Access denied: Something is wrong with your user name or password")
+            elif err.errno == errorcode.ER_BAD_DB_ERROR:
+                print("Database does not exist")
+            else:
+                print(err)
         else:
-            print(err)
-    else:
-        cursor.close()
-        conn.close()
+            cursor.close()
+            conn.close()
 # end main
 
 # When not imported, use the normal global arguments

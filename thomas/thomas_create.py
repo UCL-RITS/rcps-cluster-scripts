@@ -7,6 +7,7 @@ import subprocess
 import validate
 import mysql.connector
 from mysql.connector import errorcode
+from contextlib import closing
 import thomas_queries
 import thomas_utils
 
@@ -218,21 +219,22 @@ if __name__ == "__main__":
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
-        cursor = conn.cursor(dictionary=True)
-
-        # Either create a user from scratch or approve an existing request
-        if (args.subcommand == "user"):
-            # UCL user validation - if this is a UCL email, make sure username was given 
-            # and that it wasn't an mmm one.
-            validate.ucl_user(args.email, args.username)
-            create_and_add_user(args, args_dict, cursor, nodename)
-        elif (args.subcommand == "request"):
-            approverequest(args, args_dict, cursor, nodename)
+        #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
+        #cursor = conn.cursor(dictionary=True)
+        # make sure we close the connection wherever we exit from
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf') as conn, option_groups='thomas_update', database=db)), closing(conn.cursor(dictionary=True)) as cursor:
+            # Either create a user from scratch or approve an existing request
+            if (args.subcommand == "user"):
+                # UCL user validation - if this is a UCL email, make sure username was given 
+                # and that it wasn't an mmm one.
+                validate.ucl_user(args.email, args.username)
+                create_and_add_user(args, args_dict, cursor, nodename)
+            elif (args.subcommand == "request"):
+                approverequest(args, args_dict, cursor, nodename)
  
-        # commit the change to the database unless we are debugging
-        if (not args.debug):
-            conn.commit()
+            # commit the change to the database unless we are debugging
+            if (not args.debug):
+                conn.commit()
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
