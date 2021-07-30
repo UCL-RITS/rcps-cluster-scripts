@@ -13,6 +13,7 @@ from contextlib import closing
 import socket
 import validate
 import thomas_show
+import thomas_create
 import thomas_utils
 import thomas_queries
 
@@ -253,7 +254,10 @@ def create_user_request(cursor, args, args_dict):
     args_dict['poc_email'] = poc_email
     # add the account creation request to the database
     cursor.execute(run_addrequest(), args_dict)
+    # lastrowid is the autoincrement id from this cursor's last INSERT statement
+    request_id = cursor.lastrowid
     debug_cursor(cursor, args)
+    return request_id
 # end create_user_request
 
 # everything needed to create a new user
@@ -267,8 +271,10 @@ def create_new_user(cursor, args, args_dict):
     # insert new user into users table
     cursor.execute(run_user(args.surname), args_dict)
     debug_cursor(cursor, args)
-    # create the account creation request
-    create_user_request(cursor, args, args_dict)
+    # create the account creation request and get the request id (as a list)
+    args.request = [create_user_request(cursor, args, args_dict)]
+    # automated creation - go straight to approval
+    thomas_create.approverequest(args, args_dict, cursor, thomas_utils.getnodename())
 # end create_new_user
 
 # Check for duplicate users by key: email or username
