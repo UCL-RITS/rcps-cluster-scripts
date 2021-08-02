@@ -53,7 +53,7 @@ def getargs(argv):
     userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
     userparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
-    userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
+    #userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'project'
@@ -154,6 +154,7 @@ def run_addrequest():
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
 # By default, assumes this is not a CSV multi-user creation (csv and num are optional).
+# NOT CURRENTLY CALLED
 def contact_rc_support(args, request_id, csv='no', num=1):
     if csv == 'no':
         body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.""")
@@ -428,14 +429,14 @@ def main(argv):
                 conn.commit()
 
             # Databases are updated, now email rc-support unless nosupportemail is set
-            if (args.subcommand == "user" and args.nosupportemail == False):
+            #if (args.subcommand == "user" and args.nosupportemail == False):
                 # get the last id added (which is from the requests table)
                 # this has to be run after the commit
-                last_id = cursor.lastrowid
-                contact_rc_support(args, last_id)
-            elif (args.subcommand == "csv"):
-                last_id = cursor.lastrowid
-                contact_rc_support(args, last_id, csv='yes', num=num_users)
+            #    last_id = cursor.lastrowid
+            #    contact_rc_support(args, last_id)
+            #elif (args.subcommand == "csv"):
+            #    last_id = cursor.lastrowid
+            #    contact_rc_support(args, last_id, csv='yes', num=num_users)
 
         except mysql.connector.Error as err:
             if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
