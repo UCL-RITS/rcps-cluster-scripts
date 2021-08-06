@@ -12,6 +12,17 @@ then
     exit 1
 fi 
 
+# Check that the userid starts with a letter and is alphanumeric, 7 chars
+if echo $1 | grep -E '^[[:lower:]][[:lower:][:digit:]]{6}$' ;
+then
+    echo "Valid user string: $1"
+else
+    echo "Invalid user string: $1"
+    echo "Run \"createuser userid\"" 1>&2
+    exit 1
+fi 
+
+
 # Work out where we are
 </opt/sge/default/common/cluster_name read -r PLATFORM || (echo "Error: could not determine cluster." >&2; exit 1)
 case "$PLATFORM" in
