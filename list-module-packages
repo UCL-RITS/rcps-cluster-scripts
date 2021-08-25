@@ -10,6 +10,9 @@ module load --auto python3/recommended 2>/dev/null >/dev/null
 module load workaround-modules
 module load beta-modules
 
+temp_file_dir="$(mktemp -d)"
+
+
 # This does an extremely dodgy YAML conversion.
 export MODULES_PAGER=cat
 module whatis --paginate \
@@ -18,8 +21,10 @@ module whatis --paginate \
           -e 's/^ *//' \
           -e 's/^\([^-][^:]*\): \(.*\)/    - Name: "\1"\n      Description: "\2"/' \
           -e 's@^---* [^ ]*/\([^ /]*\) ---*$@\1:@' \
-    | tee tmp.whatis.yaml \
-    | python -c '
+    > "$temp_file_dir/tmp.whatis.yaml"
+
+<"$temp_file_dir/tmp.whatis.yaml" \
+    python -c '
 import yaml
 import json
 import sys
@@ -34,4 +39,6 @@ info = {"generated": dt.strftime("%Y-%m-%dT%H:%M:%S%z"),
 
 print(json.dumps(info, indent=3))
 '
+
+'rm' "$temp_file_dir/tmp.whatis.yaml"
 
