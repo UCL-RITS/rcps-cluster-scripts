@@ -110,46 +110,46 @@ def nextmmm():
 
 # query to run for 'user' subcommand
 # the values are inserted by cursor.execute from args.dict
-def run_user(surname):
-    query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
-    if (surname != None):
-        query += ", surname=%(surname)s"
-    return query
+#def run_user(surname):
+#    query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
+#             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
+#    if (surname != None):
+#        query += ", surname=%(surname)s"
+#    return query
 
 # query to run for 'user' and 'projectuser' subcommands
-def run_projectuser():
-    query = ("""INSERT INTO projectusers SET username=%(username)s, """
-             """project=%(project_ID)s, poc_id=%(poc_id)s, status=%(status)s, creation_date=now()""")
-    return query
+#def run_projectuser():
+#    query = ("""INSERT INTO projectusers SET username=%(username)s, """
+#             """project=%(project_ID)s, poc_id=%(poc_id)s, status=%(status)s, creation_date=now()""")
+#    return query
 
 # query to run for 'project' subcommand
-def run_project():
-    query = ("""INSERT INTO projects SET project=%(project_ID)s,  """
-             """institute_id=%(inst_ID)s, creation_date=now()""")
-    return query
+#def run_project():
+#    query = ("""INSERT INTO projects SET project=%(project_ID)s,  """
+#             """institute_id=%(inst_ID)s, creation_date=now()""")
+#    return query
 
 # query to run for 'poc' subcommand
-def run_poc(surname, username):
-    query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
-             """poc_givenname=%(given_name)s, poc_email=%(email)s,  """
-             """institute=%(inst_ID)s, status=%(status)s, creation_date=now()""")
-    if (surname != None):
-        query += ", poc_surname=%(surname)s"
-    if (username != None):
-        query += ", username=%(username)s"
-    return query
+#def run_poc(surname, username):
+#    query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
+#             """poc_givenname=%(given_name)s, poc_email=%(email)s,  """
+#             """institute=%(inst_ID)s, status=%(status)s, creation_date=now()""")
+#    if (surname != None):
+#        query += ", poc_surname=%(surname)s"
+#    if (username != None):
+#        query += ", username=%(username)s"
+#    return query
 
 # query to run for 'institute' subcommand
-def run_institute():
-    query = ("""INSERT INTO institutes SET inst_id=%(inst_ID)s, name=%(institute)s, """
-             """creation_date=now()""") 
-    return query
+#def run_institute():
+#    query = ("""INSERT INTO institutes SET inst_id=%(inst_ID)s, name=%(institute)s, """
+#             """creation_date=now()""") 
+#    return query
 
-def run_addrequest():
-    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
-             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, creation_date=now() """)
-    return query
+#def run_addrequest():
+#    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
+#             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, creation_date=now() """)
+#    return query
 
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
@@ -247,14 +247,14 @@ def create_user_request(cursor, args, args_dict):
     # projectusers status is pending until the request is approved
     args_dict['status'] = "pending"
     # add a project-user entry for the user
-    cursor.execute(run_projectuser(), args_dict)
+    cursor.execute(thomas_queries.addprojectuser(), args_dict)
     debug_cursor(cursor, args)
     # get the poc_email and add to dictionary
     cursor.execute(run_poc_email(), args_dict)
     poc_email = cursor.fetchall()[0][0]
     args_dict['poc_email'] = poc_email
     # add the account creation request to the database
-    cursor.execute(run_addrequest(), args_dict)
+    cursor.execute(thomas_queries.addrequest(), args_dict)
     # lastrowid is the autoincrement id from this cursor's last INSERT statement
     request_id = cursor.lastrowid
     debug_cursor(cursor, args)
@@ -270,7 +270,7 @@ def create_new_user(cursor, args, args_dict):
     # users status is pending until the request is approved
     args_dict['status'] = "pending"
     # insert new user into users table
-    cursor.execute(run_user(args.surname), args_dict)
+    cursor.execute(thomas_queries.adduser(args.surname), args_dict)
     debug_cursor(cursor, args)
     # create the account creation request and get the request id (as a list)
     args.request = [create_user_request(cursor, args, args_dict)]
@@ -407,17 +407,17 @@ def main(argv):
             elif (args.subcommand == "projectuser"):
                 # This is an existing user, status for the new project-user pairing is active by default
                 args_dict['status'] = "active"
-                cursor.execute(run_projectuser(), args_dict)
+                cursor.execute(thomas_queries.addprojectuser(), args_dict)
                 debug_cursor(cursor, args)
             elif (args.subcommand == "project"):
-                cursor.execute(run_project(), args_dict)
+                cursor.execute(thomas_queries.addproject(), args_dict)
                 debug_cursor(cursor, args)
             elif (args.subcommand == "poc"):
                 args_dict['status'] = "active"
-                cursor.execute(run_poc(args.surname, args.username), args_dict)
+                cursor.execute(thomas_queries.addpoc(args.surname, args.username), args_dict)
                 debug_cursor(cursor, args)
             elif (args.subcommand == "institute"):
-                cursor.execute(run_institute(), args_dict)
+                cursor.execute(thomas_queries.addinstitute(), args_dict)
                 debug_cursor(cursor, args)
 
             # commit the change to the database unless we are debugging

@@ -33,7 +33,7 @@ def addproject():
 def addpoc(surname, username):
     query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, 
                  poc_givenname=%(given_name)s, poc_email=%(email)s,  
-                 institute=%(inst_ID)s, creation_date=now()""")
+                 institute=%(inst_ID)s, status=%(status)s, creation_date=now()""")
     if (surname != None):
         query += ", poc_surname=%(surname)s"
     if (username != None):
