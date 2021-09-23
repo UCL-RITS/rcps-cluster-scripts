@@ -438,16 +438,16 @@ def main(argv):
             #    last_id = cursor.lastrowid
             #    contact_rc_support(args, last_id, csv='yes', num=num_users)
 
-        except mysql.connector.Error as err:
-            if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-                print("Access denied: Something is wrong with your user name or password")
-            elif err.errno == errorcode.ER_BAD_DB_ERROR:
-                print("Database does not exist")
-            else:
-                print(err)
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print("Access denied: Something is wrong with your user name or password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            print("Database does not exist")
         else:
-            cursor.close()
-            conn.close()
+            print(err)
+    else:
+        cursor.close()
+        conn.close()
 # end main
 
 # When not imported, use the normal global arguments
