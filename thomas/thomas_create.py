@@ -222,7 +222,7 @@ if __name__ == "__main__":
         #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
         #cursor = conn.cursor(dictionary=True)
         # make sure we close the connection wherever we exit from
-        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf') as conn, option_groups='thomas_update', database=db)), closing(conn.cursor(dictionary=True)) as cursor:
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor(dictionary=True)) as cursor:
             # Either create a user from scratch or approve an existing request
             if (args.subcommand == "user"):
                 # UCL user validation - if this is a UCL email, make sure username was given 
