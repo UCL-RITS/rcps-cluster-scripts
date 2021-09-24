@@ -155,39 +155,40 @@ def updateprojectuserstatus(args, cursor):
 
 def approverequest(args, args_dict, cursor, nodename):
 
-        # args.request is a list of ids - we use the length of it to add enough
-        # parameter placeholders to the querystring
-        cursor.execute(thomas_queries.getrequestbyid(len(args.request)), tuple(args.request))
-        results = cursor.fetchall()
-        if (args.debug):
-            print("Requests found:")
-            thomas_utils.tableprint_dict(results)
-        # carry out the request unless it is already done
-        for row in results:
-            if (row['isdone'] == 0):
-                # set the variables
-                args.username = row['username'] 
-                args.email = row['email']
-                args.ssh_key = row['ssh_key']
-                args.cc_email = row['poc_cc_email']
-                args.id = row['id']
-                args.approver = os.environ['USER']
-                args.cluster = row['cluster']
-                # Check the MMM username exists and warn if getting near max
-                validate.mmm_username_in_range(args.username)
-                # check the cluster matches where we are running from
-                if (args.cluster in nodename):
-                    # create the account
-                    createaccount(args, nodename)
-                    # update the request status
-                    updaterequest(args, cursor)
-                    # update the user and projectuser status from pending to active
-                    updateuserstatus(args, cursor)
-                    updateprojectuserstatus(args, cursor)
-                else:
-                    print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename)
+    # args.request is a list of ids - we use the length of it to add enough
+    # parameter placeholders to the querystring
+    cursor.execute(thomas_queries.getrequestbyid(len(args.request)), tuple(args.request))
+    thomas_utils.debugcursor(cursor, args.debug)
+    results = cursor.fetchall()
+    if (args.debug):
+        print("Requests found:")
+        thomas_utils.tableprint_dict(results)
+    # carry out the request unless it is already done
+    for row in results:
+        if (row['isdone'] == 0):
+            # set the variables
+            args.username = row['username'] 
+            args.email = row['email']
+            args.ssh_key = row['ssh_key']
+            args.cc_email = row['poc_cc_email']
+            args.id = row['id']
+            args.approver = os.environ['USER']
+            args.cluster = row['cluster']
+            # Check the MMM username exists and warn if getting near max
+            validate.mmm_username_in_range(args.username)
+            # check the cluster matches where we are running from
+            if (args.cluster in nodename):
+                # create the account
+                createaccount(args, nodename)
+                # update the request status
+                updaterequest(args, cursor)
+                # update the user and projectuser status from pending to active
+                updateuserstatus(args, cursor)
+                updateprojectuserstatus(args, cursor)
             else:
-                print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
+                print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename)
+        else:
+            print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
 
 # end approverequest    
 
