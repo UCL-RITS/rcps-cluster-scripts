@@ -251,7 +251,7 @@ def create_user_request(cursor, args, args_dict):
     debug_cursor(cursor, args)
     # get the poc_email and add to dictionary
     cursor.execute(run_poc_email(), args_dict)
-    poc_email = cursor.fetchall()[0][0]
+    poc_email = cursor.fetchall()[0]['poc_email']
     args_dict['poc_email'] = poc_email
     # add the account creation request to the database
     cursor.execute(thomas_queries.addrequest(), args_dict)
@@ -377,7 +377,7 @@ def main(argv):
     try:
         #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
         # make sure we close the connection wherever we exit from
-        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor()) as cursor:
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor(dictionary=True)) as cursor:
             #cursor = conn.cursor()
 
             if (args.verbose or args.debug):
