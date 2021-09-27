@@ -275,6 +275,7 @@ def create_new_user(cursor, args, args_dict):
     # create the account creation request and get the request id (as a list)
     args.request = [create_user_request(cursor, args, args_dict)]
     # automated creation - go straight to approval
+    args.noemail = False
     thomas_create.approverequest(args, args_dict, cursor, thomas_utils.getnodename())
 # end create_new_user
 
