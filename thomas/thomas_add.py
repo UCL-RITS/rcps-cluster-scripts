@@ -194,16 +194,17 @@ def get_poc_id(cursor, args, args_dict):
     rows_count = cursor.rowcount
     # I am a PoC and unique
     if rows_count == 1:
-        result = dict(zip(cursor.column_names, results[0]))
+        #result = dict(zip(cursor.column_names, results[0]))
+        result = results[0]
         args_dict['poc_id'] = result['poc_id']
         return True
     # I am more than one PoC
     elif rows_count > 1:
         # pick one
-        data = []
-        # put the results into a list of dictionaries, keys being db column names.
+        data = results
+        # results are already a list of dictionaries, keys being db column names.
         for i in range(rows_count):
-            data.append(dict(list(zip(cursor.column_names, results[i]))))
+            #data.append(dict(list(zip(cursor.column_names, results[i]))))
             # while we do this, print out the results, numbered.
             print(str(i+1) + ") "+ data[i]['poc_id'] +", "+ data[i]['poc_givenname'] +" "+ data[i]['poc_surname'] +", "+ data[i]['institute'] + ", status: " + data[i]['status'])
 
@@ -222,10 +223,10 @@ def get_poc_id(cursor, args, args_dict):
     cursor.execute(thomas_queries.contactstatusinfo())
     results = cursor.fetchall()
     rows_count = cursor.rowcount
-    data = []
-    # put the results into a list of dictionaries, keys being db column names.
+    data = results
+    # results are already a list of dictionaries, keys being db column names.
     for i in range(rows_count):
-        data.append(dict(list(zip(cursor.column_names, results[i]))))
+        #data.append(dict(list(zip(cursor.column_names, results[i]))))
         # while we do this, print out the results, numbered.
         print(str(i+1) + ") "+ data[i]['poc_id'] +", "+ data[i]['poc_givenname'] +" "+ data[i]['poc_surname'] +", "+ data[i]['institute'] + ", status: " + data[i]['status'])
 
@@ -287,11 +288,11 @@ def check_dups(key_string, cursor, args, args_dict):
     if rows_count > 0:
         # We have duplicate(s). Show results and ask them to pick one or none
         print(str(rows_count) + " user(s) with this " +key_string+ " already exist:\n")
-        data = []
-        # put the results into a list of dictionaries, keys being db column names.
+        data = results
+        # With dictionary cursor, results are already a list of dicts
         for i in range(rows_count):
-            data.append(dict(list(zip(cursor.column_names, results[i]))))
-            # while we do this, print out the results, numbered.
+            #data.append(dict(list(zip(cursor.column_names, results[i]))))
+            # print out the results, numbered from 1.
             print(str(i+1) + ") "+ data[i]['username'] +", "+ data[i]['givenname'] +" "+ data[i]['surname'] +", "+ data[i]['email'] + ", created " + str(data[i]['creation_date']))
 
         # make a string list of options, counting from 1 and ask the user to pick one
