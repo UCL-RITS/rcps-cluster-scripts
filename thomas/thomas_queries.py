@@ -49,7 +49,8 @@ def addinstitute():
 # add a new account request
 def addrequest():
     query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
-                 ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, creation_date=now()""")
+                 ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, 
+                 creation_date=now()""")
     return query
 
 ###############################################
