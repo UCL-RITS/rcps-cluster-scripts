@@ -75,8 +75,25 @@ if [ "${become_output:0:6}" != "Beacon" ]; then
 fi
 
 # add user to ACL so they can log in and submit jobs
-echo "Allowing ${username} to log in"
 qconf -au $username $ACL
+
+# check that the qconf change actually worked!
+# Try 3 times.
+for i in 1 2 3
+do
+  qconf -su "$ACL" | grep -q "$username"
+  if [ $? == 0 ]
+  then
+      echo "Successfully allowed ${username} to log in"
+  elif [ $i < 3 ]
+  # failed, try again
+  then
+      sleep 5
+  else
+    echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk"
+    exit 1
+  fi
+done
 
 # add user to michael-users mailing list
 echo "Emailing ${michael_users} to add ${email}"
