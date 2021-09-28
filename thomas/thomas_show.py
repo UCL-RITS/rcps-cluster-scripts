@@ -63,8 +63,9 @@ def getargs(argv):
  
     # the arguments for subcommand requests
     requests = subparsers.add_parser("requests", help="Show account requests (default is all pending requests)")
-    requests.add_argument("--pending", help="Show all pending requests", action='store_true')
+    requests.add_argument("--pending", help="Show all (non-test) pending requests", action='store_true')
     requests.add_argument("--all", help="Show all requests", action='store_true')
+    requests.add_argument("--test", help="Show test requests", action='store_true')
 
     # to choose the number of requests to show, including a default,
     # it seems we need another subparser
@@ -184,6 +185,9 @@ def showrequests(cursor, args, args_dict, printoutput):
         results = allrequests(cursor).fetchall()
     elif (args.requestsubcommand == "recent"):
         results = recentrequests(cursor, args_dict).fetchall()
+    elif(args.requestsubcommand == "test"):
+        cursor.execute(thomas_queries.pendingtestrequests(), args_dict)
+        results = cursor.fetchall()
     # if pending or not specified, show pending
     else: 
         results = pendingrequests(cursor).fetchall()

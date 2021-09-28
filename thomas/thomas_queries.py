@@ -223,13 +223,26 @@ def whoisuser():
 
 # Get all pending account requests and also display the user's names. 
 # ('is not true' will pick up any nulls, though there shouldn't be any).
+# Ignore the open test request ids 7,8,10,11,778
 def pendingrequests():
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
                   approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
-                WHERE isdone IS NOT TRUE""")
+                WHERE isdone IS NOT TRUE
+                  AND id NOT IN (7, 8, 10, 11, 778)""")
+    return query
+
+# For testing: get the open test request ids 7,8,10,11,778
+def pendingtestrequests():
+    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
+                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
+                  approver, cluster, requests.creation_date, requests.modification_date 
+                FROM requests
+                  INNER JOIN users ON requests.username = users.username
+                WHERE isdone IS NOT TRUE
+                  AND id IN (7, 8, 10, 11, 778)""")
     return query
 
 # Get all existing requests and also display the user's names.
