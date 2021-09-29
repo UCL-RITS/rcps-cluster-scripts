@@ -34,8 +34,8 @@ def getargs():
     userparser.add_argument("-b", "--cc", dest="cc_email", help="CC the welcome email to this address")
     userparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
-    userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
-    
+    userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')    
+
     # Used when request(s) exists in the thomas database and we get the input from there
     # Requires at least one id to be provided. request is a list.
     requestparser = subparsers.add_parser("request")
@@ -43,6 +43,10 @@ def getargs():
     requestparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     requestparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
     requestparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
+
+    # For automation - get all pending non-test requests and carry them out.
+    autoparser = subparsers.add_parser("automate", help="Carry out any pending non-test requests.")
+    autoparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # Show the usage if no arguments are supplied
     if len(sys.argv[1:]) < 1:
@@ -192,6 +196,16 @@ def approverequest(args, args_dict, cursor, nodename):
 
 # end approverequest    
 
+def automaterequests(args, args_dict, cursor, nodename):
+    # Get all pending request ids as a list, approve them.
+    cursor.execute(thomas_queries.pendingrequests())
+    thomas_utils.debugcursor(cursor, args.debug)
+    results = cursor.fetchall()
+    args.request = set(row['id']) for row in results
+    approverequest(args, args_dict, cursor, nodename)
+
+# end automaterequests
+
 if __name__ == "__main__":
 
     # check we are on an MMM Hub cluster before continuing.
@@ -224,7 +238,8 @@ if __name__ == "__main__":
         #cursor = conn.cursor(dictionary=True)
         # make sure we close the connection wherever we exit from
         with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor(dictionary=True)) as cursor:
-            # Either create a user from scratch or approve an existing request
+            # Create a user from scratch, approve given request(s), or automate
+            # all existing requests.
             if (args.subcommand == "user"):
                 # UCL user validation - if this is a UCL email, make sure username was given 
                 # and that it wasn't an mmm one.
@@ -232,7 +247,8 @@ if __name__ == "__main__":
                 create_and_add_user(args, args_dict, cursor, nodename)
             elif (args.subcommand == "request"):
                 approverequest(args, args_dict, cursor, nodename)
- 
+            elif (args.subcommand == "automate"):
+                automaterequests(args, args_dict, cursor, nodename)
             # commit the change to the database unless we are debugging
             if (not args.debug):
                 conn.commit()
