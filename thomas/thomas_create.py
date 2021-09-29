@@ -201,7 +201,7 @@ def automaterequests(args, args_dict, cursor, nodename):
     cursor.execute(thomas_queries.pendingrequests())
     thomas_utils.debugcursor(cursor, args.debug)
     results = cursor.fetchall()
-    args.request = set(row['id']) for row in results
+    args.request = set(row['id'] for row in results)
     approverequest(args, args_dict, cursor, nodename)
 
 # end automaterequests
