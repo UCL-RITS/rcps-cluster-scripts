@@ -185,7 +185,7 @@ def showrequests(cursor, args, args_dict, printoutput):
         results = allrequests(cursor).fetchall()
     elif (args.requestsubcommand == "recent"):
         results = recentrequests(cursor, args_dict).fetchall()
-    elif (args.requestsubcommand == "test"):
+    elif (args.test):
         cursor.execute(thomas_queries.pendingtestrequests())
         results = cursor.fetchall()
     # if pending or not specified, show pending
