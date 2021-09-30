@@ -46,6 +46,7 @@ def getargs():
 
     # For automation - get all pending non-test requests and carry them out.
     autoparser = subparsers.add_parser("automate", help="Carry out any pending non-test requests.")
+    autoparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     autoparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # Show the usage if no arguments are supplied
