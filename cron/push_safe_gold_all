@@ -1,4 +1,11 @@
 #!/bin/bash
+
+##### Cron job we used for this:
+# Upload all allocations once a day, gets the final values for those expired at midnight.
+#SHELL="/bin/bash"
+#MAILTO="somewhere@ucl.ac.uk"
+#10 0 * * * OUTPUT=$(/shared/ucl/apps/cluster-scripts/cron/push_safe_gold_all -set all 2>&1) || echo "$OUTPUT" | mail -s "push_safe_gold_all: Failed to upload Gold" $MAILTO
+
 cd /home/$USER
 source /etc/profile.d/modules.sh
 module load gcc-libs/4.9.2
