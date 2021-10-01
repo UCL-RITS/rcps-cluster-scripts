@@ -68,7 +68,7 @@ def createaccount(args, nodename):
     elif ("young" in nodename):
         create_args = ['createYounguser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
     else:
-        print("You do not appear to be on a supported cluster: nodename is "+nodename)
+        print("You do not appear to be on a supported cluster: nodename is "+nodename, file=sys.stderr)
         exit(1)
 
     if (args.cc_email != None):
@@ -191,7 +191,7 @@ def approverequest(args, args_dict, cursor, nodename):
                 updateuserstatus(args, cursor)
                 updateprojectuserstatus(args, cursor)
             else:
-                print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename)
+                print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename, file=sys.stderr)
         else:
             print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
 
@@ -256,11 +256,11 @@ if __name__ == "__main__":
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Access denied: Something is wrong with your user name or password")
+            print("mysql.connector.Error: Access denied. Something is wrong with your user name or password.", file=sys.stderr)
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
+            print("mysql.connector.Error: Database does not exist.", file=sys.stderr)
         else:
-            print(err)
+            print(err, file=sys.stderr)
     else:
         cursor.close()
         conn.close()
