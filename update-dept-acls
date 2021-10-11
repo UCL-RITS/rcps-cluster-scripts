@@ -258,16 +258,20 @@ function main() {
             fi
 
             if [[ "$skip_adding_users_to_sge" == "false" ]]; then
-                if [[ "$wipe_acls_first" == "true" ]]; then
-                    tslog "removing all users from ACL: $dept_acl_name"
-                    wipe_acl "$dept_acl_name"
+                if [[ "$dept_acl_name" == "" ]]; then
+                    tslog "no ACL name, skipping ACL step"
+                else
+                    if [[ "$wipe_acls_first" == "true" ]]; then
+                        tslog "removing all users from ACL: $dept_acl_name"
+                        wipe_acl "$dept_acl_name"
+                    fi
+                    tslog "adding to ACL: ${dept_acl_name}"
+                    echo "$expanded_spec" \
+                        | grep -v '^#' \
+                        | sort -u \
+                        | subtract_acl "${dept_acl_name}" \
+                        | pipe_users_to_acl "${dept_acl_name}"
                 fi
-                tslog "adding to ACL: ${dept_acl_name}"
-                echo "$expanded_spec" \
-                    | grep -v '^#' \
-                    | sort -u \
-                    | subtract_acl "${dept_acl_name}" \
-                    | pipe_users_to_acl "${dept_acl_name}"
             else
                 tslog "skipping SGE ACL changes"
             fi
@@ -307,6 +311,7 @@ documented_example_input_file='# Format goes:
 #
 # And you can put comments with leading # as first character of line.
 # All specs are intersected with the full list of users.
+# SGE ACL field can be empty.
 
 economics:Economics:@economics-all,%ccsprci,%ccsprcop,ccspapp,=RGVwdCBvZiBFY29ub21pY3MK
 biosciences:Bioscientists:@biosci-all
