@@ -250,9 +250,13 @@ function main() {
             tslog "expanded spec to $es_num_users users ($es_distinct distinct)"
 
             if [[ "$skip_text_list_gen" == "false" ]]; then
-                tslog "writing to text file: ${dept_label}_users.txt"
-                echo "$expanded_spec" \
-                    | header_tee "${path_for_text_files}/${dept_label}_users.txt" >/dev/null
+                if [[ "$dept_label" == "" ]]; then
+                    tslog "no listfile label, skipping listfile generation"
+                else
+                    tslog "writing to text file: ${dept_label}_users.txt"
+                    echo "$expanded_spec" \
+                        | header_tee "${path_for_text_files}/${dept_label}_users.txt" >/dev/null
+                fi
             else
                 tslog "skipping text user list generation"
             fi
@@ -311,7 +315,7 @@ documented_example_input_file='# Format goes:
 #
 # And you can put comments with leading # as first character of line.
 # All specs are intersected with the full list of users.
-# SGE ACL field can be empty.
+# Text file label and SGE ACL field can both be empty.
 
 economics:Economics:@economics-all,%ccsprci,%ccsprcop,ccspapp,=RGVwdCBvZiBFY29ub21pY3MK
 biosciences:Bioscientists:@biosci-all
