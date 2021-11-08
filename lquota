@@ -4,7 +4,8 @@ trap callstack ERR
 
 set -o errexit \
     -o nounset \
-    -o pipefail
+    -o pipefail \
+    -o errtrace
 
 
 clustername="$(/shared/ucl/sysops/libexec/clustname)"
@@ -167,7 +168,8 @@ function print_user_quota_for_poolkvs() {
     local usage_pc
     local pool_name
     local pool_path
-    local warn_user="n"
+    local warn_user_about_space="n"
+    local lfs_accuracy_error="n"
     local -a pools_approaching_limit
     local -a pools_over_limit
     if [[ -z "$global_quiet_mode" ]]; then
@@ -176,23 +178,38 @@ function print_user_quota_for_poolkvs() {
     for poolkv in "${poolkvs[@]}"; do
           pool_name="${poolkv%%=*}"
           pool_path="${poolkv#*=}"
+
           usage_kb="$(_get_user_quota_usage "$username" "$pool_path")"
+          # If lfs encounters an error, it returns the numbers in brackets[]
+          if [[ "$usage_kb" =~ ^\[[0-9]+\]$ ]]; then
+              usage_kb="${usage_kb//[\[\]]/}"
+              lfs_accuracy_error="y"
+              msg debug "lfs returned usage in brackets, indicating error";
+          fi
+
           quota_kb="$(_get_user_quota       "$username" "$pool_path")"
+          # If lfs encounters an error, it returns the numbers in brackets[]
+          if [[ "$quota_kb" =~ ^\[[0-9]+\]$ ]]; then
+              quota_kb="${usage_kb//[\[\]]/}"
+              lfs_accuracy_error="y"
+              msg debug "lfs returned quota in brackets, indicating error";
+          fi
+
           human_usage="$(raw_kb_to_human_size "$usage_kb")"
           human_quota="$(raw_kb_to_human_size "$quota_kb")"
           usage_pc="$(( (usage_kb * 100) / quota_kb ))"
 
           printf "%*s  %*s   %*s   %5d%%   %s\n" 12 "$pool_name" 10 "$human_usage" 10 "$human_quota" "$usage_pc" "$pool_path"
           if [[ "$usage_pc" -ge 90 ]] && [[ "$usage_pc" -le 100 ]]; then
-              warn_user="y"
+              warn_user_about_space="y"
               pools_approaching_limit+=("$pool_name")
           fi
           if [[ "$usage_pc" -gt 100 ]]; then
-              warn_user="y"
+              warn_user_about_space="y"
               pools_over_limit+=("$pool_name")
           fi
     done
-    if [[ -z "$global_quiet_mode" ]] && [[ "$warn_user" != "n" ]]; then
+    if [[ -z "$global_quiet_mode" ]] && [[ "$warn_user_about_space" != "n" ]]; then
         printf "\n"
         if [[ "${#pools_approaching_limit[@]}" -gt 0 ]]; then
             for pool_name in "${pools_approaching_limit[@]}"; do
@@ -204,6 +221,15 @@ function print_user_quota_for_poolkvs() {
                 printf "Warning: data in %s exceeds the quota limit.\n" "$pool_name"
             done
         fi
+    fi
+    if [[ -z "$global_quiet_mode" ]] && [[ "$lfs_accuracy_error" == "y" ]]; then
+        printf "Warning: system errors were reported while obtaining data. Quantities may not be accurate.\n"
+        printf "\n"
+    fi
+    if [[ "$lfs_accuracy_error" == "y" ]]; then
+        return 1
+    else
+        return 0
     fi
 }
 
@@ -218,7 +244,8 @@ function print_project_quota_for_poolkvs() {
     local usage_pc
     local pool_name
     local pool_path
-    local warn_user="n"
+    local warn_user_about_space="n"
+    local lfs_accuracy_error="n"
     local -a pools_approaching_limit
     local -a pools_over_limit
     if [[ -z "$global_quiet_mode" ]]; then
@@ -227,25 +254,40 @@ function print_project_quota_for_poolkvs() {
     for poolkv in "${poolkvs[@]}"; do
           pool_name="${poolkv%%=*}"
           pool_path="${poolkv#*=}"
+
           msg debug "calling _get_project_quota_usage \"$pool_path\""
           usage_kb="$(_get_project_quota_usage "$pool_path")"
+          # If lfs encounters an error, it returns the numbers in brackets[]
+          if [[ "$usage_kb" =~ ^\[[0-9]+\]$ ]]; then
+              usage_kb="${usage_kb//[\[\]]/}"
+              lfs_accuracy_error="y"
+              msg debug "lfs returned usage in brackets, indicating error";
+          fi
+
           msg debug "calling _get_project_quota \"$pool_path\""
           quota_kb="$(_get_project_quota       "$pool_path")"
+          # If lfs encounters an error, it returns the numbers in brackets[]
+          if [[ "$quota_kb" =~ ^\[[0-9]+\]$ ]]; then
+              quota_kb="${quota_kb//[\[\]]/}"
+              lfs_accuracy_error="y"
+              msg debug "lfs returned quota in brackets, indicating error";
+          fi
+
           human_usage="$(raw_kb_to_human_size "$usage_kb")"
           human_quota="$(raw_kb_to_human_size "$quota_kb")"
           usage_pc="$(( (usage_kb * 100) / quota_kb ))"
 
           printf "%*s  %*s   %*s   %5d%%   %s\n" 12 "$pool_name" 10 "$human_usage" 10 "$human_quota" "$usage_pc" "$pool_path"
           if [[ "$usage_pc" -ge 90 ]] && [[ "$usage_pc" -le 100 ]]; then
-              warn_user="y"
+              warn_user_about_space="y"
               pools_approaching_limit+=("$pool_name")
           fi
           if [[ "$usage_pc" -gt 100 ]]; then
-              warn_user="y"
+              warn_user_about_space="y"
               pools_over_limit+=("$pool_name")
           fi
     done
-    if [[ -z "$global_quiet_mode" ]] && [[ "$warn_user" != "n" ]]; then
+    if [[ -z "$global_quiet_mode" ]] && [[ "$warn_user_about_space" != "n" ]]; then
         printf "\n"
         if [[ "${#pools_approaching_limit[@]}" -gt 0 ]]; then
             for pool_name in "${pools_approaching_limit[@]}"; do
@@ -258,7 +300,17 @@ function print_project_quota_for_poolkvs() {
             done
         fi
         printf "Programs will fail to write data if there is no space remaining.\n"
+        
         printf "\n"
+    fi
+    if [[ -z "$global_quiet_mode" ]] && [[ "$lfs_accuracy_error" == "y" ]]; then
+        printf "Warning: system errors were reported while obtaining data. Quantities may not be accurate.\n"
+        printf "\n"
+    fi
+    if [[ "$lfs_accuracy_error" == "y" ]]; then
+        return 1
+    else
+        return 0
     fi
 }
 
@@ -503,7 +555,8 @@ function __main() {
     fi
 
     if [[ "$#" -eq 0 ]]; then
-        local user="$(whoami)"
+        local user
+              user="$(whoami)"
         check_user_exists "$user"
         local op_mode="display"
     fi
@@ -534,10 +587,10 @@ function __main() {
         done
         if [[ "$quota_mode" == "user" ]]; then
             msg debug "calling: print_project_quota_for_paths \"$user\" ${subst_pools[*]@Q}"
-            print_user_quota_for_poolkvs "$user" "${subst_pools[@]}"
+            print_user_quota_for_poolkvs "$user" "${subst_pools[@]}" || exit 1
         elif [[ "$quota_mode" == "project" ]]; then
             msg debug "calling: print_project_quota_for_paths ${subst_pools[*]@Q}"
-            print_project_quota_for_poolkvs "${subst_pools[@]}"
+            print_project_quota_for_poolkvs "${subst_pools[@]}" || exit 1 
         fi
     else 
         msg fatal "Invalid op_mode: $op_mode"
