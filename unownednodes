@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-declare -A nodes
-declare -A owned_nodes
-declare -A online_nodes
-declare -A unowned_nodes
+declare -iA nodes
+declare -iA owned_nodes
+declare -iA online_nodes
+declare -iA unowned_nodes
 for l in $(qhost \
             | grep -o node-. \
             | uniq -c \
