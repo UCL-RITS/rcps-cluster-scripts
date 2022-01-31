@@ -68,6 +68,16 @@ for (( access_group_index=0; access_group_index < "${#sge_access_groups[@]}"; ac
     fi
 done
 
+echo -n "Checking whether user is in the actual PAM userlist: "
+pam_listfile="/var/opt/sge/shared/userlist"
+if [[ ! -r "$pam_listfile" ]]; then
+    echo "${RED}error${RESET}"
+fi
+if grep "^$username\$" "$pam_listfile" >/dev/null; then
+    echo "${GREEN}yes${RESET}"
+else
+    echo "${RED}no${RESET}"
+fi
 
 echo -n "Checking whether user has been blocked from submitting jobs: "
 if qconf -su NoSubmission 2>/dev/null >/dev/null
