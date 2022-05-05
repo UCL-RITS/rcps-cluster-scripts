@@ -1,8 +1,8 @@
 #!/bin/bash
 
 source "/etc/profile.d/modules.sh"
-# We need to use a 4.x release for this or the redirection doesn't work. (Or is different, at least.)
-source "/shared/ucl/apps/modules/4.3.0/init/bash"
+# Modules version 5.1.0 adds the redirection option we need to make this consistent
+source "/shared/ucl/apps/modules/5.1.0/init/bash"
 
 module load --auto python3/recommended 2>/dev/null >/dev/null
 
@@ -14,8 +14,7 @@ temp_file_dir="$(mktemp -d)"
 
 
 # This does an extremely dodgy YAML conversion.
-export MODULES_PAGER=cat
-module whatis --paginate \
+module whatis --redirect --no-pager \
     | grep -e ':' -e '---' \
     | sed -e 's/"/\\"/g' \
           -e 's/^ *//' \
