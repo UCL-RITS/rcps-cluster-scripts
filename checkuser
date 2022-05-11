@@ -11,7 +11,7 @@ BLUE="$(tput setaf 4)"
 RED="$(tput setaf 1)"
 RESET="$(tput sgr0)"
 
-if [[ "$username" =~ ^[a-z0-9.]+@ucl\.ac\.uk$ ]]; then
+if [[ "$username" =~ ^[^[:space:]]+@ucl\.ac\.uk$ ]]; then
     echo "${RED}Warning: this username looks like an email address.${RESET}"
     echo "${RED}         It will be checked and converted.${RESET}"
 
