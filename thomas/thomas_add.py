@@ -164,7 +164,7 @@ Requests can then be approved by running '""" + args.cluster + """-create reques
 """)
 
     msg = MIMEText(body)
-    msg["From"] = "rc-support@ucl.ac.uk"
+    msg["From"] = "service-management-noreply@ucl.ac.uk"
     msg["To"] = "rc-support@ucl.ac.uk"
     msg["Subject"] = args.cluster.capitalize() + " account request"
     if (args.debug):
