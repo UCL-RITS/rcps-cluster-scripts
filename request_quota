@@ -30,9 +30,10 @@ if [[ "$prompt_result" != "y" ]]; then exit; fi
 echo ""
 
 # request is being sent, email rc-support.
+# Use the noreply address as source to avoid ticket loops in RemedyForce.
 echo "Emailing rc-support@ucl.ac.uk with this request."
 /usr/sbin/sendmail -t<<EOF
-From: rc-support@ucl.ac.uk
+From: service-management-noreply@ucl.ac.uk
 To: rc-support@ucl.ac.uk
 Subject: Quota request for ${USER} on ${cluster^}
 
