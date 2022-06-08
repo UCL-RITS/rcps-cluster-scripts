@@ -60,17 +60,24 @@ then
 fi
 
 # become user, create ssh directory and add key
-echo "Becoming ${username}, creating ssh dir and adding key"
-become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
-echo "Beacon"
-mkdir -p .ssh
-chmod go-rwx .ssh
-echo "${ssh_key}" >> ~/.ssh/authorized_keys
-EOF
-)
-become_exit_status=$?
-if [ "${become_output:0:6}" != "Beacon" ]; then
-  echo "Error: could not become user ${username}" >&2
+#echo "Becoming ${username}, creating ssh dir and adding key"
+#become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
+#echo "Beacon"
+#mkdir -p .ssh
+#chmod go-rwx .ssh
+#echo "${ssh_key}" >> ~/.ssh/authorized_keys
+#EOF
+#)
+#become_exit_status=$?
+#if [ "${become_output:0:6}" != "Beacon" ]; then
+#  echo "Error: could not become user ${username}" >&2
+#  exit 1
+#fi
+
+# replacement for become - creates homedir and adds key
+if ! sudo /shared/ucl/sysops/libexec/add_sshkeys "${username}" "${ssh_key}"
+then
+  echo "Creation of "${username}" homedir or addition of key failed, exiting."
   exit 1
 fi
 
