@@ -213,11 +213,11 @@ def main(argv):
                 conn.commit()
 
             # Databases are updated, now email rc-support unless nosupportemail is set
-            if (args.subcommand == "user" and args.nosupportemail == False):
+            #if (args.subcommand == "user" and args.nosupportemail == False):
                 # get the last id added (which is from the requests table)
                 # this has to be run after the commit
-                last_id = cursor.lastrowid
-                contact_rc_support(args, last_id)
+                #last_id = cursor.lastrowid
+                #contact_rc_support(args, last_id)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
