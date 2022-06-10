@@ -163,7 +163,7 @@ fi
 
 echo -n "Checking whether home directory has standard permissions: "
 perms="$(stat --printf=%A "/home/${username}" 2>/dev/null)"
-if [[ "${perms}" != "drwx------" ]];
+if [[ "${perms}" == "drwx------" ]];
 then
     echo "${GREEN}yes${RESET}"
 else 
