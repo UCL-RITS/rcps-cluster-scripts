@@ -142,7 +142,7 @@ echo -n "Checking whether home directory is usable by owner: "
 perms="$(stat --printf=%A "/home/${username}" 2>/dev/null)"
 if [[ "${perms:1:3}" =~ rwx ]];
 then
-    echo  "${GREEN}yes${RESET}"
+    echo "${GREEN}yes${RESET}"
 else 
     echo "${RED}no: perms are ${perms}${RESET}"
 fi
@@ -159,6 +159,15 @@ then
     fi
 else
     echo "${BLUE}skipped${RESET}"
+fi
+
+echo -n "Checking whether home directory has standard permissions: "
+perms="$(stat --printf=%A "/home/${username}" 2>/dev/null)"
+if [[ "${perms}" != "drwx------" ]];
+then
+    echo "${GREEN}yes${RESET}"
+else 
+    echo "${RED}no: perms are ${perms}${RESET}"
 fi
 
 echo ""
