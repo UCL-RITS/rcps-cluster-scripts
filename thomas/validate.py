@@ -51,7 +51,7 @@ def ucl_user(email, username):
 # Check that this MMM username is in the range we have created
 def mmm_username_in_range(username):
     # the highest mmm account currently existing
-    MAX_ACCOUNT_NO = 1200
+    MAX_ACCOUNT_NO = 1800
     prefix="mmm"
     if username.startswith(prefix):
         number = int(username[len(prefix):])
