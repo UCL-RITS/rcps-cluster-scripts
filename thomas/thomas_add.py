@@ -32,7 +32,7 @@ class ValidateUser(argparse.Action):
 # end class ValidateUser
 
 def getargs(argv):
-    parser = argparse.ArgumentParser(description="Add data to the Thomas database. Use [positional argument -h] for more help.")
+    parser = argparse.ArgumentParser(description="Add data to the MMM user database. Use [positional argument -h] for more help.")
     # store which subparser was used in args.subcommand
     subparsers = parser.add_subparsers(dest="subcommand")
 
@@ -108,53 +108,10 @@ def nextmmm():
     mmm_string = '{0:04}'.format(mmm_int)
     return 'mmm' + mmm_string
 
-# query to run for 'user' subcommand
-# the values are inserted by cursor.execute from args.dict
-#def run_user(surname):
-#    query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-#             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
-#    if (surname != None):
-#        query += ", surname=%(surname)s"
-#    return query
-
-# query to run for 'user' and 'projectuser' subcommands
-#def run_projectuser():
-#    query = ("""INSERT INTO projectusers SET username=%(username)s, """
-#             """project=%(project_ID)s, poc_id=%(poc_id)s, status=%(status)s, creation_date=now()""")
-#    return query
-
-# query to run for 'project' subcommand
-#def run_project():
-#    query = ("""INSERT INTO projects SET project=%(project_ID)s,  """
-#             """institute_id=%(inst_ID)s, creation_date=now()""")
-#    return query
-
-# query to run for 'poc' subcommand
-#def run_poc(surname, username):
-#    query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
-#             """poc_givenname=%(given_name)s, poc_email=%(email)s,  """
-#             """institute=%(inst_ID)s, status=%(status)s, creation_date=now()""")
-#    if (surname != None):
-#        query += ", poc_surname=%(surname)s"
-#    if (username != None):
-#        query += ", username=%(username)s"
-#    return query
-
-# query to run for 'institute' subcommand
-#def run_institute():
-#    query = ("""INSERT INTO institutes SET inst_id=%(inst_ID)s, name=%(institute)s, """
-#             """creation_date=now()""") 
-#    return query
-
-#def run_addrequest():
-#    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
-#             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, creation_date=now() """)
-#    return query
-
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
 # By default, assumes this is not a CSV multi-user creation (csv and num are optional).
-# NOT CURRENTLY CALLED
+# NOT CURRENTLY CALLED - REMOVED BY AUTOMATION
 def contact_rc_support(args, request_id, csv='no', num=1):
     if csv == 'no':
         body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.""")
