@@ -26,15 +26,15 @@ while getopts ":hu:e:k:nm:c:" opt; do
       ;;
     u)
       username="$OPTARG"
-      echo "Username: $username"
+      #echo "Username: $username"
       ;;
     e)
       email="$OPTARG"
-      echo "Email: $email"
+      #echo "Email: $email"
       ;;
     k)
       ssh_key="$OPTARG"
-      echo "ssh key: $ssh_key"
+      #echo "ssh key: $ssh_key"
       ;;
     n)
       do_not_mail="y"
