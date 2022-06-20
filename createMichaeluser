@@ -104,7 +104,7 @@ do
 done
 
 # add user to michael-users mailing list
-echo "Emailing ${michael_users} to add ${email}"
+echo "  Emailing ${michael_users} to add ${email}"
 /usr/sbin/sendmail -t<<EOF
 From: ${mailing_requestor}
 To: ${michael_users}
@@ -115,7 +115,7 @@ EOF
 # email welcome to user, unless do_not_mail was set
 if [ ! "$do_not_mail" ] 
 then
-  echo "Emailing user ${username} at ${email}"
+  echo "  Emailing user ${username} at ${email}"
   /usr/sbin/sendmail -t<<EOF
 From: rc-support@ucl.ac.uk
 To: ${email}
