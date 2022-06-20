@@ -91,6 +91,7 @@ do
   qconf -su "$ACL" | grep -q "$username"
   if [ $? == 0 ]
   then
+    echo ""
     echo "Successfully allowed ${username} to log in"
     break
   elif [ $i < 3 ]
