@@ -84,11 +84,12 @@ do
   qconf -su "$ACL" | grep -q "$username"
   if [ $? == 0 ]
   then
-      echo "Successfully allowed ${username} to log in"
+    echo "Successfully allowed ${username} to log in"
+    break
   elif [ $i < 3 ]
   # failed, try again
   then 
-      sleep 5
+    sleep 5
   else
     echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk"
     exit 1
