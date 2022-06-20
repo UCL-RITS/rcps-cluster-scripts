@@ -41,6 +41,7 @@ def getargs(argv):
     csvparser.add_argument("-f", "--file", dest="csvfile", help="Path to CSV file of users", required=True)
     csvparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     csvparser.add_argument("--debug", help="Show SQL queries submitted without committing the changes", action='store_true')
+    csvparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
     # the arguments for subcommand 'user'
     userparser = subparsers.add_parser("user", help="Adding a new user with their initial project")
@@ -55,6 +56,7 @@ def getargs(argv):
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
     #userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    userparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
     # the arguments for subcommand 'project'
     projectparser = subparsers.add_parser("project", help="Adding a new project")
@@ -62,6 +64,7 @@ def getargs(argv):
     projectparser.add_argument("-i", "--institute", dest="inst_ID", help="Institute ID this project belongs to", required=True)
     projectparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    projectparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
     # the arguments for subcommand 'projectuser'
     projectuserparser = subparsers.add_parser("projectuser", help="Adding a new user-project-contact relationship")
@@ -70,6 +73,7 @@ def getargs(argv):
     projectuserparser.add_argument("-c", "--contact", dest="poc_id", help="An existing Point of Contact ID", required=True)
     parser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectuserparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    projectuserparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
     # the arguments for subcommand 'poc'
     pocparser = subparsers.add_parser("poc", help="Adding a new Point of Contact")
@@ -81,6 +85,7 @@ def getargs(argv):
     pocparser.add_argument("-u", "--user", dest="username", help="The PoC's UCL username (optional)", action=ValidateUser)
     pocparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     pocparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    pocparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
     # the arguments for subcommand 'institute'
     instituteparser = subparsers.add_parser("institute", help="Adding a new institute/consortium")
@@ -88,6 +93,7 @@ def getargs(argv):
     instituteparser.add_argument("-n", "--name", dest="institute", help="Full name of institute/consortium", required=True)
     instituteparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     instituteparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    instituteparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
     # Show the usage if no arguments are supplied
     if len(argv) < 1:
@@ -113,6 +119,8 @@ def nextmmm():
 # By default, assumes this is not a CSV multi-user creation (csv and num are optional).
 # NOT CURRENTLY CALLED - REMOVED BY AUTOMATION
 def contact_rc_support(args, request_id, csv='no', num=1):
+    if (args.livedebug):
+        print("-- start thomas_add.contact_rc_support")
     if csv == 'no':
         body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.""")
     else:
@@ -144,6 +152,8 @@ def run_poc_email():
 
 # get poc_id of submitter, or prompt to pick one
 def get_poc_id(cursor, args, args_dict):
+    if (args.livedebug):
+        print("-- start thomas_add.get_poc_id")
     me = os.environ.get('USER')
     # check if I am a PoC
     cursor.execute(thomas_queries.findpocbyusername(), {'username': me})
@@ -202,6 +212,8 @@ def get_poc_id(cursor, args, args_dict):
 
 # everything needed to create a new account creation request
 def create_user_request(cursor, args, args_dict):
+    if (args.livedebug):
+        print("-- start thomas_add.create_user_request")
     # projectusers status is pending until the request is approved
     args_dict['status'] = "pending"
     # add a project-user entry for the user
@@ -221,6 +233,8 @@ def create_user_request(cursor, args, args_dict):
 
 # everything needed to create a new user
 def create_new_user(cursor, args, args_dict):
+    if (args.livedebug):
+        print("-- start thomas_add.create_new_user")
     # if no username was specified, get the next available mmm username
     if (args.username == None or args_dict['username'] == ''):
         args.username = nextmmm()
@@ -240,6 +254,8 @@ def create_new_user(cursor, args, args_dict):
 
 # Check for duplicate users by key: email or username
 def check_dups(key_string, cursor, args, args_dict):
+    if (args.livedebug):
+        print("-- start thomas_add.check_dups")
     cursor.execute(thomas_queries.findduplicate(key_string), args_dict)
     results = cursor.fetchall()
     rows_count = cursor.rowcount
@@ -288,7 +304,8 @@ def check_dups(key_string, cursor, args, args_dict):
 # run all this when someone tries to create a new user
 # for now we are assuming the creation request was done on the correct cluster
 def new_user(cursor, args, args_dict):
-
+    if (args.livedebug):
+        print("-- start thomas_add.new_user")
     # if there was no duplicate username check for duplicate email
     if not check_dups("username", cursor, args, args_dict):
         if not check_dups("email", cursor, args, args_dict):
