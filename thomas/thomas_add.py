@@ -39,6 +39,7 @@ def getargs(argv):
     # the arguments for subcommand 'csv'
     csvparser = subparsers.add_parser("csv", help="Add all users from the provided CSV file")
     csvparser.add_argument("-f", "--file", dest="csvfile", help="Path to CSV file of users", required=True)
+    csvparser.add_argument("--noconfirm", help="Don't ask for confirmation on user account creation", action='store_true')
     csvparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     csvparser.add_argument("--debug", help="Show SQL queries submitted without committing the changes", action='store_true')
     csvparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
@@ -52,6 +53,7 @@ def getargs(argv):
     userparser.add_argument("-k", "--key", dest="ssh_key", help="User's public ssh key (quotes necessary)", required=True)
     userparser.add_argument("-p", "--project", dest="project_ID", help="Initial project the user belongs to", required=True)
     userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
+    userparser.add_argument("--noconfirm", help="Don't ask for confirmation on user account creation", action='store_true')
     userparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
     #userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
@@ -241,7 +243,14 @@ def create_new_user(cursor, args, args_dict):
         args_dict['username'] = args.username
     # users status is pending until the request is approved
     args_dict['status'] = "pending"
-    # insert new user into users table
+    # confirm that info is ok unless --noconfirm is set
+    if not args.noconfirm:
+        if not thomas_utils.are_you_sure("\nDo you want to create and activate the user account with this information? \n    Username: "+args.username+"\n    Email: "+args.email+ "\n    SSH key: "+args.ssh_key+"\n"):
+            print("Entry rejected: doing nothing and exiting.")
+            exit(0)
+  
+    print("")
+    # insert new user into users table      
     cursor.execute(thomas_queries.adduser(args.surname), args_dict)
     debug_cursor(cursor, args)
     # create the account creation request and get the request id (as a list)
