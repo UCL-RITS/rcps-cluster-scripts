@@ -34,6 +34,7 @@ def getargs():
     userparser.add_argument("-b", "--cc", dest="cc_email", help="CC the welcome email to this address")
     userparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    userparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')    
 
     # Used when request(s) exists in the thomas database and we get the input from there
@@ -42,12 +43,14 @@ def getargs():
     requestparser.add_argument("request", nargs='+', type=int, help="The request id(s) to carry out, divided by spaces")
     requestparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     requestparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    requestparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
     requestparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
 
     # For automation - get all pending non-test requests and carry them out.
     autoparser = subparsers.add_parser("automate", help="Carry out any pending non-test requests.")
     autoparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     autoparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
+    autoparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
     # Show the usage if no arguments are supplied
     if len(sys.argv[1:]) < 1:
@@ -61,6 +64,8 @@ def getargs():
 
 # Activate account on cluster and add user's key
 def createaccount(args, nodename):
+    if (args.livedebug):
+        print("-- start thomas_create.createaccount")
     if ("thomas" in nodename):
         create_args = ['createThomasuser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
     elif ("michael" in nodename):
@@ -84,6 +89,8 @@ def createaccount(args, nodename):
 
 # Check for duplicate users by key: email or username
 def check_dups(key_string, cursor, args, args_dict):
+    if (args.livedebug):
+        print("-- start thomas_create.check_dups")
     cursor.execute(thomas_queries.findduplicate(key_string), args_dict)
     results = cursor.fetchall()
     rows_count = cursor.rowcount
@@ -115,7 +122,8 @@ def check_dups(key_string, cursor, args, args_dict):
 # end check_dups
 
 def create_and_add_user(args, args_dict, cursor, nodename):
-
+    if (args.livedebug):
+        print("-- start thomas_create.create_and_add_user")
     # check the cluster matches the project
     thomas_utils.checkprojectoncluster(args.project_ID, nodename)
     # if nosshverify is not set, verify the ssh key
@@ -142,24 +150,31 @@ def create_and_add_user(args, args_dict, cursor, nodename):
 
     # Now create the account.
     createaccount(args, nodename)
-# end createuser
+# end create_and_add_user
 
 def updaterequest(args, cursor):
+    if (args.livedebug):
+        print("-- start thomas_create.updaterequest")
     #query = ("""UPDATE requests SET isdone='1', approver=%s 
     #            WHERE id=%s""")
     cursor.execute(thomas_queries.updaterequest(), (args.approver, args.id))
     thomas_utils.debugcursor(cursor, args.debug)
 
 def updateuserstatus(args, cursor):
+    if (args.livedebug):
+        print("-- start thomas_create.updateuserstatus")
     cursor.execute(thomas_queries.activateuser(), (args.username,))
     thomas_utils.debugcursor(cursor, args.debug)
 
 def updateprojectuserstatus(args, cursor):
+    if (args.livedebug):
+        print("-- start thomas_create.updateprojectuserstatus")
     cursor.execute(thomas_queries.activatependingprojectuser(), (args.username,))
     thomas_utils.debugcursor(cursor, args.debug)
 
 def approverequest(args, args_dict, cursor, nodename):
-
+    if (args.livedebug):
+        print("-- start thomas_create.approverequest")
     # args.request is a list of ids - we use the length of it to add enough
     # parameter placeholders to the querystring
     cursor.execute(thomas_queries.getrequestbyid(len(args.request)), tuple(args.request))
@@ -198,6 +213,8 @@ def approverequest(args, args_dict, cursor, nodename):
 # end approverequest    
 
 def automaterequests(args, args_dict, cursor, nodename):
+    if (args.livedebug):
+        print("-- start thomas_create.automaterequests")
     # Get all pending request ids as a list, approve them.
     cursor.execute(thomas_queries.pendingrequests())
     thomas_utils.debugcursor(cursor, args.debug)

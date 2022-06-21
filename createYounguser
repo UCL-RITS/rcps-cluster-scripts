@@ -26,15 +26,15 @@ while getopts ":hu:e:k:nm:c:" opt; do
       ;;
     u)
       username="$OPTARG"
-      echo "Username: $username"
+      #echo "Username: $username"
       ;;
     e)
       email="$OPTARG"
-      echo "Email: $email"
+      #echo "Email: $email"
       ;;
     k)
       ssh_key="$OPTARG"
-      echo "ssh key: $ssh_key"
+      #echo "ssh key: $ssh_key"
       ;;
     n)
       do_not_mail="y"
@@ -60,17 +60,24 @@ then
 fi
 
 # become user, create ssh directory and add key
-echo "Becoming ${username}, creating ssh dir and adding key"
-become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
-echo "Beacon"
-mkdir -p .ssh
-chmod go-rwx .ssh
-echo "${ssh_key}" >> ~/.ssh/authorized_keys
-EOF
-)
-become_exit_status=$?
-if [ "${become_output:0:6}" != "Beacon" ]; then
-  echo "Error: could not become user ${username}" >&2
+#echo "Becoming ${username}, creating ssh dir and adding key"
+#become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
+#echo "Beacon"
+#mkdir -p .ssh
+#chmod go-rwx .ssh
+#echo "${ssh_key}" >> ~/.ssh/authorized_keys
+#EOF
+#)
+#become_exit_status=$?
+#if [ "${become_output:0:6}" != "Beacon" ]; then
+#  echo "Error: could not become user ${username}" >&2
+#  exit 1
+#fi
+
+# replacement for become - creates homedir and adds key
+if ! sudo /shared/ucl/sysops/libexec/add_sshkeys "${username}" "${ssh_key}"
+then
+  echo "Creation of "${username}" homedir or addition of key failed, exiting."
   exit 1
 fi
 
@@ -84,11 +91,13 @@ do
   qconf -su "$ACL" | grep -q "$username"
   if [ $? == 0 ]
   then
-      echo "Successfully allowed ${username} to log in"
+    echo ""
+    echo "Successfully allowed ${username} to log in"
+    break
   elif [ $i < 3 ]
   # failed, try again
   then
-      sleep 5
+    sleep 5
   else
     echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk"
     exit 1
@@ -96,7 +105,7 @@ do
 done
 
 # add user to thomas-users mailing list
-echo "Emailing ${mailinglist} to add ${email}"
+echo "  Emailing ${mailinglist} to add ${email}"
 /usr/sbin/sendmail -t<<EOF
 From: ${mailing_requestor}
 To: ${mailinglist}
@@ -107,7 +116,7 @@ EOF
 # email welcome to user, unless do_not_mail was set
 if [ ! "$do_not_mail" ] 
 then
-  echo "Emailing user ${username} at ${email}"
+  echo "  Emailing user ${username} at ${email}"
   /usr/sbin/sendmail -t<<EOF
 From: rc-support@ucl.ac.uk
 To: ${email}

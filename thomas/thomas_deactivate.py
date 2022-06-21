@@ -30,19 +30,19 @@ class ValidateUser(argparse.Action):
 # end class ValidateUser
 
 def getargs(argv):
-    parser = argparse.ArgumentParser(description="Deactivate entries in the Thomas database. Use [positional argument -h] for more help.")
+    parser = argparse.ArgumentParser(description="Deactivate entries in the user database. Use [positional argument -h] for more help.")
     # store which subparser was used in args.subcommand
     subparsers = parser.add_subparsers(dest="subcommand")
 
     # the arguments for subcommand 'user'
-    userparser = subparsers.add_parser("user", help="Deactivate a user account")
+    userparser = subparsers.add_parser("user", help="Deactivate a user account - NOT YET FUNCTIONAL")
     userparser.add_argument("-u", "--user", dest="username", help="Username of user", action=ValidateUser)
     userparser.add_argument("--force", help="Force user deactivation without project confirmations (use with caution)", action='store_true')
     userparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'project'
-    projectparser = subparsers.add_parser("project", help="Deactivate an entire project")
+    projectparser = subparsers.add_parser("project", help="Deactivate an entire project - NOT YET FUNCTIONAL")
     projectparser.add_argument("-p", "--project", dest="project", help="The existing project ID", required=True)
     projectparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     projectparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
@@ -186,15 +186,17 @@ def main(argv):
 
             # cursor.execute takes a querystring and a dictionary or tuple
             if (args.subcommand == "user"):
-                deactivate_user_request(cursor, args, args_dict)
-                print(args.username + "'s membership of " + args.project + " has been deactivated.")
+                #deactivate_user_request(cursor, args, args_dict)
+                #print(args.username + "'s membership of " + args.project + " has been deactivated.")
+                print("User deactivation functionality is not available yet - please email rc-support@ucl.ac.uk")
             elif (args.subcommand == "projectuser"):
                 cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
                 print(args.username + "'s membership of " + args.project + " is being deactivated.")
                 debug_cursor(cursor, args)
             elif (args.subcommand == "project"):
-                cursor.execute(run_project(), args_dict)
-                debug_cursor(cursor, args)
+                #cursor.execute(run_project(), args_dict)
+                #debug_cursor(cursor, args)
+                print("Whole project deactivation is not available yet. User membership in projects can be deactivated with the projectuser option.")
             elif (args.subcommand == "poc"):
                 cursor.execute(run_poc(args.surname, args.username), args_dict)
                 debug_cursor(cursor, args)
@@ -211,11 +213,11 @@ def main(argv):
                 conn.commit()
 
             # Databases are updated, now email rc-support unless nosupportemail is set
-            if (args.subcommand == "user" and args.nosupportemail == False):
+            #if (args.subcommand == "user" and args.nosupportemail == False):
                 # get the last id added (which is from the requests table)
                 # this has to be run after the commit
-                last_id = cursor.lastrowid
-                contact_rc_support(args, last_id)
+                #last_id = cursor.lastrowid
+                #contact_rc_support(args, last_id)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:

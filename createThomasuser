@@ -26,15 +26,15 @@ while getopts ":hu:e:k:nm:c:" opt; do
       ;;
     u)
       username="$OPTARG"
-      echo "Username: $username"
+      #echo "Username: $username"
       ;;
     e)
       email="$OPTARG"
-      echo "Email: $email"
+      #echo "Email: $email"
       ;;
     k)
       ssh_key="$OPTARG"
-      echo "ssh key: $ssh_key"
+      #echo "ssh key: $ssh_key"
       ;;
     n)
       do_not_mail="y"
@@ -84,11 +84,13 @@ do
   qconf -su "$ACL" | grep -q "$username"
   if [ $? == 0 ]
   then
-      echo "Successfully allowed ${username} to log in"
+    echo ""
+    echo "Successfully allowed ${username} to log in"
+    break
   elif [ $i < 3 ]
   # failed, try again
   then 
-      sleep 5
+    sleep 5
   else
     echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk"
     exit 1
@@ -96,7 +98,7 @@ do
 done
 
 # add user to thomas-users mailing list
-echo "Emailing ${thomas_users} to add ${email}"
+echo "  Emailing ${thomas_users} to add ${email}"
 /usr/sbin/sendmail -t<<EOF
 From: ${mailing_requestor}
 To: ${thomas_users}
@@ -107,7 +109,7 @@ EOF
 # email welcome to user, unless do_not_mail was set
 if [ ! "$do_not_mail" ] 
 then
-  echo "Emailing user ${username} at ${email}"
+  echo "  Emailing user ${username} at ${email}"
   /usr/sbin/sendmail -t<<EOF
 From: rc-support@ucl.ac.uk
 To: ${email}
