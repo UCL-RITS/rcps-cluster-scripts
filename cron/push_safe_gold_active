@@ -1,4 +1,11 @@
 #!/bin/bash
+
+##### Cron job we used for this:
+# Upload active allocation values every 30mins.
+#SHELL="/bin/bash"
+#MAILTO="somewhere@ucl.ac.uk"
+#*/30 * * * * OUTPUT=$(/shared/ucl/apps/cluster-scripts/cron/push_safe_gold_active -set all 2>&1) || echo "$OUTPUT" | mail -s "push_safe_gold_active: Failed to upload Gold" $MAILTO
+
 cd /home/$USER
 source /etc/profile.d/modules.sh
 module load gcc-libs/4.9.2

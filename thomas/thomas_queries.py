@@ -33,7 +33,7 @@ def addproject():
 def addpoc(surname, username):
     query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, 
                  poc_givenname=%(given_name)s, poc_email=%(email)s,  
-                 institute=%(inst_ID)s, creation_date=now()""")
+                 institute=%(inst_ID)s, status=%(status)s, creation_date=now()""")
     if (surname != None):
         query += ", poc_surname=%(surname)s"
     if (username != None):
@@ -49,7 +49,8 @@ def addinstitute():
 # add a new account request
 def addrequest():
     query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
-                 ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, creation_date=now()""")
+                 ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, 
+                 creation_date=now()""")
     return query
 
 ###############################################
@@ -222,13 +223,26 @@ def whoisuser():
 
 # Get all pending account requests and also display the user's names. 
 # ('is not true' will pick up any nulls, though there shouldn't be any).
+# Ignore the open test request ids 7,8,10,11,778
 def pendingrequests():
     query = ("""SELECT id, requests.username, users.givenname AS givenname, 
                   users.surname AS surname, requests.email, poc_cc_email, isdone, 
                   approver, cluster, requests.creation_date, requests.modification_date 
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
-                WHERE isdone IS NOT TRUE""")
+                WHERE isdone IS NOT TRUE
+                  AND id NOT IN (7, 8, 10, 11, 778)""")
+    return query
+
+# For testing: get the open test request ids 7,8,10,11,778
+def pendingtestrequests():
+    query = ("""SELECT id, requests.username, users.givenname AS givenname, 
+                  users.surname AS surname, requests.email, poc_cc_email, isdone, 
+                  approver, cluster, requests.creation_date, requests.modification_date 
+                FROM requests
+                  INNER JOIN users ON requests.username = users.username
+                WHERE isdone IS NOT TRUE
+                  AND id IN (7, 8, 10, 11, 778)""")
     return query
 
 # Get all existing requests and also display the user's names.

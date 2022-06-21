@@ -5,6 +5,7 @@ import argparse
 import sys
 import mysql.connector
 from mysql.connector import errorcode
+from contextlib import closing
 from tabulate import tabulate
 import validate
 import thomas_queries
@@ -62,8 +63,9 @@ def getargs(argv):
  
     # the arguments for subcommand requests
     requests = subparsers.add_parser("requests", help="Show account requests (default is all pending requests)")
-    requests.add_argument("--pending", help="Show all pending requests", action='store_true')
+    requests.add_argument("--pending", help="Show all (non-test) pending requests", action='store_true')
     requests.add_argument("--all", help="Show all requests", action='store_true')
+    requests.add_argument("--test", help="Show test requests", action='store_true')
 
     # to choose the number of requests to show, including a default,
     # it seems we need another subparser
@@ -183,6 +185,9 @@ def showrequests(cursor, args, args_dict, printoutput):
         results = allrequests(cursor).fetchall()
     elif (args.requestsubcommand == "recent"):
         results = recentrequests(cursor, args_dict).fetchall()
+    elif (args.test):
+        cursor.execute(thomas_queries.pendingtestrequests())
+        results = cursor.fetchall()
     # if pending or not specified, show pending
     else: 
         results = pendingrequests(cursor).fetchall()
@@ -210,85 +215,87 @@ def main(argv, printoutput):
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database=db)
-        cursor = conn.cursor()
+        #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database=db)
+        #cursor = conn.cursor()
+        # make sure we close the connection wherever we exit from
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database=db)) as conn, closing(conn.cursor()) as cursor:
 
-        # Get info for the given user, print if running directly.
-        # Fetchall removes the rows from the cursor, but the description is still there
-        # so the cursor must also be passed to tableprint to print the headers.
-        if (args.user != None):
-            userresults = userinfo(cursor, args_dict).fetchall()
-            if (printoutput):
-                print("All information for {}:".format(args.user))
-                tableprint(cursor, userresults)
+            # Get info for the given user, print if running directly.
+            # Fetchall removes the rows from the cursor, but the description is still there
+            # so the cursor must also be passed to tableprint to print the headers.
+            if (args.user != None):
+                userresults = userinfo(cursor, args_dict).fetchall()
+                if (printoutput):
+                    print("All information for {}:".format(args.user))
+                    tableprint(cursor, userresults)
 
-            sshresults = sshinfo(cursor, args_dict).fetchall()
-            if (printoutput):
-                print("SSH key on file:")
-                simpleprint(sshresults)
+                sshresults = sshinfo(cursor, args_dict).fetchall()
+                if (printoutput):
+                    print("SSH key on file:")
+                    simpleprint(sshresults)
 
-            projectresults = projectinfo(cursor, args_dict).fetchall()
-            if (printoutput):
-                print("User is in these projects:")
-                tableprint(cursor, projectresults)
-            return (userresults, sshresults, projectresults)
+                projectresults = projectinfo(cursor, args_dict).fetchall()
+                if (printoutput):
+                    print("User is in these projects:")
+                    tableprint(cursor, projectresults)
+                return (userresults, sshresults, projectresults)
 
-        # Get all allowed values for poc_id
-        if (args.contacts):
-            contactresults = contactsinfo(cursor).fetchall()
-            if (printoutput):
-                print("All current Points of Contact:")
-                tableprint(cursor, contactresults)
-            return contactresults      
+            # Get all allowed values for poc_id
+            if (args.contacts):
+                contactresults = contactsinfo(cursor).fetchall()
+                if (printoutput):
+                    print("All current Points of Contact:")
+                    tableprint(cursor, contactresults)
+                return contactresults      
  
-        # Get all allowed values for inst_id
-        if (args.institutes):
-            instresults = instituteinfo(cursor).fetchall()
-            if (printoutput):
-                print("All current institutes:")
-                tableprint(cursor, instresults)
-            return instresults
+            # Get all allowed values for inst_id
+            if (args.institutes):
+                instresults = instituteinfo(cursor).fetchall()
+                if (printoutput):
+                    print("All current institutes:")
+                    tableprint(cursor, instresults)
+                return instresults
 
-        # Get all existing users (username, names, email, dates but not ssh keys)
-        if (args.allusers):
-            alluserresults = alluserinfo(cursor).fetchall()
-            if (printoutput):
-                print("All current users:")
-                tableprint(cursor, alluserresults)
-            return alluserresults
+            # Get all existing users (username, names, email, dates but not ssh keys)
+            if (args.allusers):
+                alluserresults = alluserinfo(cursor).fetchall()
+                if (printoutput):
+                    print("All current users:")
+                    tableprint(cursor, alluserresults)
+                return alluserresults
 
-        # Get the n latest users (not ssh keys)
-        if (args.subcommand == "recentusers"):
-            recentresults = recentinfo(cursor, args_dict).fetchall()
-            if (printoutput):
-                tableprint(cursor, recentresults)
-            return recentresults
+            # Get the n latest users (not ssh keys)
+            if (args.subcommand == "recentusers"):
+                recentresults = recentinfo(cursor, args_dict).fetchall()
+                if (printoutput):
+                    tableprint(cursor, recentresults)
+                return recentresults
 
-        # Get the most recent mmm user added    
-        if (args.getmmm):        
-            lastresult = lastmmm(cursor).fetchall()
-            if (printoutput):
-                simpleprint(lastresult)
-            # This is a list of tuples with one element - returning the string is more useful
-            return lastresult[0][0]
+            # Get the most recent mmm user added    
+            if (args.getmmm):        
+                lastresult = lastmmm(cursor).fetchall()
+                if (printoutput):
+                    simpleprint(lastresult)
+                # This is a list of tuples with one element - returning the string is more useful
+                return lastresult[0][0]
 
-        # Get all users in this project/inst/PoC combo
-        if (args.subcommand == "getusers") or (args.subcommand == "users"):
-            comboresults = projectcombo(cursor, args_dict).fetchall()
-            if (printoutput):
-                tableprint(cursor, comboresults)
-            return comboresults
+            # Get all users in this project/inst/PoC combo
+            if (args.subcommand == "getusers") or (args.subcommand == "users"):
+                comboresults = projectcombo(cursor, args_dict).fetchall()
+                if (printoutput):
+                    tableprint(cursor, comboresults)
+                return comboresults
 
-        # Who is this person?
-        if (args.subcommand == "whois"):
-            whoisresults = whoisuser(cursor, args_dict).fetchall()
-            if (printoutput):
-                tableprint(cursor, whoisresults)
-            return whoisresults
+            # Who is this person?
+            if (args.subcommand == "whois"):
+                whoisresults = whoisuser(cursor, args_dict).fetchall()
+                if (printoutput):
+                    tableprint(cursor, whoisresults)
+                return whoisresults
         
-        # Get account requests
-        if (args.subcommand == "requests"):
-            return showrequests(cursor, args, args_dict, printoutput)
+            # Get account requests
+            if (args.subcommand == "requests"):
+                return showrequests(cursor, args, args_dict, printoutput)
 
 
     except mysql.connector.Error as err:

@@ -7,6 +7,7 @@ import subprocess
 import validate
 import mysql.connector
 from mysql.connector import errorcode
+from contextlib import closing
 import thomas_queries
 import thomas_utils
 
@@ -33,8 +34,8 @@ def getargs():
     userparser.add_argument("-b", "--cc", dest="cc_email", help="CC the welcome email to this address")
     userparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
-    userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
-    
+    userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')    
+
     # Used when request(s) exists in the thomas database and we get the input from there
     # Requires at least one id to be provided. request is a list.
     requestparser = subparsers.add_parser("request")
@@ -42,6 +43,11 @@ def getargs():
     requestparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
     requestparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
     requestparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
+
+    # For automation - get all pending non-test requests and carry them out.
+    autoparser = subparsers.add_parser("automate", help="Carry out any pending non-test requests.")
+    autoparser.add_argument("--noemail", help="Create account, don't send welcome email", action='store_true')
+    autoparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # Show the usage if no arguments are supplied
     if len(sys.argv[1:]) < 1:
@@ -62,7 +68,7 @@ def createaccount(args, nodename):
     elif ("young" in nodename):
         create_args = ['createYounguser', '-u', args.username, '-e', args.email, '-k', args.ssh_key]
     else:
-        print("You do not appear to be on a supported cluster: nodename is "+nodename)
+        print("You do not appear to be on a supported cluster: nodename is "+nodename, file=sys.stderr)
         exit(1)
 
     if (args.cc_email != None):
@@ -154,41 +160,52 @@ def updateprojectuserstatus(args, cursor):
 
 def approverequest(args, args_dict, cursor, nodename):
 
-        # args.request is a list of ids - we use the length of it to add enough
-        # parameter placeholders to the querystring
-        cursor.execute(thomas_queries.getrequestbyid(len(args.request)), tuple(args.request))
-        results = cursor.fetchall()
-        if (args.debug):
-            print("Requests found:")
-            thomas_utils.tableprint_dict(results)
-        # carry out the request unless it is already done
-        for row in results:
-            if (row['isdone'] == 0):
-                # set the variables
-                args.username = row['username'] 
-                args.email = row['email']
-                args.ssh_key = row['ssh_key']
-                args.cc_email = row['poc_cc_email']
-                args.id = row['id']
-                args.approver = os.environ['USER']
-                args.cluster = row['cluster']
-                # Check the MMM username exists and warn if getting near max
-                validate.mmm_username_in_range(args.username)
-                # check the cluster matches where we are running from
-                if (args.cluster in nodename):
-                    # create the account
-                    createaccount(args, nodename)
-                    # update the request status
-                    updaterequest(args, cursor)
-                    # update the user and projectuser status from pending to active
-                    updateuserstatus(args, cursor)
-                    updateprojectuserstatus(args, cursor)
-                else:
-                    print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename)
+    # args.request is a list of ids - we use the length of it to add enough
+    # parameter placeholders to the querystring
+    cursor.execute(thomas_queries.getrequestbyid(len(args.request)), tuple(args.request))
+    thomas_utils.debugcursor(cursor, args.debug)
+    results = cursor.fetchall()
+    if (args.debug):
+        print("Requests found:")
+        thomas_utils.tableprint_dict(results)
+    # carry out the request unless it is already done
+    for row in results:
+        if (row['isdone'] == 0):
+            # set the variables
+            args.username = row['username'] 
+            args.email = row['email']
+            args.ssh_key = row['ssh_key']
+            args.cc_email = row['poc_cc_email']
+            args.id = row['id']
+            args.approver = os.environ['USER']
+            args.cluster = row['cluster']
+            # Check the MMM username exists and warn if getting near max
+            validate.mmm_username_in_range(args.username)
+            # check the cluster matches where we are running from
+            if (args.cluster in nodename):
+                # create the account
+                createaccount(args, nodename)
+                # update the request status
+                updaterequest(args, cursor)
+                # update the user and projectuser status from pending to active
+                updateuserstatus(args, cursor)
+                updateprojectuserstatus(args, cursor)
             else:
-                print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
+                print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename, file=sys.stderr)
+        else:
+            print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
 
 # end approverequest    
+
+def automaterequests(args, args_dict, cursor, nodename):
+    # Get all pending request ids as a list, approve them.
+    cursor.execute(thomas_queries.pendingrequests())
+    thomas_utils.debugcursor(cursor, args.debug)
+    results = cursor.fetchall()
+    args.request = set(row['id'] for row in results)
+    approverequest(args, args_dict, cursor, nodename)
+
+# end automaterequests
 
 if __name__ == "__main__":
 
@@ -218,29 +235,32 @@ if __name__ == "__main__":
     # connect to MySQL database with write access.
     # (.thomas.cnf has readonly connection details as the default option group)
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
-        cursor = conn.cursor(dictionary=True)
-
-        # Either create a user from scratch or approve an existing request
-        if (args.subcommand == "user"):
-            # UCL user validation - if this is a UCL email, make sure username was given 
-            # and that it wasn't an mmm one.
-            validate.ucl_user(args.email, args.username)
-            create_and_add_user(args, args_dict, cursor, nodename)
-        elif (args.subcommand == "request"):
-            approverequest(args, args_dict, cursor, nodename)
- 
-        # commit the change to the database unless we are debugging
-        if (not args.debug):
-            conn.commit()
+        #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
+        #cursor = conn.cursor(dictionary=True)
+        # make sure we close the connection wherever we exit from
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor(dictionary=True)) as cursor:
+            # Create a user from scratch, approve given request(s), or automate
+            # all existing requests.
+            if (args.subcommand == "user"):
+                # UCL user validation - if this is a UCL email, make sure username was given 
+                # and that it wasn't an mmm one.
+                validate.ucl_user(args.email, args.username)
+                create_and_add_user(args, args_dict, cursor, nodename)
+            elif (args.subcommand == "request"):
+                approverequest(args, args_dict, cursor, nodename)
+            elif (args.subcommand == "automate"):
+                automaterequests(args, args_dict, cursor, nodename)
+            # commit the change to the database unless we are debugging
+            if (not args.debug):
+                conn.commit()
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Access denied: Something is wrong with your user name or password")
+            print("mysql.connector.Error: Access denied. Something is wrong with your user name or password.", file=sys.stderr)
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
+            print("mysql.connector.Error: Database does not exist.", file=sys.stderr)
         else:
-            print(err)
+            print(err, file=sys.stderr)
     else:
         cursor.close()
         conn.close()

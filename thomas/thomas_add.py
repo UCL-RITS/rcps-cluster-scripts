@@ -9,9 +9,11 @@ from subprocess import Popen, PIPE
 import csv
 import mysql.connector
 from mysql.connector import errorcode
+from contextlib import closing
 import socket
 import validate
 import thomas_show
+import thomas_create
 import thomas_utils
 import thomas_queries
 
@@ -51,7 +53,7 @@ def getargs(argv):
     userparser.add_argument("-c", "--contact", dest="poc_id", help="Short ID of the user's Point of Contact", required=True)
     userparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
-    userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
+    #userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
 
     # the arguments for subcommand 'project'
@@ -108,50 +110,51 @@ def nextmmm():
 
 # query to run for 'user' subcommand
 # the values are inserted by cursor.execute from args.dict
-def run_user(surname):
-    query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
-             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
-    if (surname != None):
-        query += ", surname=%(surname)s"
-    return query
+#def run_user(surname):
+#    query = ("""INSERT INTO users SET username=%(username)s, givenname=%(given_name)s, """
+#             """email=%(email)s, ssh_key=%(ssh_key)s, status=%(status)s, creation_date=now()""")
+#    if (surname != None):
+#        query += ", surname=%(surname)s"
+#    return query
 
 # query to run for 'user' and 'projectuser' subcommands
-def run_projectuser():
-    query = ("""INSERT INTO projectusers SET username=%(username)s, """
-             """project=%(project_ID)s, poc_id=%(poc_id)s, status=%(status)s, creation_date=now()""")
-    return query
+#def run_projectuser():
+#    query = ("""INSERT INTO projectusers SET username=%(username)s, """
+#             """project=%(project_ID)s, poc_id=%(poc_id)s, status=%(status)s, creation_date=now()""")
+#    return query
 
 # query to run for 'project' subcommand
-def run_project():
-    query = ("""INSERT INTO projects SET project=%(project_ID)s,  """
-             """institute_id=%(inst_ID)s, creation_date=now()""")
-    return query
+#def run_project():
+#    query = ("""INSERT INTO projects SET project=%(project_ID)s,  """
+#             """institute_id=%(inst_ID)s, creation_date=now()""")
+#    return query
 
 # query to run for 'poc' subcommand
-def run_poc(surname, username):
-    query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
-             """poc_givenname=%(given_name)s, poc_email=%(email)s,  """
-             """institute=%(inst_ID)s, status=%(status)s, creation_date=now()""")
-    if (surname != None):
-        query += ", poc_surname=%(surname)s"
-    if (username != None):
-        query += ", username=%(username)s"
-    return query
+#def run_poc(surname, username):
+#    query = ("""INSERT INTO pointofcontact SET poc_id=%(poc_id)s, """
+#             """poc_givenname=%(given_name)s, poc_email=%(email)s,  """
+#             """institute=%(inst_ID)s, status=%(status)s, creation_date=now()""")
+#    if (surname != None):
+#        query += ", poc_surname=%(surname)s"
+#    if (username != None):
+#        query += ", username=%(username)s"
+#    return query
 
 # query to run for 'institute' subcommand
-def run_institute():
-    query = ("""INSERT INTO institutes SET inst_id=%(inst_ID)s, name=%(institute)s, """
-             """creation_date=now()""") 
-    return query
+#def run_institute():
+#    query = ("""INSERT INTO institutes SET inst_id=%(inst_ID)s, name=%(institute)s, """
+#             """creation_date=now()""") 
+#    return query
 
-def run_addrequest():
-    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
-             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, creation_date=now() """)
-    return query
+#def run_addrequest():
+#    query = ("""INSERT INTO requests SET username=%(username)s, email=%(email)s, 
+#             ssh_key=%(ssh_key)s, poc_cc_email=%(poc_email)s, cluster=%(cluster)s, creation_date=now() """)
+#    return query
 
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
 # By default, assumes this is not a CSV multi-user creation (csv and num are optional).
+# NOT CURRENTLY CALLED
 def contact_rc_support(args, request_id, csv='no', num=1):
     if csv == 'no':
         body = (args.cluster.capitalize() + """ user account request id """ + str(request_id) + """ has been received.""")
@@ -191,16 +194,17 @@ def get_poc_id(cursor, args, args_dict):
     rows_count = cursor.rowcount
     # I am a PoC and unique
     if rows_count == 1:
-        result = dict(zip(cursor.column_names, results[0]))
+        #result = dict(zip(cursor.column_names, results[0]))
+        result = results[0]
         args_dict['poc_id'] = result['poc_id']
         return True
     # I am more than one PoC
     elif rows_count > 1:
         # pick one
-        data = []
-        # put the results into a list of dictionaries, keys being db column names.
+        data = results
+        # results are already a list of dictionaries, keys being db column names.
         for i in range(rows_count):
-            data.append(dict(list(zip(cursor.column_names, results[i]))))
+            #data.append(dict(list(zip(cursor.column_names, results[i]))))
             # while we do this, print out the results, numbered.
             print(str(i+1) + ") "+ data[i]['poc_id'] +", "+ data[i]['poc_givenname'] +" "+ data[i]['poc_surname'] +", "+ data[i]['institute'] + ", status: " + data[i]['status'])
 
@@ -219,10 +223,10 @@ def get_poc_id(cursor, args, args_dict):
     cursor.execute(thomas_queries.contactstatusinfo())
     results = cursor.fetchall()
     rows_count = cursor.rowcount
-    data = []
-    # put the results into a list of dictionaries, keys being db column names.
+    data = results
+    # results are already a list of dictionaries, keys being db column names.
     for i in range(rows_count):
-        data.append(dict(list(zip(cursor.column_names, results[i]))))
+        #data.append(dict(list(zip(cursor.column_names, results[i]))))
         # while we do this, print out the results, numbered.
         print(str(i+1) + ") "+ data[i]['poc_id'] +", "+ data[i]['poc_givenname'] +" "+ data[i]['poc_surname'] +", "+ data[i]['institute'] + ", status: " + data[i]['status'])
 
@@ -244,15 +248,18 @@ def create_user_request(cursor, args, args_dict):
     # projectusers status is pending until the request is approved
     args_dict['status'] = "pending"
     # add a project-user entry for the user
-    cursor.execute(run_projectuser(), args_dict)
+    cursor.execute(thomas_queries.addprojectuser(), args_dict)
     debug_cursor(cursor, args)
     # get the poc_email and add to dictionary
     cursor.execute(run_poc_email(), args_dict)
-    poc_email = cursor.fetchall()[0][0]
+    poc_email = cursor.fetchall()[0]['poc_email']
     args_dict['poc_email'] = poc_email
     # add the account creation request to the database
-    cursor.execute(run_addrequest(), args_dict)
+    cursor.execute(thomas_queries.addrequest(), args_dict)
+    # lastrowid is the autoincrement id from this cursor's last INSERT statement
+    request_id = cursor.lastrowid
     debug_cursor(cursor, args)
+    return request_id
 # end create_user_request
 
 # everything needed to create a new user
@@ -264,10 +271,14 @@ def create_new_user(cursor, args, args_dict):
     # users status is pending until the request is approved
     args_dict['status'] = "pending"
     # insert new user into users table
-    cursor.execute(run_user(args.surname), args_dict)
+    cursor.execute(thomas_queries.adduser(args.surname), args_dict)
     debug_cursor(cursor, args)
-    # create the account creation request
+    # create the account creation request and get the request id (as a list)
     create_user_request(cursor, args, args_dict)
+    #args.request = [create_user_request(cursor, args, args_dict)]
+    # automated creation - go straight to approval
+    #args.noemail = False
+    #thomas_create.approverequest(args, args_dict, cursor, thomas_utils.getnodename())
 # end create_new_user
 
 # Check for duplicate users by key: email or username
@@ -278,11 +289,11 @@ def check_dups(key_string, cursor, args, args_dict):
     if rows_count > 0:
         # We have duplicate(s). Show results and ask them to pick one or none
         print(str(rows_count) + " user(s) with this " +key_string+ " already exist:\n")
-        data = []
-        # put the results into a list of dictionaries, keys being db column names.
+        data = results
+        # With dictionary cursor, results are already a list of dicts
         for i in range(rows_count):
-            data.append(dict(list(zip(cursor.column_names, results[i]))))
-            # while we do this, print out the results, numbered.
+            #data.append(dict(list(zip(cursor.column_names, results[i]))))
+            # print out the results, numbered from 1.
             print(str(i+1) + ") "+ data[i]['username'] +", "+ data[i]['givenname'] +" "+ data[i]['surname'] +", "+ data[i]['email'] + ", created " + str(data[i]['creation_date']))
 
         # make a string list of options, counting from 1 and ask the user to pick one
@@ -367,66 +378,68 @@ def main(argv):
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
-        cursor = conn.cursor()
+        #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
+        # make sure we close the connection wherever we exit from
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor(dictionary=True)) as cursor:
+            #cursor = conn.cursor()
 
-        if (args.verbose or args.debug):
-            print("")
-            print(">>>> Queries being sent:")
-
-        # CSV file was provided
-        if (args.subcommand == "csv"):
-            # Get poc_id for submitter, or prompt
-            get_poc_id(cursor, args, args_dict)
-            args.poc_id = args_dict['poc_id']
-            with open(args.csvfile) as input:
-                reader = csv.DictReader(input, delimiter=',')
-                num_users = 0
-                for row_dict in reader:
-                    args.username = row_dict['username']
-                    args.surname = row_dict['surname']
-                    row_dict['poc_id'] = args_dict['poc_id']
-                    row_dict['cluster'] = args_dict['cluster']
-                    new_user(cursor, args, row_dict)
-                    num_users += 1
-
-        # cursor.execute takes a querystring and a dictionary or tuple
-        elif (args.subcommand == "user"):
-            new_user(cursor, args, args_dict)
-
-        elif (args.subcommand == "projectuser"):
-            # This is an existing user, status for the new project-user pairing is active by default
-            args_dict['status'] = "active"
-            cursor.execute(run_projectuser(), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "project"):
-            cursor.execute(run_project(), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "poc"):
-            args_dict['status'] = "active"
-            cursor.execute(run_poc(args.surname, args.username), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "institute"):
-            cursor.execute(run_institute(), args_dict)
-            debug_cursor(cursor, args)
-
-        # commit the change to the database unless we are debugging
-        if (not args.debug):
-            if (args.verbose):
+            if (args.verbose or args.debug):
                 print("")
-                print("Committing database change")
-                print("")
-            conn.commit()
+                print(">>>> Queries being sent:")
 
-        # Databases are updated, now email rc-support unless nosupportemail is set
-        if (args.subcommand == "user" and args.nosupportemail == False):
-            # get the last id added (which is from the requests table)
-            # this has to be run after the commit
-            last_id = cursor.lastrowid
-            contact_rc_support(args, last_id)
-        elif (args.subcommand == "csv"):
-            last_id = cursor.lastrowid
-            contact_rc_support(args, last_id, csv='yes', num=num_users)
+            # CSV file was provided
+            if (args.subcommand == "csv"):
+                # Get poc_id for submitter, or prompt
+                get_poc_id(cursor, args, args_dict)
+                args.poc_id = args_dict['poc_id']
+                with open(args.csvfile) as input:
+                    reader = csv.DictReader(input, delimiter=',')
+                    num_users = 0
+                    for row_dict in reader:
+                        args.username = row_dict['username']
+                        args.surname = row_dict['surname']
+                        row_dict['poc_id'] = args_dict['poc_id']
+                        row_dict['cluster'] = args_dict['cluster']
+                        new_user(cursor, args, row_dict)
+                        num_users += 1
+
+            # cursor.execute takes a querystring and a dictionary or tuple
+            elif (args.subcommand == "user"):
+                new_user(cursor, args, args_dict)
+
+            elif (args.subcommand == "projectuser"):
+                # This is an existing user, status for the new project-user pairing is active by default
+                args_dict['status'] = "active"
+                cursor.execute(thomas_queries.addprojectuser(), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "project"):
+                cursor.execute(thomas_queries.addproject(), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "poc"):
+                args_dict['status'] = "active"
+                cursor.execute(thomas_queries.addpoc(args.surname, args.username), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "institute"):
+                cursor.execute(thomas_queries.addinstitute(), args_dict)
+                debug_cursor(cursor, args)
+
+            # commit the change to the database unless we are debugging
+            if (not args.debug):
+                if (args.verbose):
+                    print("")
+                    print("Committing database change")
+                    print("")
+                conn.commit()
+
+            # Databases are updated, now email rc-support unless nosupportemail is set
+            #if (args.subcommand == "user" and args.nosupportemail == False):
+                # get the last id added (which is from the requests table)
+                # this has to be run after the commit
+            #    last_id = cursor.lastrowid
+            #    contact_rc_support(args, last_id)
+            #elif (args.subcommand == "csv"):
+            #    last_id = cursor.lastrowid
+            #    contact_rc_support(args, last_id, csv='yes', num=num_users)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:

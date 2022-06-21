@@ -8,6 +8,7 @@ import subprocess
 from subprocess import Popen, PIPE
 import mysql.connector
 from mysql.connector import errorcode
+from contextlib import closing
 import socket
 import validate
 #import thomas_show
@@ -174,45 +175,47 @@ def main(argv):
     # (.thomas.cnf has readonly connection details as the default option group)
 
     try:
-        conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
-        cursor = conn.cursor()
+        #conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)
+        #cursor = conn.cursor()
+        # make sure we close the connection wherever we exit from
+        with closing(mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), option_groups='thomas_update', database=db)) as conn, closing(conn.cursor()) as cursor:
 
-        if (args.verbose or args.debug):
-            print("")
-            print(">>>> Queries being sent:")
-
-        # cursor.execute takes a querystring and a dictionary or tuple
-        if (args.subcommand == "user"):
-            deactivate_user_request(cursor, args, args_dict)
-            print(args.username + "'s membership of " + args.project + " has been deactivated.")
-        elif (args.subcommand == "projectuser"):
-            cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
-            print(args.username + "'s membership of " + args.project + " is being deactivated.")
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "project"):
-            cursor.execute(run_project(), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "poc"):
-            cursor.execute(run_poc(args.surname, args.username), args_dict)
-            debug_cursor(cursor, args)
-        elif (args.subcommand == "institute"):
-            cursor.execute(run_institute(), args_dict)
-            debug_cursor(cursor, args)
-
-        # commit the change to the database unless we are debugging
-        if (not args.debug):
-            if (args.verbose):
+            if (args.verbose or args.debug):
                 print("")
-                print("Committing database change")
-                print("")
-            conn.commit()
+                print(">>>> Queries being sent:")
 
-        # Databases are updated, now email rc-support unless nosupportemail is set
-        if (args.subcommand == "user" and args.nosupportemail == False):
-            # get the last id added (which is from the requests table)
-            # this has to be run after the commit
-            last_id = cursor.lastrowid
-            contact_rc_support(args, last_id)
+            # cursor.execute takes a querystring and a dictionary or tuple
+            if (args.subcommand == "user"):
+                deactivate_user_request(cursor, args, args_dict)
+                print(args.username + "'s membership of " + args.project + " has been deactivated.")
+            elif (args.subcommand == "projectuser"):
+                cursor.execute(thomas_queries.deactivateprojectuser(), args_dict)
+                print(args.username + "'s membership of " + args.project + " is being deactivated.")
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "project"):
+                cursor.execute(run_project(), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "poc"):
+                cursor.execute(run_poc(args.surname, args.username), args_dict)
+                debug_cursor(cursor, args)
+            elif (args.subcommand == "institute"):
+                cursor.execute(run_institute(), args_dict)
+                debug_cursor(cursor, args)
+
+            # commit the change to the database unless we are debugging
+            if (not args.debug):
+                if (args.verbose):
+                    print("")
+                    print("Committing database change")
+                    print("")
+                conn.commit()
+
+            # Databases are updated, now email rc-support unless nosupportemail is set
+            if (args.subcommand == "user" and args.nosupportemail == False):
+                # get the last id added (which is from the requests table)
+                # this has to be run after the commit
+                last_id = cursor.lastrowid
+                contact_rc_support(args, last_id)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
