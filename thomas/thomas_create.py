@@ -246,6 +246,11 @@ if __name__ == "__main__":
         print(err)
         exit(1)
 
+    # Check that the user running the create command is a member of ccsprcop or lgmmmpoc
+    if not validate.user_has_privs():
+        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the create commands. Exiting.")
+        exit(1)
+
     # Pick the correct MMM db to connect to
     db = thomas_utils.getdb(nodename)
 

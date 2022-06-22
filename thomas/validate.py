@@ -1,5 +1,19 @@
 # UCL input validation module
 
+# Check that the user running this script is in ccsprcop or lgmmmpoc and 
+# hence has permission to run commands that make changes.
+def user_has_privs():
+    import os
+    import grp
+    #me = os.environ.get('USER')
+    mygids = os.getgroups()
+    mygroups = [grp.getgrgid(g).gr_name for g in mygids]
+    if "ccsprcop" in mygroups or "lgmmmpoc" in mygroups:
+        return True
+    else:
+        return False
+# end user_has_privs
+
 # validate the provided username
 def user(username):
     # usernames must exist and be 7 characters
