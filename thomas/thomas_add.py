@@ -254,11 +254,11 @@ def create_new_user(cursor, args, args_dict):
     cursor.execute(thomas_queries.adduser(args.surname), args_dict)
     debug_cursor(cursor, args)
     # create the account creation request and get the request id (as a list)
-    #create_user_request(cursor, args, args_dict)
-    args.request = [create_user_request(cursor, args, args_dict)]
+    create_user_request(cursor, args, args_dict)
+    #args.request = [create_user_request(cursor, args, args_dict)]
     # automated creation - go straight to approval
-    args.noemail = False
-    thomas_create.approverequest(args, args_dict, cursor, thomas_utils.getnodename())
+    #args.noemail = False
+    #thomas_create.approverequest(args, args_dict, cursor, thomas_utils.getnodename())
 # end create_new_user
 
 # Check for duplicate users by key: email or username
