@@ -87,7 +87,7 @@ do
     echo ""
     echo "Successfully allowed ${username} to log in"
     break
-  elif [ $i < 3 ]
+  elif (( $i < 3 ))
   # failed, try again
   then 
     sleep 5
