@@ -75,7 +75,11 @@ if [ "${become_output:0:6}" != "Beacon" ]; then
 fi
 
 # add user to ACL so they can log in and submit jobs
-qconf -au "$username" "$ACL"
+if ! qconf -au "$username" "$ACL"
+then
+  echo "Adding ${username} to $ACL ACL failed, exiting." 
+  exit 1
+fi
 
 # check that the qconf change actually worked!
 # Try 3 times.

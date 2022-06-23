@@ -77,12 +77,16 @@ fi
 # replacement for become - creates homedir and adds key
 if ! sudo /shared/ucl/sysops/libexec/add_sshkeys "${username}" "${ssh_key}"
 then
-  echo "Creation of "${username}" homedir or addition of key failed, exiting."
+  echo "Creation of ${username} homedir or addition of key failed, exiting."
   exit 1
 fi
 
 # add user to ACL so they can log in and submit jobs
-qconf -au $username $ACL
+if ! qconf -au "$username" "$ACL"
+then
+  echo "Adding ${username} to $ACL ACL failed, exiting."
+  exit 1
+fi
 
 # check that the qconf change actually worked!
 # Try 3 times.
