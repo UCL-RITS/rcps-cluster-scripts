@@ -12,5 +12,5 @@ module load gcc-libs
 module load userscripts
 
 # Create any pending requests
-thomas-create automate
+young-create automate
 
