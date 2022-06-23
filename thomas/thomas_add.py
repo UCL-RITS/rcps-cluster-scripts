@@ -245,7 +245,7 @@ def create_new_user(cursor, args, args_dict):
     args_dict['status'] = "pending"
     # confirm that info is ok unless --noconfirm is set
     if not args.noconfirm:
-        if not thomas_utils.are_you_sure("\nDo you want to create and activate the user account with this information? \n    Username: "+args.username+"\n    Email: "+args.email+ "\n    SSH key: "+args.ssh_key+"\n"):
+        if not thomas_utils.are_you_sure("\nDo you want to create the user account with this information? \n    Username: "+args.username+"\n    Email: "+args.email+ "\n    SSH key: "+args.ssh_key+"\n"):
             print("Entry rejected: doing nothing and exiting.")
             exit(0)
   
