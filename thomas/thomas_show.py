@@ -209,7 +209,7 @@ def main(argv, printoutput):
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
     except ValueError as err:
-        print(err)
+        print(err, file=sys.stderr)
         exit(1)
     # connect to MySQL database with read access.
     # (.thomas.cnf has readonly connection details as the default option group)
@@ -304,7 +304,7 @@ def main(argv, printoutput):
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
             print("Database does not exist")
         else:
-            print(err)
+            print(err, file=sys.stderr)
     else:
         cursor.close()
         conn.close()

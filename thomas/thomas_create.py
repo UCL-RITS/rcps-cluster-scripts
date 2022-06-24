@@ -243,12 +243,12 @@ if __name__ == "__main__":
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
     except ValueError as err:
-        print(err)
+        print(err, file=sys.stderr)
         exit(1)
 
     # Check that the user running the create command is a member of ccsprcop or lgmmmpoc
     if not validate.user_has_privs():
-        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the create commands. Exiting.")
+        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the create commands. Exiting.", file=sys.stderr)
         exit(1)
 
     # Pick the correct MMM db to connect to

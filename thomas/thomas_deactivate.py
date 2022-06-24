@@ -165,12 +165,12 @@ def main(argv):
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
     except ValueError as err:
-        print(err)
+        print(err, file=sys.stderr)
         exit(1)
 
     # Check that the user running the add command is a member of ccsprcop or lgmmmpoc
     if not validate.user_has_privs():
-        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the deactivate commands. Exiting.")
+        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the deactivate commands. Exiting.", file=sys.stderr)
         exit(1)
 
     # get the MMM db to connect to
@@ -230,7 +230,7 @@ def main(argv):
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
             print("Database does not exist")
         else:
-            print(err)
+            print(err, file=sys.stderr)
     else:
         cursor.close()
         conn.close()

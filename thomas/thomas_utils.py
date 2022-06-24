@@ -7,6 +7,7 @@ import socket
 import thomas_queries
 import validate
 import subprocess
+import sys
 
 ##########################
 #                        #
@@ -101,7 +102,7 @@ def searchpocresults(result, rowcount):
             return poc_id
     # no results were passed in
     else:
-        print("Zero rows of points of contact found.")
+        print("Zero rows of points of contact found.", file=sys.stderr)
         exit(1)
 # end searchpocresults
 
@@ -268,7 +269,7 @@ def getcluster(nodename):
     elif "young" in nodename:
         return "young"
     else:
-        print("Cluster not recognised, nodename is "+nodename)
+        print("Cluster not recognised, nodename is "+nodename, file=sys.stderr)
         exit(1)
 # end getcluster
 
@@ -297,7 +298,7 @@ def AD_username_from_email(config, email):
     # check if we got more than one result (bad!)
     # TODO: ask if we want to pick one
     if len(conn.entries[0].cn.values) > 1 or len(conn.entries) > 1:
-        print("More than one username found for " + email + ", exiting.")
+        print("More than one username found for " + email + ", exiting.", file=sys.stderr)
         print(conn.entries)
         exit(1)
     return conn.entries[0].cn.values[0]

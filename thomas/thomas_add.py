@@ -348,7 +348,7 @@ def main(argv):
 
     # Check that the user running the add command is a member of ccsprcop or lgmmmpoc
     if not validate.user_has_privs():
-        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the add commands. Exiting.")
+        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the add commands. Exiting.", file=sys.stderr)
         exit(1)
 
     if (args.subcommand == "user"):
@@ -435,11 +435,11 @@ def main(argv):
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Access denied: Something is wrong with your user name or password")
+            print("Access denied: Something is wrong with your user name or password", file=sys.stderr)
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
+            print("Database does not exist", file=sys.stderr)
         else:
-            print(err)
+            print(err, file=sys.stderr)
     else:
         cursor.close()
         conn.close()
