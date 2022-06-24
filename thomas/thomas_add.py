@@ -41,6 +41,7 @@ def getargs(argv):
     csvparser.add_argument("-f", "--file", dest="csvfile", help="Path to CSV file of users", required=True)
     csvparser.add_argument("--noconfirm", help="Don't ask for confirmation on user account creation", action='store_true')
     csvparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
+    csvparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
     csvparser.add_argument("--debug", help="Show SQL queries submitted without committing the changes", action='store_true')
     csvparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
@@ -56,7 +57,7 @@ def getargs(argv):
     userparser.add_argument("--noconfirm", help="Don't ask for confirmation on user account creation", action='store_true')
     userparser.add_argument("--verbose", help="Show SQL queries that are being submitted", action='store_true')
     userparser.add_argument("--nosshverify", help="Do not verify SSH key (use with caution!)", action='store_true')
-    #userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
+    userparser.add_argument("--nosupportemail", help="Do not email rc-support to create this account", action='store_true')
     userparser.add_argument("--debug", help="Show SQL query submitted without committing the change", action='store_true')
     userparser.add_argument("--livedebug", help="Carry everything out but show extra information about where in the code we are", action='store_true')
 
@@ -428,7 +429,7 @@ def main(argv):
                 # this has to be run after the commit
                 last_id = cursor.lastrowid
                 contact_rc_support(args, last_id)
-            elif (args.subcommand == "csv"):
+            elif (args.subcommand == "csv" and args.nosupportemail == False):
                 last_id = cursor.lastrowid
                 contact_rc_support(args, last_id, csv='yes', num=num_users)
 
