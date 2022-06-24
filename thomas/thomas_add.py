@@ -119,7 +119,7 @@ def nextmmm():
 # send an email to RC-Support with the command to run to create this account,
 # unless debugging in which case just print it.
 # By default, assumes this is not a CSV multi-user creation (csv and num are optional).
-# NOT CURRENTLY CALLED - REMOVED BY AUTOMATION
+# NOT CURRENTLY CALLED EXCEPT ON THOMAS - REMOVED BY AUTOMATION
 def contact_rc_support(args, request_id, csv='no', num=1):
     if (args.livedebug):
         print("-- start thomas_add.contact_rc_support")
@@ -420,14 +420,17 @@ def main(argv):
                 conn.commit()
 
             # Databases are updated, now email rc-support unless nosupportemail is set
-            #if (args.subcommand == "user" and args.nosupportemail == False):
+            # (only email on Thomas)
+            if not args.cluster == "thomas":
+                args.nosupportemail = True
+            if (args.subcommand == "user" and args.nosupportemail == False):
                 # get the last id added (which is from the requests table)
                 # this has to be run after the commit
-            #    last_id = cursor.lastrowid
-            #    contact_rc_support(args, last_id)
-            #elif (args.subcommand == "csv"):
-            #    last_id = cursor.lastrowid
-            #    contact_rc_support(args, last_id, csv='yes', num=num_users)
+                last_id = cursor.lastrowid
+                contact_rc_support(args, last_id)
+            elif (args.subcommand == "csv"):
+                last_id = cursor.lastrowid
+                contact_rc_support(args, last_id, csv='yes', num=num_users)
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
