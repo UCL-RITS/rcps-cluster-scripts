@@ -77,7 +77,7 @@ fi
 # add user to ACL so they can log in and submit jobs
 if ! qconf -au "$username" "$ACL"
 then
-  echo "Adding ${username} to $ACL ACL failed, exiting." 
+  echo "Adding ${username} to $ACL ACL failed, exiting." >&2 
   exit 1
 fi
 
@@ -96,7 +96,7 @@ do
   then 
     sleep 5
   else
-    echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk"
+    echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk" >&2
     exit 1
   fi
 done
