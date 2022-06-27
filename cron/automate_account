@@ -12,5 +12,6 @@ module load gcc-libs
 module load userscripts
 
 # Create any pending requests
+date
 young-create automate
 
