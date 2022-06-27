@@ -219,9 +219,13 @@ def automaterequests(args, args_dict, cursor, nodename):
     cursor.execute(thomas_queries.pendingrequests())
     thomas_utils.debugcursor(cursor, args.debug)
     results = cursor.fetchall()
-    args.request = set(row['id'] for row in results)
-    approverequest(args, args_dict, cursor, nodename)
-
+    rows_count = cursor.rowcount
+    if rows_count > 0:
+        args.request = set(row['id'] for row in results)
+        approverequest(args, args_dict, cursor, nodename)
+    else:
+        if (args.livedebug):
+            print("-- -- No automatable requests found.")
 # end automaterequests
 
 if __name__ == "__main__":
