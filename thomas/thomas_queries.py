@@ -221,7 +221,7 @@ def whoisuser():
     return query
 #cursor.execute(query, ("%" + args_dict["username"] + "%", "%" + args_dict["email"] + "%", "%" + args_dict["given_name"] + "%", "%" + args_dict["surname"] + "%"))
 
-# Get all pending account requests and also display the user's names. 
+# Get all pending account requests for this cluster and also display the user's names. 
 # ('is not true' will pick up any nulls, though there shouldn't be any).
 # Ignore the open test request ids 7,8,10,11,778
 def pendingrequests():
@@ -231,6 +231,7 @@ def pendingrequests():
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
                 WHERE isdone IS NOT TRUE
+                  AND cluster=%(cluster)s
                   AND id NOT IN (7, 8, 10, 11, 778)""")
     return query
 
@@ -242,6 +243,7 @@ def pendingtestrequests():
                 FROM requests
                   INNER JOIN users ON requests.username = users.username
                 WHERE isdone IS NOT TRUE
+                  AND cluster=%(cluster)s
                   AND id IN (7, 8, 10, 11, 778)""")
     return query
 

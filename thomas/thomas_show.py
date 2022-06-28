@@ -162,9 +162,9 @@ def whoisuser(cursor, args_dict):
 
 # Get all pending account requests 
 # ('is not true' will pick up any nulls, though there shouldn't be any).
-def pendingrequests(cursor):
+def pendingrequests(cursor, args_dict):
     query = thomas_queries.pendingrequests()
-    cursor.execute(query)
+    cursor.execute(query, args_dict)
     return cursor
 
 # Get all existing requests and also display the user's names.
@@ -190,7 +190,7 @@ def showrequests(cursor, args, args_dict, printoutput):
         results = cursor.fetchall()
     # if pending or not specified, show pending
     else: 
-        results = pendingrequests(cursor).fetchall()
+        results = pendingrequests(cursor, args_dict).fetchall()
 
     if (printoutput):
         tableprint(cursor, results)
@@ -206,6 +206,7 @@ def main(argv, printoutput):
 
     try:
         args = getargs(argv)
+        args.cluster = thomas_utils.getcluster(nodename)
         # make a dictionary from args to make string substitutions doable by key name
         args_dict = vars(args)
     except ValueError as err:

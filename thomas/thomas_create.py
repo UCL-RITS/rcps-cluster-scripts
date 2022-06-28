@@ -206,7 +206,7 @@ def approverequest(args, args_dict, cursor, nodename):
                 updateuserstatus(args, cursor)
                 updateprojectuserstatus(args, cursor)
             else:
-                print("Request id " +str(row['id'])+ "was for "+args.cluster+" and this is "+nodename, file=sys.stderr)
+                print("Request id " +str(row['id'])+ " was for "+args.cluster+" and this is "+nodename, file=sys.stderr)
         else:
             print("Request id " + str(row['id']) + " was already approved by " + row['approver'])
 
@@ -215,8 +215,9 @@ def approverequest(args, args_dict, cursor, nodename):
 def automaterequests(args, args_dict, cursor, nodename):
     if (args.livedebug):
         print("-- start thomas_create.automaterequests")
-    # Get all pending request ids as a list, approve them.
-    cursor.execute(thomas_queries.pendingrequests())
+    # Get all pending request ids for this cluster as a list, approve them.
+    args_dict['cluster'] = thomas_utils.getcluster(nodename)
+    cursor.execute(thomas_queries.pendingrequests(), args_dict)
     thomas_utils.debugcursor(cursor, args.debug)
     results = cursor.fetchall()
     rows_count = cursor.rowcount
