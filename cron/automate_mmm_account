@@ -12,6 +12,5 @@ module load gcc-libs
 module load userscripts
 
 # Create any pending MMM requests
-date
 young-create automate
 

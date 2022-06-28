@@ -77,14 +77,14 @@ fi
 # replacement for become - creates homedir and adds key
 if ! sudo /shared/ucl/sysops/libexec/add_sshkeys "${username}" "${ssh_key}"
 then
-  echo "Creation of ${username} homedir or addition of key failed, exiting." >&2
+  echo $(date) ": Creation of ${username} homedir or addition of key failed, exiting." >&2
   exit 1
 fi
 
 # add user to ACL so they can log in and submit jobs
 if ! qconf -au "$username" "$ACL"
 then
-  echo "Adding ${username} to $ACL ACL failed, exiting." >&2
+  echo $(date) ": Adding ${username} to $ACL ACL failed, exiting." >&2
   exit 1
 fi
 
@@ -96,14 +96,14 @@ do
   if [ $? == 0 ]
   then
     echo ""
-    echo "Successfully allowed ${username} to log in"
+    echo $(date) ": Successfully allowed ${username} to log in"
     break
   elif (( $i < 3 ))
   # failed, try again
   then
     sleep 5
   else
-    echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk" >&2
+    echo $(date) ": Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk" >&2
     exit 1
   fi
 done
