@@ -60,7 +60,7 @@ then
 fi
 
 # become user, create ssh directory and add key
-echo "Becoming ${username}, creating ssh dir and adding key"
+echo $(date) ": Becoming ${username}, creating ssh dir and adding key"
 become_output=$(sudo /shared/ucl/sysops/libexec/become $username <<EOF
 echo "Beacon"
 mkdir -p .ssh
@@ -70,14 +70,14 @@ EOF
 )
 become_exit_status=$?
 if [ "${become_output:0:6}" != "Beacon" ]; then
-  echo "Error: could not become user ${username}" >&2
+  echo $(date) ": Error: could not become user ${username}" >&2
   exit 1
 fi
 
 # add user to ACL so they can log in and submit jobs
 if ! qconf -au "$username" "$ACL"
 then
-  echo "Adding ${username} to $ACL ACL failed, exiting." >&2 
+  echo $(date) ": Adding ${username} to $ACL ACL failed, exiting." >&2 
   exit 1
 fi
 
@@ -89,14 +89,14 @@ do
   if [ $? == 0 ]
   then
     echo ""
-    echo "Successfully allowed ${username} to log in"
+    echo $(date) ": Successfully allowed ${username} to log in"
     break
   elif (( $i < 3 ))
   # failed, try again
   then 
     sleep 5
   else
-    echo "Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk" >&2
+    echo $(date) ": Grid Engine failed to add ${username} to $ACL ACL three times - please contact rc-support@ucl.ac.uk" >&2
     exit 1
   fi
 done
