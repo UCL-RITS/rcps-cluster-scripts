@@ -116,9 +116,15 @@ function _get_user_quota_usage() {
     local username="$1"
     local lustre_path="$2"
 
-    lfs quota -q -u "$username" "$lustre_path" \
-        |tr -d '\n*' \
-        |awk '{print $2}'
+    if [[ -z "$global_calc_usage" ]]; then
+        lfs quota -q -u "$username" "$lustre_path" \
+            | tr -d '\n*' \
+            | awk '{print $2}'
+    else
+        lfs quota -v -q -u "$username" "$lustre_path" 2>/dev/null \
+            | grep '^\s\+[0-9]\+\*\?\s' \
+            | awk '{ sum+=$1 } END { print sum }'
+    fi
 }
 
 function _get_project_quota() {
@@ -149,9 +155,15 @@ function _get_project_quota_usage() {
                        )"
           project_id="${project_id%% *}"
 
-    lfs quota -q -p "$project_id" "$lustre_path" \
-        | tr -d '\n*' \
-        | awk '{print $2}'
+    if [[ -z "$global_calc_usage" ]]; then
+        lfs quota -q -p "$project_id" "$lustre_path" \
+            | tr -d '\n*' \
+            | awk '{print $2}'
+    else
+        lfs quota -v -q -p "$project_id" "$lustre_path" 2>/dev/null \
+            | grep '^\s\+[0-9]\+\*\?\s' \
+            | awk '{ sum+=$1 } END { print sum }'
+    fi
 }
 
 
@@ -435,6 +447,7 @@ lquota
    user      a username
    -l        list available pools
    -q        quiet mode -- do not print quota warnings or column headers
+   -u        calculate total usage from individual device usage
 
 EOF
     exit 0
@@ -448,11 +461,12 @@ function __main() {
     global_robot_mode=""
     global_dry_run=""
     global_quiet_mode=""
+    global_calc_usage=""
     local only_list_pools=""
     command -v /usr/bin/lfs >/dev/null || msg fatal "no lfs tool found in /usr/bin/lfs"
 
     local opt
-    while getopts ":hi:nblq" opt; do
+    while getopts ":hi:nblqu" opt; do
         case "$opt" in
             h)
                 usage
@@ -471,6 +485,10 @@ function __main() {
             q)
                 msg debug "setting quiet mode -- will not display column headers or user warnings"
                 global_quiet_mode="y"
+                ;;
+            u)
+                msg debug "will calculate usage from -v output"
+                global_calc_usage="y"
                 ;;
             :)
                 msg fatal "command line option \"-$OPTARG\" requires an argument"
