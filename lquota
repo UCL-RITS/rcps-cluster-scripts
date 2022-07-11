@@ -122,8 +122,8 @@ function _get_user_quota_usage() {
             | awk '{print $2}'
     else
         lfs quota -v -q -u "$username" "$lustre_path" 2>/dev/null \
-            | grep '^\s\+[0-9]\+\*\?\s' \
-            | awk '{ sum+=$1 } END { print sum }'
+            | grep -A1 '^\w\+-\(MDT\|OST\)' \
+            | awk '/^\s*[0-9]+\*?\s/ { sum +=$1 } END { print sum }'
     fi
 }
 
@@ -161,8 +161,8 @@ function _get_project_quota_usage() {
             | awk '{print $2}'
     else
         lfs quota -v -q -p "$project_id" "$lustre_path" 2>/dev/null \
-            | grep '^\s\+[0-9]\+\*\?\s' \
-            | awk '{ sum+=$1 } END { print sum }'
+            | grep -A1 '^\w\+-\(MDT\|OST\)' \
+            | awk '/^\s+[0-9]+\*?\s/ { sum +=$1 } END { print sum }'
     fi
 }
 
