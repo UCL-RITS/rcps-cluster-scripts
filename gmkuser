@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Make sure we are on a cluster with Gold
+if /shared/ucl/apps/cluster-bin/whereami &> /dev/null
+then
+  identifycluster="/shared/ucl/apps/cluster-bin/whereami"
+else
+  identifycluster="hostname -f"
+fi
+
+if "$identifycluster" | grep -q thomas || "$identifycluster" | grep -q michael || "$identifycluster" | grep -q young || "$identifycluster" | grep -q myriad || "$identifycluster" | grep -q kathleen
+then
+  ssh util-ha-nfs gmkuser "$@"
+else
+  echo "There is no resource management on this cluster."
+fi
+
