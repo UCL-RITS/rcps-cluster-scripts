@@ -105,8 +105,6 @@ while [[ -n "${1:-}" ]]; do
     fi
 
     # Then try searching the date-marked directories :(
-    # This find is going to take ages I bet
-    #for directory in $(find "$archive_job_search_dir" -maxdepth 1 -type d -name "*-*-*" | sort -r); do
     #shellcheck disable=SC2010
     # ^-- complains about using ls to list files in a script like this
     #     but getting minimum latency from a networked filesystem is a listed
