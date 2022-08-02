@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 
-search_dirs=(/var/opt/sge/shared/qmaster/job_scripts /var/opt/sge/shared/saved_job_scripts)
+set -o errexit \
+    -o nounset \
+    -o pipefail \
+    -o noclobber 
+
+active_job_search_dir=/var/opt/sge/shared/shared/qmaster/job_scripts
+archive_job_search_dir=/var/opt/sge/shared/saved_job_scripts
 
 function Usage() {
 echo "
@@ -12,8 +18,18 @@ echo "
     -h      show this help message
     -p      print path to script(s) instead of opening
     -c      cat -v script(s) instead of using \$PAGER (shows non printing chars)
-    -d DIR  use DIR as search directory instead of default 
+    -d DIR  use DIR as active (flat) search directory instead of default 
+    -k DIR  use DIR as archive (date-filed) search directory instead of default 
     -D      print default search directories
+    -a      keep searching after first find
+
+    Active job search dir is expected to be a flat directory full of job-ID named files.
+
+    Archive job search dir is expected to be a directory containing YYYY-MM-DD directories
+      each containing job-ID named files.
+
+    By default, only the first match will be shown, searching the active dir first, then
+      archive dirs in reverse order (to find the most recent).
     "
 }
 
@@ -23,7 +39,14 @@ if [ -z "$1" ]  ; then
     exit 1
 fi
 
-while getopts ":hpcd:D" opt; do
+
+# Defaults
+print_mode="pager"
+stop_on_first_result="yes"
+
+
+
+while getopts ":hpcd:k:aD" opt; do
     case $opt in
         h)
             Usage
@@ -35,11 +58,17 @@ while getopts ":hpcd:D" opt; do
         c)
             print_mode="cat"
             ;;
+        a)
+            stop_on_first_result="no"
+            ;;
         d)
-            search_dirs=("$OPTARG")
+            active_job_search_dir="$OPTARG"
+            ;;
+        k)  
+            archive_job_search_dir="$OPTARG"
             ;;
         D) 
-            echo "Search dirs: ${search_dirs[*]}"
+            printf "Active search dir: %s\nArchive search dir: %s\n" "$active_job_search_dir" "$archive_job_search_dir"
             exit 0
             ;;
         :)
@@ -57,7 +86,7 @@ shift $((OPTIND-1));
 
 declare -a files_found
 
-while [ -n "$1" ]; do
+while [[ -n "${1:-}" ]]; do
     if [[ ! "$1" =~ ^[0-9]+$ ]]; then
         echo "Invalid argument: $1" >&2
         exit 2
@@ -65,14 +94,34 @@ while [ -n "$1" ]; do
 
     found_for_this_jobid=0
 
-    for directory in "${search_dirs[@]}"; do
-        if [[ -f "$directory/$1" ]]; then
-            files_found+=("$directory/$1")
+    # First search active jobs
+    if [[ -f "$active_job_search_dir/$1" ]]; then
+        files_found+=("$directory/$1")
+        found_for_this_jobid=$((found_for_this_jobid + 1))
+        if [[ "$stop_on_first_result" == "yes" ]]; then
+            shift
+            continue
+        fi
+    fi
+
+    # Then try searching the date-marked directories :(
+    # This find is going to take ages I bet
+    #for directory in $(find "$archive_job_search_dir" -maxdepth 1 -type d -name "*-*-*" | sort -r); do
+    #shellcheck disable=SC2010
+    # ^-- complains about using ls to list files in a script like this
+    #     but getting minimum latency from a networked filesystem is a listed
+    #     and valid exception
+    for directory in $(ls -1U "$archive_job_search_dir" | grep -e '-' | sort -r); do 
+        if [[ -f "$archive_job_search_dir/$directory/$1" ]]; then
+            files_found+=("$archive_job_search_dir/$directory/$1")
             found_for_this_jobid=$((found_for_this_jobid + 1))
+            if [[ "$stop_on_first_result" == "yes" ]]; then
+                break 
+            fi
         fi
     done
 
-    if [[ ${found_for_this_jobid} -eq 0 ]]; then
+    if [[ "${found_for_this_jobid}" -eq 0 ]]; then
         echo "Job script not found for id: $1" >&2
     fi
 
@@ -84,7 +133,7 @@ if [ ${#files_found[*]} -eq 0 ]; then
     exit 5
 fi
 
-case "${print_mode:-pager}" in
+case "$print_mode" in
     pager)
         ${PAGER:-less} "${files_found[@]}"
         ;;
