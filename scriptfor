@@ -96,7 +96,7 @@ while [[ -n "${1:-}" ]]; do
 
     # First search active jobs
     if [[ -f "$active_job_search_dir/$1" ]]; then
-        files_found+=("$directory/$1")
+        files_found+=("$active_job_search_dir/$1")
         found_for_this_jobid=$((found_for_this_jobid + 1))
         if [[ "$stop_on_first_result" == "yes" ]]; then
             shift
