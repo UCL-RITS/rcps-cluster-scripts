@@ -5,7 +5,7 @@ set -o errexit \
     -o pipefail \
     -o noclobber 
 
-active_job_search_dir=/var/opt/sge/shared/shared/qmaster/job_scripts
+active_job_search_dir=/var/opt/sge/shared/qmaster/job_scripts
 archive_job_search_dir=/var/opt/sge/shared/saved_job_scripts
 
 function Usage() {
