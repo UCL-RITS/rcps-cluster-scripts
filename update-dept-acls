@@ -11,7 +11,7 @@ set -o errexit \
 
 function check_commands_avail() {
     for c in "$@"; do
-        command -v "$c" >/dev/null || exit 1
+        command -v "$c" >/dev/null || (printf "%s: error: needs command '%s' which is not available\n" "$0" "$c" >&2; exit 1)
     done
 }
 
