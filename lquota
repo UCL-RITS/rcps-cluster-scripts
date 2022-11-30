@@ -581,10 +581,10 @@ function __main() {
     if [[ "$#" -eq 1 ]]; then
         if [[ "$(whoami)" != "root" ]]; then
             msg fatal "You must be root to get quotas for other users."
-            check_user_exists "$1"
-            local user="$1"
-            local op_mode="display"
         fi
+        check_user_exists "$1"
+        local user="$1"
+        local op_mode="display"
     fi
 
 
