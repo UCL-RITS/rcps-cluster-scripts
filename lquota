@@ -329,7 +329,36 @@ function print_project_quota_for_poolkvs() {
 
 
 function report_user_quota() {
-    msg fatal "not implemented yet"
+    local pattern="$1"
+    local pooldir="${pattern%/*}"
+    local user
+    local -A quota
+    local -A usage
+
+    msg info "Gathering users' quota, please be patient..."
+    for userdir in "${pooldir}"/*; do
+        if [[ -L "${userdir}" || ! -d "${userdir}" ]]; then
+            msg debug "skipping entry '${userdir}', is not a directory"
+            continue
+        fi
+        user="${userdir##*/}"
+        if [[ ! "$user" =~ ^[a-z0-9]{7}$ ]]; then
+            msg debug "skipping entry '${userdir}', malformed username"
+            continue
+        fi
+        quota[$user]="$( _get_user_quota "$user" "$userdir")"
+        usage[$user]="$( _get_user_quota_usage "$user" "$userdir")"
+    done
+
+    printf "%-12s %12s %12s\n" User Usage Quota
+    echo "----------------------------------------"
+    for user in "${!quota[@]}"; do
+        printf "%-12s %12s %12s\n" \
+            "$user" \
+            "$(raw_kb_to_human_size_compact "${usage[$user]}")" \
+            "$(raw_kb_to_human_size_compact "${quota[$user]}")"
+    done \
+    | sort -k 2 -h -r
 }
 
 
