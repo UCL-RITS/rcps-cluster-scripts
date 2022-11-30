@@ -133,6 +133,7 @@ function _get_project_quota() {
 
     local lustre_path="$1"
 
+    local project_id
     project_id="$(lsattr -pd "$lustre_path" \
                     || msg fatal "lsattr command could not get project ID"
                 )"
@@ -327,6 +328,56 @@ function print_project_quota_for_poolkvs() {
 }
 
 
+function report_user_quota() {
+    msg fatal "not implemented yet"
+}
+
+
+function report_project_quota() {
+    local pattern="$1"
+    local pooldir="${pattern%/*}"
+    local project_id
+    local user
+    local -A users
+    local -A quota
+    local -A usage
+
+    msg info "Gathering users' quota, please be patient..."
+    for userdir in "${pooldir}"/*; do
+        if [[ -L "${userdir}" || ! -d "${userdir}" ]]; then
+            msg debug "skipping entry '${userdir}', is not a directory"
+            continue
+        fi
+        user="${userdir##*/}"
+        if [[ ! "$user" =~ ^[a-z0-9]{7}$ ]]; then
+            msg debug "skipping entry '${userdir}', malformed username"
+            continue
+        fi
+        project_id="$(lsattr -pd "${userdir}" \
+                      || msg fatal "lsattr command could not get project ID"
+                     )"
+        project_id="${project_id%% *}"
+        if [[ "${project_id}" -eq 0 ]]; then
+            msg debug "skipping entry '${userdir}', project id is zero"
+            continue
+        fi
+        users[$project_id]="$user"
+        quota[$project_id]="$( _get_project_quota "$userdir" )"
+        usage[$project_id]="$( _get_project_quota_usage "$userdir" )"
+    done
+
+    printf "%-12s %12s %12s\n" User Usage Quota
+    echo "----------------------------------------"
+    for project_id in "${!quota[@]}"; do
+        printf "%-12s %12s %12s\n" \
+            "${users[$project_id]}" \
+            "$(raw_kb_to_human_size_compact "${usage[$project_id]}")" \
+            "$(raw_kb_to_human_size_compact "${quota[$project_id]}")"
+    done \
+    | sort -k 2 -h -r
+}
+
+
 function validate_size() {
     local size="$1"
     # *yes* strictly this allows for millibits and other nonsensical
@@ -439,6 +490,11 @@ function raw_kb_to_human_size() {
     fi
 }
 
+function raw_kb_to_human_size_compact() {
+    local size="$1"
+    raw_kb_to_human_size "$size" | tr -d '\n '
+}
+
 
 function usage() {
     cat <<EOF
@@ -448,6 +504,7 @@ lquota
    -l        list available pools
    -q        quiet mode -- do not print quota warnings or column headers
    -u        calculate total usage from individual device usage
+   -r pool   produce quota report for the given pool
 
 EOF
     exit 0
@@ -463,10 +520,11 @@ function __main() {
     global_quiet_mode=""
     global_calc_usage=""
     local only_list_pools=""
+    local report_pool=""
     command -v /usr/bin/lfs >/dev/null || msg fatal "no lfs tool found in /usr/bin/lfs"
 
     local opt
-    while getopts ":hi:nblqu" opt; do
+    while getopts ":hi:nblqur:" opt; do
         case "$opt" in
             h)
                 usage
@@ -489,6 +547,9 @@ function __main() {
             u)
                 msg debug "will calculate usage from -v output"
                 global_calc_usage="y"
+                ;;
+            r)  report_pool="${OPTARG}"
+                msg debug "will produce quota report for pool '${report_pool}'"
                 ;;
             :)
                 msg fatal "command line option \"-$OPTARG\" requires an argument"
@@ -587,6 +648,15 @@ function __main() {
         local op_mode="display"
     fi
 
+    if [[ "$report_pool" != "" ]]; then
+        if [[ "$(whoami)" != "root" ]]; then
+            msg fatal "You must be root to get quotas for all users."
+        fi
+        if [[ "$#" -ne 0 ]]; then
+            msg fatal "Report mode doesn't take a username."
+        fi
+        local op_mode="report"
+    fi
 
     if [[ "$op_mode" == "display" ]]; then
         for pool_path in "${pools[@]//%username%/$user}"; do
@@ -610,6 +680,19 @@ function __main() {
             msg debug "calling: print_project_quota_for_paths ${subst_pools[*]@Q}"
             print_project_quota_for_poolkvs "${subst_pools[@]}" || exit 1 
         fi
+
+    elif [[ "$op_mode" == "report" ]]; then
+        if [[ "${pools[$report_pool]:+has_a_value}" != "has_a_value" ]]; then
+            msg fatal "unknown pool '${report_pool}', use option -l to list pools"
+        fi
+        if [[ "$quota_mode" == "user" ]]; then
+            msg debug "calling: report_user_quota ${pools[$report_pool]@Q}"
+            report_user_quota "${pools[$report_pool]}"
+        elif [[ "$quota_mode" == "project" ]]; then
+            msg debug "calling: report_project_quota ${pools[$report_pool]@Q}"
+            report_project_quota "${pools[$report_pool]}"
+        fi
+
     else 
         msg fatal "Invalid op_mode: $op_mode"
     fi
@@ -617,3 +700,4 @@ function __main() {
 
 __main "$@"
 
+# vim: set expandtab ts=4 sw=4 :
