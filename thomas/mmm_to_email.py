@@ -8,7 +8,11 @@ def getEmail(userid):
 
     email=""
 
-    query = "SELECT email FROM users WHERE username LIKE '" + userid + "';"
+    cluster_dbs = ["thomas","young"]
+    union_string = ' union '.join(["SELECT username,email FROM %s.users" % c for c in cluster_dbs])
+
+
+    query = "SELECT email FROM (%s) AS t1 WHERE username LIKE '%s';" % (union_string, userid)
 
     try:
         conn = mysql.connector.connect(option_files=os.path.expanduser('~/.thomas.cnf'), database='thomas')
