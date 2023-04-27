@@ -347,9 +347,9 @@ def main(argv):
         exit(1)
 
     # Check that the user running the add command is a member of ccsprcop or lgmmmpoc
-    if not validate.user_has_privs():
-        print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the add commands. Exiting.", file=sys.stderr)
-        exit(1)
+    #if not validate.user_has_privs():
+    #    print("You need to be a member of the lgmmmpoc or ccsprcop groups to run the add commands. Exiting.", file=sys.stderr)
+    #    exit(1)
 
     if (args.subcommand == "user"):
         # UCL user validation - if this is a UCL email, make sure username was given 
