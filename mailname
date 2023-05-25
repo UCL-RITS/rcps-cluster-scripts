@@ -29,7 +29,8 @@ fi
 
 for name in "$@"; do
       if [[ ! "$name" =~ [A-Za-z.0-9+-]+@ucl\.ac\.uk ]] && \
-         [[ ! "$name" =~ [A-Za-z.0-9+-]+@live\.ucl\.ac\.uk ]]; then
+         [[ ! "$name" =~ [A-Za-z.0-9+-]+@live\.ucl\.ac\.uk ]] && \
+         [[ ! "$name" =~ [A-Za-z.0-9+-]+@alumni\.ucl\.ac\.uk ]]; then
           echo "Error: not a valid UCL email address: $name" >&2
           exit 1
       fi
