@@ -43,6 +43,11 @@ Usage: $scriptname [-h] [-f|-i] [-r]
     -f  Force update even if it would be the same
     -i  Do not treat it as an error if the update would be the same
     -k  Do not remove old module trees after update
+
+Branches:
+    If a file named 'modulefiles_branch_override' exists in the target
+     directory, it will be read and its contents used as the name of the
+     branch to check out from the modulefiles repository.
 "
 
 # Mode defaults
@@ -100,9 +105,17 @@ fi
 branch="master"
 repo_url="https://github.com/UCL-RITS/rcps-modulefiles.git"
 
+override_file="$moduledirs_path/modulefiles_branch_override"
+if [[ -r "$override_file" ]]; then
+    echo "Found branch override file, reading..." >&2
+    branch="$(tr -d '\n' <"$override_file")"
+    echo "Set branch to: $branch" >&2
+else
+    echo "No branch override file found, using default: $branch" >&2
+fi
 
 echo "Getting latest commit hash for ${branch} branch..." >&2
-latest_sha=$(git ls-remote --exit-code ${repo_url} ${branch} | cut -f 1)
+latest_sha=$(git ls-remote --exit-code "${repo_url}" "${branch}" | cut -f 1)
 
 if [[ -n "$DEBUG" ]]; then
   echo "latest_sha: ${latest_sha}" >&2
@@ -149,7 +162,7 @@ if [[ -d "$target_dir" || -d "$target_dir.*" ]]; then
 fi
 
 
-git clone --depth=1 -b ${branch} https://github.com/UCL-RITS/rcps-modulefiles.git "${target_dir}"
+git clone --depth=1 -b "${branch}" https://github.com/UCL-RITS/rcps-modulefiles.git "${target_dir}"
 echo "${req_commit_sha}" >"${target_dir}/.commit_sha"
 
 most_recent_log="$(cd "${moduledirs_path}/${target_dir}" && git log -n 1 --no-decorate --oneline)"
