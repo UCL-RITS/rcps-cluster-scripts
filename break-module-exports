@@ -1,0 +1,72 @@
+#!/bin/bash
+
+set -o errexit \
+    -o nounset \
+    -o pipefail \
+    -o noclobber
+
+function print_help() {
+    echo "Usage: $0 <modules install prefix>"
+    echo ""
+    echo "This script creates and links a copy of a Tcl Env Modules"
+    echo " bash init script, appending commands to unexport all"
+    echo " the module shell functions."
+    echo "This is done because qrsh -- which we use to run MPI tasks"
+    echo " on compute nodes -- cannot handle exported shell functions"
+    echo " and produces very noisy errors if they are present."
+    echo ""
+    echo "Because this performs the symlink as the final operation,"
+    echo " it should be safe to run live."
+    echo ""
+}
+
+if [[ "$#" != 1 ]]; then
+    print_help >&2
+    exit 1
+fi
+
+if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+   print_help 
+   exit 0
+fi
+
+target_dir="$1"
+target_file="$target_dir/init/bash"
+
+if [[ ! -w "$target_file" ]]; then
+    echo "Error: No writable bash init file found in provided directory" >&2
+    exit 2
+fi
+
+if grep --quiet -e '^#UNEXPORTED_FLAG_COMMENT' "$target_file"; then
+    echo "Detected UNEXPORTED_FLAG_COMMENT in target file: unexports already added." >&2
+    exit 0
+fi
+
+if [[ -f "$target_file.old" ]]; then
+    echo "Error: Flag not found, but found existing backup of bash init file in: $target_file.old" >&2
+    echo "       This script does not know how to proceed in this situation." >&2
+    exit 3
+fi
+
+# Okay let's get on with it
+
+echo "Making copies of old bash init file..." >&2
+cp -v "$target_file" "$target_file.old"
+cp -v "$target_file" "$target_file.no_export_fs"
+
+echo "Appending unexports to copy..." >&2
+cat >>"$target_file.no_export_fs" <<'EOF'
+# unexports all module shell functions to avoid a bug in qrsh
+declare -Fx module      && export -nf module
+declare -Fx ml          && export -nf ml
+declare -Fx _module_raw && export -nf _module_raw
+declare -Fx switchml    && export -nf switchml
+#UNEXPORTED_FLAG_COMMENT
+# ^-- this means we can check whether we've made the change to the init file
+EOF
+
+echo "Force-linking old filename to new copy..." >&2
+ln -vsf "${target_file##*/}.no_export_fs" "$target_file"
+
+echo "Done." >&2
