@@ -58,10 +58,10 @@ cp -v "$target_file" "$target_file.no_export_fs"
 echo "Appending unexports to copy..." >&2
 cat >>"$target_file.no_export_fs" <<'EOF'
 # unexports all module shell functions to avoid a bug in qrsh
-declare -Fx module      && export -nf module
-declare -Fx ml          && export -nf ml
-declare -Fx _module_raw && export -nf _module_raw
-declare -Fx switchml    && export -nf switchml
+declare -Fx module      && export -nf module       || true
+declare -Fx ml          && export -nf ml           || true
+declare -Fx _module_raw && export -nf _module_raw  || true
+declare -Fx switchml    && export -nf switchml     || true
 #UNEXPORTED_FLAG_COMMENT
 # ^-- this means we can check whether we've made the change to the init file
 EOF
