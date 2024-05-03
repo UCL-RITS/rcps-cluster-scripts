@@ -19,6 +19,10 @@ function print_usage() {
     
     (job idents are in the form: job_id.task_id)
     (task_id = \"unspecified\" if not an array job)
+
+    If two OOM kills happen in different job cgroups within a 3-second
+     window, this tool will inadvertently print them both for each job.
+    Avoiding this would make everything *much* more complicated.
 \n" "$bn"
 }
 
@@ -67,6 +71,7 @@ function extract_date() {
 }
 
 # This takes a date in the format above and adds the dates 1,2 seconds before and after
+# The OOM messages typically happen over 1 or 2 seconds and this ensures we catch them all
 function add_window() {
     sed -e 's/^\(.*\) *$/date --date="\1 - 2 seconds" +"%a %b %e %H:%M:%S %Y"; date --date="\1 - 1 second" +"%a %b %e %H:%M:%S %Y";printf "%s\n" "\1"; date --date="\1 + 1 second" +"%a %b %e %H:%M:%S %Y"; date --date="\1 + 2 seconds" +"%a %b %e %H:%M:%S %Y"/e'
 }
@@ -84,7 +89,6 @@ function transform_kill_line() {
     # I *think* this anon-rss number is per-cgroup, not per-process, but I'm not sure
     sed -ne 's/^\(\[[^]]*\]\).*Killed process [0-9]* (\(.*\)), .*, anon-rss:\([0-9]*\)kB,.*$/\1 OOM KILL: Process named \2 was killed, job attempting to use RAM: \3 kB (anon-rss)/p'
 }
-
 
 oom_times="$(dmesg_get \
                 | grep -F -e "Task in /UCL/$job_ident killed as a result of limit" \
