@@ -14,10 +14,8 @@ function print_usage() {
      the out-of-memory kill handler having killed a process in a job's
      cgroup.
 
-    If no job ident is provided, it will default to SGE_UCL_JIDENT.
-    If SGE_UCL_JIDENT is not set in this case, an error will result.
+    If no job ident is provided, it will default to job_id.task_id.
     
-    (job idents are in the form: job_id.task_id)
     (task_id = \"unspecified\" if not an array job)
 
     If two OOM kills happen in different job cgroups within a 3-second
@@ -26,15 +24,17 @@ function print_usage() {
 \n" "$bn"
 }
 
+# There's an SGE_UCL_JIDENT variable, but in non-array jobs the task ID section
+#  is "0", not "undefined". So we'll put it together ourselves.
 
 job_ident=""
 
 if [[ "$#" -eq 0 ]]; then
-    if [[ "${SGE_UCL_JIDENT:-}" == "" ]]; then
-        echo "Error: this script is intended to be run in a job environment, but SGE_UCL_JIDENT was not set." >&2
+    if [[ "${JOB_ID:-}" == "" ]] || [[ "${SGE_TASK_ID:-}" == "" ]]; then
+        echo "Error: this script is intended to be run in a job environment, but JOB_ID and/or SGE_TASK_ID were not set." >&2
         exit 1
     fi
-    job_ident="$SGE_UCL_JIDENT"
+    job_ident="$JOB_ID.$SGE_TASK_ID"
 fi
 
 if [[ "$#" -eq 1 ]]; then
@@ -58,7 +58,6 @@ fi
 # We get the second it happened,
 # then everything that happened that second
 
-# Currently un-targeted: for jobs, we want to specify the JIDENT to ensure it's relevant to the user
 
 # This extracts a date in the format:
 # [Wed May  1 11:03:05 2024]
@@ -86,7 +85,7 @@ function dmesg_get_err() {
 }
 
 function transform_kill_line() {
-    # I *think* this anon-rss number is per-cgroup, not per-process, but I'm not sure
+    # I'm pretty sure this anon-rss number is per-cgroup, not per-process, after some testing.
     sed -ne 's/^\(\[[^]]*\]\).*Killed process [0-9]* (\(.*\)), .*, anon-rss:\([0-9]*\)kB,.*$/\1 OOM KILL: Process named \2 was killed, job attempting to use RAM: \3 kB (anon-rss)/p'
 }
 
