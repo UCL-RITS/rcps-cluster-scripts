@@ -61,14 +61,14 @@ fi
 # Or [%a %b %e %H:%M:%S %Y] in strftime format
 # It's not the strictest it could be, to keep it even vaguely understandable within grep regexes
 function extract_date() {
-    grep -o '^\[[A-Z][a-z][a-z] [A-Z][a-z][a-z] [ 0-9][0-9] [0-2][0-9]:[0-5][0-9]:[0-6][0-9] 20[0-2][0-9]\] ' \
+    grep -o '^\[[A-Z][a-z][a-z] [A-Z][a-z][a-z] [ 0-9][0-9] [0-2][0-9]:[0-5][0-9]:[0-6][0-9] 20[0-2][0-9]\]' \
         | tr -d '[]' \
         | add_window
 }
 
-# This takes a date in the format above and adds the dates 1 second before and after
+# This takes a date in the format above and adds the dates 1,2 seconds before and after
 function add_window() {
-    sed -e 's/^\(.*\)$/date --date="\1 - 1 second" +"%a %b %e %H:%M:%S %Y";printf "%s\n" "\1"; date --date="\1 + 1 second" +"%a %b %e %H:%M:%S %Y"/e'
+    sed -e 's/^\(.*\) *$/date --date="\1 - 2 seconds" +"%a %b %e %H:%M:%S %Y"; date --date="\1 - 1 second" +"%a %b %e %H:%M:%S %Y";printf "%s\n" "\1"; date --date="\1 + 1 second" +"%a %b %e %H:%M:%S %Y"; date --date="\1 + 2 seconds" +"%a %b %e %H:%M:%S %Y"/e'
 }
 
 # This is to let us substitute the source for testing
@@ -85,16 +85,14 @@ function transform_kill_line() {
     sed -ne 's/^\(\[[^]]*\]\).*Killed process [0-9]* (\(.*\)), .*, anon-rss:\([0-9]*\)kB,.*$/\1 OOM KILL: Process named \2 was killed, job attempting to use RAM: \3 kB (anon-rss)/p'
 }
 
-oom_times="$(dmesg_get \ \
+
+oom_times="$(dmesg_get \
                 | grep -F -e "Task in /UCL/$job_ident killed as a result of limit" \
                 | extract_date \
                 )"
 
-set -x
-
 if [[ "$oom_times" != "" ]]; then
     dmesg_get_err \
-        | tee dmesg_out.$$ \
         | grep -F -e "$oom_times" \
         | transform_kill_line
 fi
