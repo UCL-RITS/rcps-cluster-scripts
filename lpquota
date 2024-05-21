@@ -34,7 +34,9 @@ function print_project_quota_for_path() {
     fi
 
     # Get just the numeric ID off the beginning of the line
-    dir_project_id="${dir_project_id%% *}"
+    # Bear in mind that this line can have leading spaces if the project ID is small
+    dir_project_id="${dir_project_id// /}"
+    dir_project_id="${dir_project_id%%-*}"
 
     # lfs quota needs a directory, so if it's a file get the dirname
     local target_dir
