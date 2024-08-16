@@ -211,7 +211,11 @@ function print_user_quota_for_poolkvs() {
 
           human_usage="$(raw_kb_to_human_size "$usage_kb")"
           human_quota="$(raw_kb_to_human_size "$quota_kb")"
-          usage_pc="$(( (usage_kb * 100) / quota_kb ))"
+          if [[ "$quota_kb" -gt 0 ]]; then
+              usage_pc="$(( (usage_kb * 100) / quota_kb ))"
+          else
+              usage_pc=0  # no quota, which means unlimited
+          fi
 
           printf "%*s  %*s   %*s   %5d%%   %s\n" 12 "$pool_name" 10 "$human_usage" 10 "$human_quota" "$usage_pc" "$pool_path"
           if [[ "$usage_pc" -ge 90 ]] && [[ "$usage_pc" -le 100 ]]; then
@@ -289,7 +293,11 @@ function print_project_quota_for_poolkvs() {
 
           human_usage="$(raw_kb_to_human_size "$usage_kb")"
           human_quota="$(raw_kb_to_human_size "$quota_kb")"
-          usage_pc="$(( (usage_kb * 100) / quota_kb ))"
+          if [[ "$quota_kb" -gt 0 ]]; then
+              usage_pc="$(( (usage_kb * 100) / quota_kb ))"
+          else
+              usage_pc=0  # no quota, which means unlimited
+          fi
 
           printf "%*s  %*s   %*s   %5d%%   %s\n" 12 "$pool_name" 10 "$human_usage" 10 "$human_quota" "$usage_pc" "$pool_path"
           if [[ "$usage_pc" -ge 90 ]] && [[ "$usage_pc" -le 100 ]]; then
