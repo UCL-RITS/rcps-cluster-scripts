@@ -127,17 +127,24 @@ function _get_user_quota_usage() {
     fi
 }
 
-function _get_project_quota() {
+function _get_project_id() {
+    local lustre_path="$1"
+
     command -v lsattr >/dev/null \
         || msg fatal "could not find lsattr command, needed for project quota ID"
 
+    local project_id
+          project_id="$(lsattr -pd "$lustre_path" | awk '{print $1}' \
+                            || msg fatal "lsattr command could not get project ID"
+                       )"
+    echo "$project_id"
+}
+
+function _get_project_quota() {
     local lustre_path="$1"
 
     local project_id
-    project_id="$(lsattr -pd "$lustre_path" \
-                    || msg fatal "lsattr command could not get project ID"
-                )"
-    project_id="${project_id%% *}"
+          project_id="$(_get_project_id "$lustre_path")"
 
     lfs quota -q -p "$project_id" "$lustre_path" \
         | tr -d '\n*' \
@@ -145,16 +152,10 @@ function _get_project_quota() {
 }
 
 function _get_project_quota_usage() {
-    command -v lsattr >/dev/null \
-        || msg fatal "could not find lsattr command, needed for project quota ID"
-
     local lustre_path="$1"
 
     local project_id
-          project_id="$(lsattr -pd "$lustre_path" \
-                            || msg fatal "lsattr command could not get project ID"
-                       )"
-          project_id="${project_id%% *}"
+          project_id="$(_get_project_id "$lustre_path")"
 
     if [[ -z "$global_calc_usage" ]]; then
         lfs quota -q -p "$project_id" "$lustre_path" \
@@ -382,10 +383,7 @@ function report_project_quota() {
             msg debug "skipping entry '${userdir}', malformed username"
             continue
         fi
-        project_id="$(lsattr -pd "${userdir}" \
-                      || msg fatal "lsattr command could not get project ID"
-                     )"
-        project_id="${project_id%% *}"
+        project_id="$(_get_project_id "${userdir}")"
         if [[ "${project_id}" -eq 0 ]]; then
             msg debug "skipping entry '${userdir}', project id is zero"
             continue
@@ -639,15 +637,15 @@ function __main() {
             ;;
         "kathleen")
             msg debug "using settings for kathleen"
-            # Whereas Kathleen uses ZFS on the backend storage,
-            #  which doesn't support project attributes on files C_C
-            local quota_mode="user"
+            # Kathleen's new Lustre uses project quotas,
+            # but no separate quotas for home and scratch
+            local quota_mode="project"
             local -A pools=([lustre]="/home/%username%")
             local default_pool="lustre"
             ;;
         "young")
             msg debug "using settings for young"
-            # ZFS, no project attributes, one single quota
+            # Young's Lustre uses ZFS which didn't support project quotas initially
             local quota_mode="user"
             local -A pools=([lustre]="/home/%username%")
             local default_pool="lustre"
