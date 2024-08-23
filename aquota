@@ -1,0 +1,79 @@
+#!/bin/bash
+# vim: set et ai sw=3 ts=3 :
+
+# Display a users ACFS quota and disk usage.
+# -- 2024/08 uccafot
+
+set -o pipefail
+
+usage () {
+   local rc="$1"
+   [[ -z "$rc" ]] && rc=1
+   cat <<EOF
+Usage: aquota [ <username> ]
+Display the user's ACFS quota and disk usage.
+Without username, defaults to the current user.
+EOF
+   exit "$rc"
+}
+
+error () {
+   local msg="$1"
+   echo "ERROR: ${msg}" >&2
+   exit 1
+}
+
+_timeout_guard () {
+   timeout -k 3 5 "$@"
+   rc=$?
+   [[ "$rc" -eq 124 ]] && error "Command timed out. Server unavailable?"
+   return "$rc"
+}
+
+kiB_to_human () {
+   local size="$1"
+   # RHEL7 numfmt doesn't support precision control :(
+   numfmt --from=iec-i --to=iec-i --suffix B "${size}KiB"
+}
+
+# GPFS reports quota and usage as the actually allocated disk space,
+# i.e. including the replication factor (2, for us). For the whole
+# saga, see https://github.com/UCL-ARC/Book-of-RDP/issues/96
+repfac=2
+
+# ACFS mount point
+ACFSdir='/acfs/users'
+
+
+while getopts ':h' opt; do
+   case "$opt" in
+      h)  usage 0 ;;
+      *)  error "invalid option: $OPTARG" ;;
+   esac
+done
+shift $((OPTIND-1))
+
+username="$1"
+[[ -z "$username" ]] && username="$USER"
+
+userdir="${ACFSdir}/${username}"
+
+_timeout_guard mountpoint -q "${ACFSdir}" \
+|| error "ACFS is not mounted."
+
+_timeout_guard test -d "${userdir}" \
+|| error "ACFS directory '${userdir}' doesn't exist."
+
+df_output="$( _timeout_guard df -k --output='size,used,pcent' "${userdir}" | tail -n 1 )"
+# here, the timeout guard runs in a subshell, so it won't exit this script
+rc=$?
+[[ "$rc" -ne 0 ]] && exit "$rc"
+
+read bquota bused bpct <<< "${df_output}"
+bquota="$(kiB_to_human "$(( bquota / repfac ))")"
+bused="$(kiB_to_human "$(( bused / repfac ))")"
+
+printf "%-20s %7s %7s %6s\n" \
+   "Path" "Used" "Quota" "%Used"
+printf "%-20s %7s %7s %6s\n" \
+   "$userdir" "$bused" "$bquota" "$bpct"
