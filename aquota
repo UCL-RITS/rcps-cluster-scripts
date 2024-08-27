@@ -4,7 +4,9 @@
 # Display a users ACFS quota and disk usage.
 # -- 2024/08 uccafot
 
-set -o pipefail
+set -o errexit \
+    -o nounset \
+    -o pipefail
 
 usage () {
    local rc="$1"
@@ -53,8 +55,9 @@ while getopts ':h' opt; do
 done
 shift $((OPTIND-1))
 
-username="$1"
-[[ -z "$username" ]] && username="$USER"
+username="${1:-"${USER:-}"}"
+[[ -n "$username" ]] \
+   || error "cannot determine username to use: no argument provided and USER variable not set."
 
 userdir="${ACFSdir}/${username}"
 
@@ -65,9 +68,6 @@ _timeout_guard test -d "${userdir}" \
 || error "ACFS directory '${userdir}' doesn't exist."
 
 df_output="$( _timeout_guard df -k --output='size,used,pcent' "${userdir}" | tail -n 1 )"
-# here, the timeout guard runs in a subshell, so it won't exit this script
-rc=$?
-[[ "$rc" -ne 0 ]] && exit "$rc"
 
 read bquota bused bpct <<< "${df_output}"
 bquota="$(kiB_to_human "$(( bquota / repfac ))")"
