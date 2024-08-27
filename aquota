@@ -62,14 +62,21 @@ username="${1:-"${USER:-}"}"
 userdir="${ACFSdir}/${username}"
 
 _timeout_guard mountpoint -q "${ACFSdir}" \
-|| error "ACFS is not mounted."
+   || error "ACFS is not mounted."
 
 _timeout_guard test -d "${userdir}" \
-|| error "ACFS directory '${userdir}' doesn't exist."
+   || error "ACFS directory '${userdir}' doesn't exist."
 
+
+# Note that:
+#  - this is intended to point at an NFS mount of a GPFS system
+#  - running df against one of those gives the *fileset quota* which we are using per-user
+#  - so this gives us the user's quota on ACFS, *not* the total available storage on the ACFS
+#  - ACFS has actual user (and group) quotas and we are not using them
+#  - yes, this is, overall, a little weird
 df_output="$( _timeout_guard df -k --output='size,used,pcent' "${userdir}" | tail -n 1 )"
 
-read bquota bused bpct <<< "${df_output}"
+read -r bquota bused bpct <<< "${df_output}"
 bquota="$(kiB_to_human "$(( bquota / repfac ))")"
 bused="$(kiB_to_human "$(( bused / repfac ))")"
 
