@@ -98,7 +98,7 @@ function concat_nodes() {
                 split(job, job_label_parts, " ")
                 time_stamp = job_label_parts[1]
                 job_id_and_task_id = job_label_parts[2]
-                print "[" strftime(time_stamp) "] " job_id_and_task_id ":" jobs[job]
+                print "[" strftime("%a %b %e %H:%M:%S %Z %Y", time_stamp) "] " job_id_and_task_id ":" jobs[job]
                 delete jobs[job]
             }
         }
