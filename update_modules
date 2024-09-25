@@ -99,6 +99,12 @@ if [[ ! -L "modulefiles" ]]; then
   fi
 fi
 
+# Check if there's a common apps area (e.g. merged Young/Michael)
+if [[ -d ../common ]]; then
+  ln -Tfs ../common/modulefiles modulefiles
+  cd ../common
+  moduledirs_path="$PWD"
+fi
 
 # Repo config info
 
