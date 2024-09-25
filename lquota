@@ -636,13 +636,6 @@ function __main() {
             local -A pools=([lustre]="/scratch")
             local default_pool="lustre"
             ;;
-        "michael")
-            msg debug "using settings for michael"
-            # Ditto for michael
-            local quota_mode="user"
-            local -A pools=([lustre]="/scratch")
-            local default_pool="lustre"
-            ;;
         "kathleen")
             msg debug "using settings for kathleen"
             # Kathleen's new Lustre uses project quotas,
@@ -651,12 +644,12 @@ function __main() {
             local -A pools=([lustre]="/home/%username%")
             local default_pool="lustre"
             ;;
-        "young")
-            msg debug "using settings for young"
-            # Young's Lustre uses ZFS which didn't support project quotas initially
-            local quota_mode="user"
-            local -A pools=([lustre]="/home/%username%")
-            local default_pool="lustre"
+        "young"|"michael")
+            msg debug "using settings for young+michael"
+            # Young and Michael now share one Lustre filesystem
+            local quota_mode="project"
+            local -A pools=([home]="/home/%username%" [scratch]="/scratch/%username%")
+            local default_pool="scratch"
             ;;
         *)
     esac
