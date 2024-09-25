@@ -30,8 +30,10 @@ function usage() {
     "
 }
 
-
+# Leaks in a schedule log file name (ew, FIXME), decompresses if necessary using appropriate tools
+#  and then, if args are provided, filters for a job ID and task ID
 function get_sched_lines () {
+    # Select tools to transparently handle compressed files
     if [[ "${schedule_file##*\.}" == "gz" ]] && [[ ! "$schedule_file" == "gz" ]]; then
         CAT="zcat"
         GREP="zgrep"
@@ -42,15 +44,19 @@ function get_sched_lines () {
         CAT="cat"
         GREP="grep"
     fi
+
     if [[ -z "${1:-}" ]]; then
+        # If we don't have any args, just decompress
         "$CAT" "$schedule_file"
     elif [[ -n "${1:-}" ]] && [[ -z "${2:-}" ]]; then
+        # If we only have a job ID
         if [[ ! "$1" =~ ^[0-9]*$ ]]; then
             echo "Error: invalid job id: must be numeric only" >&2
             exit 2
         fi
         "$GREP" -e "^$1:" -e :::::::: "$schedule_file"
     else
+        # If we have a job ID and a task ID
         if [[ ! "$1" =~ ^[0-9]*$ ]]; then
             echo "Error: invalid job id: must be numeric only" >&2
             exit 2
@@ -62,9 +68,16 @@ function get_sched_lines () {
     fi
 }
 
+# Takes a section of schedule log as stdin and outputs e.g.
+# [Tue Sep 24 22:37:45 BST 2024] 1730421.1: node-j00a-002.myriad.ucl.ac.uk node-j00a-003.myriad.ucl.ac.uk
+# May contain multiple copies of the same hostname for some types of job
 function concat_nodes() {
     awk -F: '
         (($3 == "STARTING") && ($6 == "H") && ($8 == "slots")) {
+            # We make a hash key of the time, the job ID, and the task ID
+            #  and use it to accumulate hostnames as a single string
+            #  when we find schedule log entries for jobs starting
+            # See: `man sge_schedule` for more info on log format
             jobs[$4 " " $1 "." $2]=jobs[$4 " " $1 "." $2] " " $7
         }
         ($0 == "::::::::") {
