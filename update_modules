@@ -37,7 +37,7 @@ fi
 
 scriptname="$(basename "$0")"
 usage="
-Usage: $scriptname [-h] [-f|-i] [-r]
+Usage: $scriptname [-h] [-f|-i] [-k]
 
     -h  Prints this help
     -f  Force update even if it would be the same
