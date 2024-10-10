@@ -37,7 +37,7 @@ fi
 
 scriptname="$(basename "$0")"
 usage="
-Usage: $scriptname [-h] [-f|-i] [-r]
+Usage: $scriptname [-h] [-f|-i] [-k]
 
     -h  Prints this help
     -f  Force update even if it would be the same
@@ -99,6 +99,12 @@ if [[ ! -L "modulefiles" ]]; then
   fi
 fi
 
+# Check if there's a common apps area (e.g. merged Young/Michael)
+if [[ -d ../common ]]; then
+  ln -Tfs ../common/modulefiles modulefiles
+  cd ../common
+  moduledirs_path="$PWD"
+fi
 
 # Repo config info
 

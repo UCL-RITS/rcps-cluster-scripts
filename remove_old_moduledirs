@@ -15,7 +15,10 @@ if (whoami | grep -v ccspapp); then
 EOF
   exit
 fi
-  
+
+# Check if there's a common apps area (e.g. merged Young/Michael)
+[[ -d "${moduledirs_path}/../common" ]] \
+&& moduledirs_path="${moduledirs_path}/../common"
 
 # v-- gets a list of all directories named .mf_* created more than 7 days ago
 dirs_to_remove=`find -L $moduledirs_path -maxdepth 1 -type d -name ".mf_*" -ctime +7`
