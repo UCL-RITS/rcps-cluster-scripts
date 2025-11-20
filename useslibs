@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Attempts to give a list of all SO libraries used by all binary executables in a directory tree
+
+if [[ "$#" -eq 0 ]]; then
+    printf "usage: %s <directory> [directory [...]]\n" "$(basename "$0")"
+    exit 1
+fi
+
+find "$@" -executable -type f -print0 \
+    | xargs --null file \
+    | grep -e 'ELF ..-bit LSB' \
+    | grep 'dynamically linked' \
+    | awk '{print $1}' \
+    | sed -e 's/:$//' \
+    | xargs -I file ldd file \
+    | sed -e 's/(0x[0-9a-f]*)//' \
+    | sort -u -k 3 \
+    | column -t
+    
+# If you need to find a specific executable, then throw -t into the xargs and remove the sort:
+#| xargs -t -I file ldd file \
+
+# quick version: find "$@" -type f -executable -exec ldd {} \; | grep -v 'not a dynamic executable' | sed -e 's/(0x[0-9a-f]*)$//' -e 's/^ *//' -e 's/ => /\t =>\t /'| sort --unique --key 3
