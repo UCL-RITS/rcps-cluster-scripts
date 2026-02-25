@@ -107,7 +107,7 @@ do
   fi
 done
 
-# add user to thomas-users mailing list
+# add user to mailing list
 echo "  Emailing ${mailinglist} to add ${email}"
 /usr/sbin/sendmail -t<<EOF
 From: ${mailing_requestor}
