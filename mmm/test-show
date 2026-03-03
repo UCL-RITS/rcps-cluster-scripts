@@ -1,5 +1,17 @@
 #!/bin/bash
-# Very non-exhaustive tests for thomas-show
+# Very non-exhaustive tests for ${cluster}-show
+
+cluster="$1"
+if [[ -z "$cluster" ]]; then
+  echo "Usage: $0 <cluster>" >&2
+  exit 1
+fi
+
+cluster_show="./${cluster}-show"
+if [[ ! -x "${cluster_show}" ]]; then
+  echo "script '${cluster_show}' not found or not executable" >&2
+  exit 1
+fi
 
 # generate random number between 1 and 145 ($RANDOM starts at 0)
 range=144
@@ -8,62 +20,62 @@ number=$(( RANDOM % range +1 ))
 printf -v number "%04d" $number
 
 echo "------ Test show mmm user"
-./thomas-show --user "mmm$number"
+"${cluster_show}" --user "mmm$number"
 
 echo ""
 echo "------ Test show contacts"
-./thomas-show --contacts
+"${cluster_show}" --contacts
 
 echo ""
 echo "------ Test show institutes"
-./thomas-show --institutes
+"${cluster_show}" --institutes
 
 echo ""
 echo "------ Test show allusers"
-./thomas-show --allusers
+"${cluster_show}" --allusers
 
 echo ""
 echo "------ Test show getmmm"
-./thomas-show --getmmm
+"${cluster_show}" --getmmm
 
 echo ""
 echo "------ Test show recentusers (default 5)"
-./thomas-show recentusers
+"${cluster_show}" recentusers
 
 echo ""
 echo "------ Test show 8 recentusers"
-./thomas-show recentusers -n 8
+"${cluster_show}" recentusers -n 8
 
 echo ""
 echo "------ Test getusers in Soton"
-./thomas-show getusers -i Soton
+"${cluster_show}" getusers -i Soton
 
 echo ""
 echo "------ Test getusers in Soton that were in the pilot"
-./thomas-show getusers -i Soton -p Soton_pilot
+"${cluster_show}" getusers -i Soton -p Soton_pilot
 
 echo ""
 echo "------ Test whois - containing ucl in email address"
-./thomas-show whois -e ucl
+"${cluster_show}" whois -e ucl
 
 echo ""
 echo "------ Test requests (default)"
-./thomas-show requests
+"${cluster_show}" requests
 
 echo ""
 echo "------ Test requests pending"
-./thomas-show requests --pending
+"${cluster_show}" requests --pending
 
 echo ""
 echo "------ Test requests all"
-./thomas-show requests --all
+"${cluster_show}" requests --all
 
 echo ""
 echo "------ Test requests recent (default 5)"
-./thomas-show requests recent
+"${cluster_show}" requests recent
 
 echo ""
 echo "------ Test requests recent 8"
-./thomas-show requests recent -n 8
+"${cluster_show}" requests recent -n 8
 
 
