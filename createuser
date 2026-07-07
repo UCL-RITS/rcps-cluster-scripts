@@ -81,6 +81,20 @@ if command -v qconf >/dev/null; then
         echo "Error: detected SGE, but this cluster is not supposed to run SGE." >&2
         exit 1
     fi
+    # add user to PAG, but only if needed
+    if is_member_of "${username}" "${pag}"; then
+        echo "${username} is already member of ${pag}"
+    else
+        # we need to be in the right AD group to do the next bit
+        if ! is_member_of "$(whoami)" 'rg-arc-rc-hpc-groupsadmin'; then
+            echo "Error: you don't have permission to add users to the AD group" >&2
+            exit 1
+        fi
+        echo "About to add ${username} to AD group ${pag}."
+        echo "  If you are prompted for a password, enter your own AD password,"
+        echo "  and consider setting up ~/.config/modgroup.yml with the role account."
+        /shared/ucl/apps/cluster-bin/modgroup add "${username}" "${pag}"
+    fi
     qconf -au "${username}" "$SGE_ACL"
 elif command -v sacctmgr >/dev/null; then
     if [[ -z "${slurm_account}" ]]; then
